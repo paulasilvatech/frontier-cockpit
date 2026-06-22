@@ -27,7 +27,7 @@ This checklist is the contract behind "the deck is right the first time". The au
 
 - [ ] The inline Microsoft favicon from `references/head-meta.md` is present (never an external `favicon.svg`).
 - [ ] Open Graph and Twitter meta are present, with `og:locale` and a `previews/<deck-base>-preview-<locale>.png` per language.
-- [ ] If publishing, the preview files actually exist under `html/decks/previews/` (run the audit with `--check-assets`).
+- [ ] If publishing, the preview files actually exist under `decks/previews/` (run the audit with `--check-assets`).
 
 ## 4. Identity rules (non-negotiable)
 
@@ -48,9 +48,9 @@ This checklist is the contract behind "the deck is right the first time". The au
 ## 6. Delivery
 
 - [ ] The file follows the English naming pattern `<EnglishTopicCamelCase>_Deck_v<major>_<minor>_<patch>_<YYYY-MM-DD>_multi.html`.
-- [ ] Preview images live under `html/decks/previews/`, and deck-only support images live under `html/decks/assets/`.
-- [ ] Deck PDF derivatives live under `html/decks/pdf/<DeckBase>/`.
-- [ ] Deck PPTX derivatives live under `html/decks/pptx/<DeckBase>/`.
+- [ ] Preview images live under `decks/previews/`, and deck-only support images live under `decks/assets/`.
+- [ ] Deck PDF derivatives live under `decks/pdf/<DeckBase>/`.
+- [ ] Deck PPTX derivatives live under `decks/pptx/<DeckBase>/`.
 - [ ] The file is written to the workspace `output/` folder and surfaced to the user.
 - [ ] Only the multi HTML is delivered by default. Derivatives are mentioned in one line, not generated.
 
@@ -67,8 +67,8 @@ This checklist is the contract behind "the deck is right the first time". The au
 - [ ] Dependencies present (Playwright, Chromium, pypdf). The script preflights and reports exact install steps if not.
 - [ ] `reduced_motion='no-preference'` was used so animated slides do not render blank.
 - [ ] The output PDF exists, is non-empty, and the page count equals the slide count.
-- [ ] The PDF is saved under `html/decks/pdf/<DeckBase>/` with the same English deck base name and locale suffix.
-- [ ] `python3 scripts/validate_derivatives.py --html <deck>.html --locale <locale> --pdf html/decks/pdf/<DeckBase>/<DeckBase>_<locale>.pdf` exits 0.
+- [ ] The PDF is saved under `decks/pdf/<DeckBase>/` with the same English deck base name and locale suffix.
+- [ ] `python3 scripts/validate_derivatives.py --html <deck>.html --locale <locale> --pdf decks/pdf/<DeckBase>/<DeckBase>_<locale>.pdf` exits 0.
 
 ### PPTX (`make_pptx.js`)
 
@@ -76,8 +76,8 @@ This checklist is the contract behind "the deck is right the first time". The au
 - [ ] The PPTX export produced all three locale files: `<DeckBase>_pt-BR.pptx`, `<DeckBase>_en.pptx`, and `<DeckBase>_es.pptx`.
 - [ ] Cover titles fit (44pt, not 54pt for wide titles), shadows use a factory not a shared object, huge digits use rich text.
 - [ ] Visual QA done by converting key slides to images and inspecting for overlap, overflow, and misalignment.
-- [ ] The PPTX is saved under `html/decks/pptx/<DeckBase>/` with the same English deck base name and locale suffix.
-- [ ] `python3 scripts/validate_derivatives.py --html <deck>.html --locale pt-BR --pptx html/decks/pptx/<DeckBase>/<DeckBase>_pt-BR.pptx` exits 0.
-- [ ] `python3 scripts/validate_derivatives.py --html <deck>.html --locale en --pptx html/decks/pptx/<DeckBase>/<DeckBase>_en.pptx` exits 0.
-- [ ] `python3 scripts/validate_derivatives.py --html <deck>.html --locale es --pptx html/decks/pptx/<DeckBase>/<DeckBase>_es.pptx` exits 0.
+- [ ] The PPTX is saved under `decks/pptx/<DeckBase>/` with the same English deck base name and locale suffix.
+- [ ] `python3 scripts/validate_derivatives.py --html <deck>.html --locale pt-BR --pptx decks/pptx/<DeckBase>/<DeckBase>_pt-BR.pptx` exits 0.
+- [ ] `python3 scripts/validate_derivatives.py --html <deck>.html --locale en --pptx decks/pptx/<DeckBase>/<DeckBase>_en.pptx` exits 0.
+- [ ] `python3 scripts/validate_derivatives.py --html <deck>.html --locale es --pptx decks/pptx/<DeckBase>/<DeckBase>_es.pptx` exits 0.
 - [ ] If `--allow-notes-derived-content` was used, it was used only for PPTX, the reason is documented, and the output remains native/editable with locale-correct notes.

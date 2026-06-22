@@ -1,0 +1,202 @@
+# Frontier Cockpit
+
+> GitHub Copilot and agentic development observability workspace for local developer learning and Azure FinOps governance.
+
+## Repository Purpose
+
+This repository contains Frontier Cockpit, a local-to-enterprise observability package for GitHub Copilot. It combines Frontier Developer Cockpit for local private optimization with Frontier FinOps Cockpit for sanitized Azure rollups, governance, adoption, and leadership views.
+
+## Primitive Inventory
+
+| Primitive | Count | Location |
+| --- | ---: | --- |
+| Agents | 26 | `.github/agents/` |
+| Skills | 47 | `.github/skills/` |
+| Prompts | 42 | `.github/prompts/` |
+| Instructions | 9 | `.github/instructions/` |
+
+## Key Entry Points
+
+- `README.md`: repository map and operating overview.
+- `docs/`: approved strategy, playbook, guides, runbooks, and taxonomy.
+- `local-otel/`: local OpenTelemetry kit, Docker stack, Azure forwarding, GitHub Enterprise ingestion, and demo scripts.
+- `decks/`: trilingual HTML deck sources plus PDF, PPTX, previews, and deck assets.
+- `diagrams/`: editable draw.io architecture source and SVG exports.
+- `workshop/`: hands-on labs and participant checklist.
+- `.github/copilot-instructions.md`: repository-wide GitHub Copilot guidance.
+- `.github/prompts/`: reusable task entry points.
+- `.github/skills/`: reusable capability packs.
+- `.github/agents/`: reusable GitHub Copilot personas.
+- `.github/instructions/`: path-scoped repository rules.
+
+## Validation
+
+Run these commands before shipping changes that affect primitives or deliverables:
+
+```bash
+bash .github/scripts/audit-primitives.sh
+bash .github/scripts/audit-skills.sh
+bash .github/scripts/audit-external-content.sh
+bash .github/scripts/validate-deliverables.sh
+bash .github/scripts/generate-llms-txt.sh --check
+```
+
+For local runtime readiness, run:
+
+```bash
+local-otel/check-otel-local.sh
+local-otel/demo-ready.sh
+```
+
+## External Content
+
+External agents, skills, prompts, and instructions must keep source metadata, pass portability checks, and avoid automatic installation. Curated Awesome GitHub Copilot comparisons use the `suggest-awesome-github-copilot-*` skills.
+
+## Important Documents
+
+- `.github/CONTRIBUTING.md`
+- `.github/SECURITY.md`
+- `docs/FrontierCockpit_Playbook_v1_0_0_2026-06-17_en.md`
+- `docs/FrontierCockpit_Strategy_v1_0_0_2026-06-17_en.md`
+- `docs/FrontierCockpit_TaxonomyAndPlatformLayers_v1_0_0_2026-06-18_en.md`
+- `docs/FrontierCockpit_OperationsRunbook_v1_0_0_2026-06-17_en.md`
+- `docs/FrontierCockpit_LocalLinksGuide_v1_0_0_2026-06-19_en.md`
+- `local-otel/README.md`
+
+## Primitive Files
+
+### Agents
+
+- `.github/agents/adr-generator.agent.md`
+- `.github/agents/ai-native-engineer.agent.md`
+- `.github/agents/arch.agent.md`
+- `.github/agents/architecture-critic.agent.md`
+- `.github/agents/azure-principal-architect.agent.md`
+- `.github/agents/business-rules-extractor.agent.md`
+- `.github/agents/data-auditor.agent.md`
+- `.github/agents/deliverables-producer.agent.md`
+- `.github/agents/design-architect.agent.md`
+- `.github/agents/implementer.agent.md`
+- `.github/agents/industry-analyst.agent.md`
+- `.github/agents/legacy-analyst.agent.md`
+- `.github/agents/quality-reviewer.agent.md`
+- `.github/agents/release-engineer.agent.md`
+- `.github/agents/requirements-engineer.agent.md`
+- `.github/agents/research-analyst.agent.md`
+- `.github/agents/sdd-clarify.agent.md`
+- `.github/agents/sdd-init.agent.md`
+- `.github/agents/security-auditor.agent.md`
+- `.github/agents/spec-engineer.agent.md`
+- `.github/agents/specky-onboarding.agent.md`
+- `.github/agents/specky-orchestrator.agent.md`
+- `.github/agents/task-planner.agent.md`
+- `.github/agents/test-engineer-modernization.agent.md`
+- `.github/agents/test-verifier.agent.md`
+- `.github/agents/ubb-engineer.agent.md`
+
+### Skills
+
+- `.github/skills/agentic-architecture-patterns/SKILL.md`
+- `.github/skills/apim-ai-gateway/SKILL.md`
+- `.github/skills/architecture-doc/SKILL.md`
+- `.github/skills/azure-api-center/SKILL.md`
+- `.github/skills/azure-architecture-diagrams/SKILL.md`
+- `.github/skills/azure-managed-redis-cache/SKILL.md`
+- `.github/skills/backstage-plugin-builder/SKILL.md`
+- `.github/skills/canvas-design/SKILL.md`
+- `.github/skills/client-ubb-transition-kit/SKILL.md`
+- `.github/skills/code-modernization/SKILL.md`
+- `.github/skills/create-plugin/SKILL.md`
+- `.github/skills/foundry-agent-blueprint/SKILL.md`
+- `.github/skills/implementer/SKILL.md`
+- `.github/skills/markdown-writer/SKILL.md`
+- `.github/skills/mcp-builder/SKILL.md`
+- `.github/skills/monthly-insights/SKILL.md`
+- `.github/skills/ms-demo-video-editor/SKILL.md`
+- `.github/skills/ms-gartner-deck/SKILL.md`
+- `.github/skills/ms-presentation-deck/SKILL.md`
+- `.github/skills/ms-research-report/SKILL.md`
+- `.github/skills/overlay/SKILL.md`
+- `.github/skills/paula-article-writer/SKILL.md`
+- `.github/skills/ms-identity-editorial-brief/SKILL.md`
+- `.github/skills/ms-identity-technical-doc/SKILL.md`
+- `.github/skills/ms-identity/SKILL.md`
+- `.github/skills/playbook-pdf-builder/SKILL.md`
+- `.github/skills/prompt-architect/SKILL.md`
+- `.github/skills/release-engineer/SKILL.md`
+- `.github/skills/requirements-engineer/SKILL.md`
+- `.github/skills/research-analyst/SKILL.md`
+- `.github/skills/rhdh-jira/SKILL.md`
+- `.github/skills/rhdh-local/SKILL.md`
+- `.github/skills/rhdh/SKILL.md`
+- `.github/skills/sdd-markdown-standard/SKILL.md`
+- `.github/skills/sdd-pipeline/SKILL.md`
+- `.github/skills/sdd-spec-engineer/SKILL.md`
+- `.github/skills/skill-creator/SKILL.md`
+- `.github/skills/skill-maker/SKILL.md`
+- `.github/skills/specky-onboarding/SKILL.md`
+- `.github/skills/specky-orchestrator/SKILL.md`
+- `.github/skills/suggest-awesome-github-copilot-agents/SKILL.md`
+- `.github/skills/suggest-awesome-github-copilot-instructions/SKILL.md`
+- `.github/skills/suggest-awesome-github-copilot-prompts/SKILL.md`
+- `.github/skills/suggest-awesome-github-copilot-skills/SKILL.md`
+- `.github/skills/svg-professional/SKILL.md`
+- `.github/skills/test-verifier/SKILL.md`
+- `.github/skills/web-artifacts-builder/SKILL.md`
+
+### Prompts
+
+- `.github/prompts/analyst.prompt.md`
+- `.github/prompts/audit-skills.prompt.md`
+- `.github/prompts/build-ubb-platform.prompt.md`
+- `.github/prompts/compare-with-awesome.prompt.md`
+- `.github/prompts/design-agentic-system.prompt.md`
+- `.github/prompts/diagram-architecture.prompt.md`
+- `.github/prompts/modernize-assess.prompt.md`
+- `.github/prompts/modernize-brief.prompt.md`
+- `.github/prompts/modernize-extract-rules.prompt.md`
+- `.github/prompts/modernize-harden.prompt.md`
+- `.github/prompts/modernize-map.prompt.md`
+- `.github/prompts/modernize-reimagine.prompt.md`
+- `.github/prompts/modernize-transform.prompt.md`
+- `.github/prompts/new-client-case.prompt.md`
+- `.github/prompts/new-skill.prompt.md`
+- `.github/prompts/research.prompt.md`
+- `.github/prompts/review-agentic-architecture.prompt.md`
+- `.github/prompts/spec-feature.prompt.md`
+- `.github/prompts/specky-api.prompt.md`
+- `.github/prompts/specky-brownfield.prompt.md`
+- `.github/prompts/specky-check-drift.prompt.md`
+- `.github/prompts/specky-clarify.prompt.md`
+- `.github/prompts/specky-debug-hook.prompt.md`
+- `.github/prompts/specky-deploy.prompt.md`
+- `.github/prompts/specky-design.prompt.md`
+- `.github/prompts/specky-from-figma.prompt.md`
+- `.github/prompts/specky-from-meeting.prompt.md`
+- `.github/prompts/specky-greenfield.prompt.md`
+- `.github/prompts/specky-implement.prompt.md`
+- `.github/prompts/specky-migration.prompt.md`
+- `.github/prompts/specky-onboarding.prompt.md`
+- `.github/prompts/specky-orchestrate.prompt.md`
+- `.github/prompts/specky-pipeline-status.prompt.md`
+- `.github/prompts/specky-release.prompt.md`
+- `.github/prompts/specky-research.prompt.md`
+- `.github/prompts/specky-reset-phase.prompt.md`
+- `.github/prompts/specky-resolve-conflict.prompt.md`
+- `.github/prompts/specky-specify.prompt.md`
+- `.github/prompts/specky-tasks.prompt.md`
+- `.github/prompts/specky-verify.prompt.md`
+- `.github/prompts/standardize-deck.prompt.md`
+- `.github/prompts/verify-app.prompt.md`
+
+### Instructions
+
+- `.github/instructions/agentic-architecture.instructions.md`
+- `.github/instructions/client-cases.instructions.md`
+- `.github/instructions/code-modernization.instructions.md`
+- `.github/instructions/copilot-instructions.instructions.md`
+- `.github/instructions/document-organization.instructions.md`
+- `.github/instructions/documentation.instructions.md`
+- `.github/instructions/external-copilot-content.instructions.md`
+- `.github/instructions/react-apps.instructions.md`
+- `.github/instructions/skills-authoring.instructions.md`

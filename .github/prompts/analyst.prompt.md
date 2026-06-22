@@ -22,7 +22,7 @@ Use the `Industry Analyst` agent persona where helpful. Load the `ms-research-re
 ## Rules
 
 - **Never fabricate** metrics, market share, ROI, or benchmarks. Cite a credible source with a link; end with a References section. If a value has no source, state it as an assumption or omit it.
-- For any GitHub Copilot UBB numbers, pull from the client's audited source (for BTG, [../../gh-btg/btg-gh-ubb-mini-site/CONTEXT.md](../../gh-btg/btg-gh-ubb-mini-site/CONTEXT.md)) and the `ubb-engine` skill; never invent values.
+- For any GitHub Copilot billing, usage, adoption, or telemetry numbers, pull from audited client sources, official GitHub APIs or exports, local Frontier Cockpit telemetry clearly labeled as operational, or cited source documents. Never invent values.
 - Consultative voice, not commercial. Do not promote a specific vendor unless asked for a comparison.
 - Write "GitHub Copilot", never "Copilot" alone. No em dashes. Microsoft identity, not personal brand.
 

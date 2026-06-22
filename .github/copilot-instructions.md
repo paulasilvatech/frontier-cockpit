@@ -1,78 +1,123 @@
 # GitHub Copilot Instructions
 
-Repository-wide guidance for GitHub Copilot in the **GitHub Copilot UBB Transition Workspace**. Keep responses aligned with these conventions. Path-scoped rules live in [instructions/](instructions/), reusable prompts in [prompts/](prompts/), custom agents in [agents/](agents/), and skills in [skills/](skills/).
+Repository-wide guidance for GitHub Copilot in the **Frontier Cockpit** workspace. Keep responses aligned with the root README, path-scoped instructions, local runtime docs, validation scripts, agents, prompts, and skills.
 
-## Document organization (always)
+## What This Repository Is
 
-This repository stores rendered and authored documents by file type (`html/`, `pdf/`, `xlsx/`, `pptx/`, `docx/`, `md/`). Whenever you generate, save, or update a document:
+Frontier Cockpit is the umbrella platform for GitHub Copilot and agentic development observability. It has two coordinated experiences:
 
-- Place it in the folder matching its extension; never leave it loose at the repository root.
-- Exception for deck derivatives: PDF and PPTX files generated from `html/decks/*.html` stay with the deck family under `html/decks/pdf/<DeckBase>/` and `html/decks/pptx/<DeckBase>/`. Deck previews stay under `html/decks/previews/`, and deck-only support images stay under `html/decks/assets/`.
-- Keep only the latest version in the folder root; move any previous version or duplicate download into that folder's `archive/`.
-- Validate it in place, and update the document map in [../README.md](../README.md) when you add a new logical document.
+- **Frontier Developer Cockpit:** local, private developer learning and optimization.
+- **Frontier FinOps Cockpit:** centralized Azure cost, governance, adoption, ROI, and leadership views.
 
-The full rule is auto-applied by [instructions/document-organization.instructions.md](instructions/document-organization.instructions.md); the document map and "how it works" are in [../README.md](../README.md).
+The platform observes GitHub Copilot Chat, agent mode, tool calls, context use, AIU signals, model labels, workspace attribution, and GitHub Enterprise signals. Local views can be full fidelity. Azure views must be sanitized, governed, and suitable for enterprise history.
 
-## What this repository is
+## Workspace Map
 
-A workspace for planning, packaging, and presenting **GitHub Copilot Usage-Based Billing (UBB)** transitions for enterprise clients. It holds:
+- `README.md`: root package index and product taxonomy.
+- `docs/`: approved strategy, playbook, architecture, guides, runbooks, and taxonomy.
+- `diagrams/`: editable draw.io source and SVG architecture exports.
+- `decks/`: trilingual Microsoft-identity HTML decks plus PDF, PPTX, previews, and assets.
+- `local-otel/`: local OpenTelemetry kit, Docker stack, Azure deployment, GitHub Enterprise ingestion, dashboards, materialization, and demo scripts.
+- `workshop/`: hands-on labs and participant checklist.
+- `.github/`: GitHub Copilot agents, prompts, skills, instructions, validation scripts, workflows, plugins, and repository policy.
+- `_archive/`: local migration backups. Do not use as source of truth unless explicitly asked.
 
-- **Client cases**: per-client packages (control center apps and/or deliverables). The reference, fully built case is `gh-btg/`. Other client folders (`gh-bb`, `gh-bradesco`, `gh-caixa`, `gh-petrobras`, `gh-serpro`) are planned placeholders.
-- **Template**: `gh-contoso-template/`, the brand-safe (anonymized "Contoso") deliverables used to seed new client cases.
-- **Learning experiences**: `gh-ubb-learning-site/` (React + TypeScript + Tailwind), `gh-ubb-simple-learning-site/` (static HTML tools), `gh-ubb-ebook/` (PT-BR Markdown ebook with SVG diagrams), and `gh-ubb-token-optimization-workshop/` (English Markdown workshop).
-- **Tools**: `gh-agentic-roi-calculator/` (static HTML agent ROI calculator).
-- **Decks and documents**: `gh-ms-customers-decks/` (client-facing decks) and `gh-ubb-oficial-documents/` (official reference documents). Planned (empty) packages.
-- **Platform spec**: the build prompt for the future multi-client `ubb-platform/` lives at [prompts/build-ubb-platform.prompt.md](prompts/build-ubb-platform.prompt.md). The platform is the single main site that indexes and hosts every workspace folder as a mini-app.
-- **AI context index**: [../llms.txt](../llms.txt) is the machine-readable map of this hub for AI-native tools. Regenerate it with `bash .github/scripts/generate-llms-txt.sh` after adding or removing primitives.
+## Golden Rules
 
-The strategic direction: instead of duplicating one site per client, treat **each client as a data record** inside a single platform; the BTG case is the validated template.
+1. Write **GitHub Copilot**, never bare product shorthand, in user-facing copy.
+2. Never fabricate metrics, KPIs, ROI, market data, prices, quotas, or benchmarks. Cite official sources or state assumptions.
+3. Treat local OpenTelemetry as operational telemetry, not official billing. Official billing and adoption claims require GitHub APIs, billing exports, or cited sources.
+4. Keep raw prompts, responses, tool arguments, and tool results local unless an explicit approved workflow says otherwise.
+5. Azure forwarding must sanitize raw content and oversized sensitive attributes before enterprise ingestion.
+6. Use the locked product names: Frontier Cockpit, Frontier Developer Cockpit, Frontier FinOps Cockpit, Frontier Platform Layers, Fleet Overview.
+7. Documentation is English by default. User-facing workshop, deck, or app content may be multilingual when the artifact requires it.
+8. No em dashes in repository-authored documentation or UI copy.
+9. Prefer verified repository scripts and existing patterns over new one-off tooling.
+10. Do not run destructive reset, teardown, or secret-rotation commands unless explicitly requested.
 
-## Golden rules
+## Local Runtime
 
-1. **Never fabricate metrics.** Financial, billing, usage, and ROI numbers are audited per client. Do not invent, estimate, or alter canonical values. When a number is needed, pull it from the client's audited source (for BTG, see `gh-btg/btg-gh-ubb-mini-site/CONTEXT.md`). Cite the source.
-2. **Always write "GitHub Copilot"**, never "Copilot" alone, in user-facing copy.
-3. **English for documentation.** All `.md` documentation, READMEs, and everything under `.github/` is written in English. App UI copy is trilingual (EN / PT-BR / ES).
-4. **No em dashes in UI copy.** Use commas, parentheses, or restructure the sentence.
-5. **Reuse, do not rewrite.** The BTG app contains battle-tested code (engine formulas, the `useDB` persistence hook, the editable grid, i18n, the design system). Port and parametrize it; do not reimplement from scratch.
-6. **Do not alter built deliverables.** Treat files under any client's deliverables package (for BTG, `btg-gh-ubb-mini-site/`) as audited outputs. Update `CONTEXT.md` if context changes, but never silently rewrite numbers.
-7. **Curate external primitives.** Do not bulk-import from `github/awesome-copilot` or any external catalog. Use the local `suggest-awesome-github-copilot-*` skills and [prompts/compare-with-awesome.prompt.md](prompts/compare-with-awesome.prompt.md), then classify each candidate as adopt, adapt, defer, or reject.
+The local runtime source of truth is `local-otel/`. The user-level compatibility path may be `~/.copilot-otel`.
 
-## Tech stack and conventions
+Default endpoints:
 
-- **Frontend:** React 18 with Vite. Prefer **TypeScript** for new apps. Hash routing so single-file builds open from `file://`.
-- **Design system (ms-identity):** Microsoft 4-color palette `#F25022` / `#7FBA00` / `#00A4EF` / `#FFB900` with 50/500/700 ramps; **Inter** for body text, **JetBrains Mono** for data; light and dark themes; sticky header with the 4-square logo; cards with colored top accents; editorial tables.
-- **Charts:** hand-rolled SVG in the design-system style. No external chart libraries.
-- **Assets:** use **SVG** for icons, favicons, and logos (inline data-URI favicon is preferred).
-- **Persistence:** client edits live in `localStorage` with export/import and File System Access save, following the existing `useDB` hook. No backend today (Azure Static Web Apps is the future path for shared persistence).
-- **i18n:** trilingual EN / PT-BR / ES via the existing `t()` pattern; persist the locale; never let one language leak into another.
+- Aspire Dashboard: `http://localhost:18888`
+- Grafana OSS: `http://localhost:3000`
+- Prometheus: `http://localhost:9090`
+- Tempo: `http://localhost:3200`
+- Loki: `http://localhost:3100`
+- OTLP HTTP: `http://localhost:4318`
+- OTLP gRPC: `http://localhost:4317`
 
-## Data integrity and sources
+The complete Frontier Developer Cockpit requires OpenTelemetry Collector, Aspire Dashboard, Tempo, Prometheus, Loki, Grafana OSS, and PostgreSQL for Grafana metadata. DuckDB or SQLite may support Python-first local insights, but they do not replace Prometheus or Grafana.
 
-- Every document with data claims must include a **References** section linking to the source.
-- Acceptable sources: the client's audited workbooks and `CONTEXT.md`, official vendor docs (Microsoft Learn, GitHub Docs), and named analyst firms with links.
-- If no source exists, state the value as an explicit assumption or omit it.
+Use `local-otel/demo-ready.sh` before demos. Use `local-otel/check-otel-local.sh` for readiness. Use `local-otel/materialize-copilot-sessions.sh` and `local-otel/daily-rollup.sh` for session summaries and rollups.
 
-## Verification
+## Azure And GitHub Enterprise
 
-When building or changing an app, prefer rendering-based verification (build, then check routes render with zero console errors) over reading code alone. Most regressions in this project (i18n leaks, broken references, wrong totals) are caught by rendering, not by inspection.
+Azure resources are defined under `local-otel/azure/` with Bicep. The current enterprise observability resource group is `rg-agentobs-dev-eus-001` in East US. Use managed identity, least privilege, and private or governed network posture where practical.
 
-## Customizations in this repository
+GitHub Enterprise and organization signals are ingested through `local-otel/ingest-github-enterprise.sh`, `local-otel/ingest-github-orgs.sh`, and related state under ignored folders. API statuses such as `404`, `403`, and `422` can be real availability signals. Do not synthesize usage when an official GitHub API is unavailable.
 
-- **Instructions** (auto-applied by path): [instructions/react-apps.instructions.md](instructions/react-apps.instructions.md), [instructions/client-cases.instructions.md](instructions/client-cases.instructions.md), [instructions/documentation.instructions.md](instructions/documentation.instructions.md), [instructions/skills-authoring.instructions.md](instructions/skills-authoring.instructions.md), [instructions/agentic-architecture.instructions.md](instructions/agentic-architecture.instructions.md).
-- **Prompts** (run with `/`): [prompts/build-ubb-platform.prompt.md](prompts/build-ubb-platform.prompt.md), [prompts/new-client-case.prompt.md](prompts/new-client-case.prompt.md), [prompts/verify-app.prompt.md](prompts/verify-app.prompt.md), [prompts/research.prompt.md](prompts/research.prompt.md), [prompts/spec-feature.prompt.md](prompts/spec-feature.prompt.md), [prompts/audit-skills.prompt.md](prompts/audit-skills.prompt.md), [prompts/new-skill.prompt.md](prompts/new-skill.prompt.md), [prompts/design-agentic-system.prompt.md](prompts/design-agentic-system.prompt.md), [prompts/diagram-architecture.prompt.md](prompts/diagram-architecture.prompt.md), [prompts/review-agentic-architecture.prompt.md](prompts/review-agentic-architecture.prompt.md).
-- **Agents** (select in chat): `UBB Engineer` ([agents/ubb-engineer.agent.md](agents/ubb-engineer.agent.md)) builds and extends the apps; `Data Auditor` ([agents/data-auditor.agent.md](agents/data-auditor.agent.md)), read-only, checks canonical-number integrity; `Deliverables Producer` ([agents/deliverables-producer.agent.md](agents/deliverables-producer.agent.md)) produces decks, reports, and PDFs under the Microsoft identity; `Spec Engineer` ([agents/spec-engineer.agent.md](agents/spec-engineer.agent.md)) writes spec-driven plans; `AI-Native Engineer` ([agents/ai-native-engineer.agent.md](agents/ai-native-engineer.agent.md)) designs agentic architectures on the GitHub platform and Azure AI Foundry and renders diagrams with official icons.
-- **Skills** (loaded on demand): `ubb-engine` ([skills/ubb-engine/SKILL.md](skills/ubb-engine/SKILL.md)) holds the canonical formulas and a node script that asserts the audited outputs, plus the design and document skills (`ms-identity` family). The AI-native set covers `agentic-architecture-patterns`, `azure-managed-redis-cache`, `foundry-agent-blueprint`, `azure-api-center`, `apim-ai-gateway`, and `azure-architecture-diagrams` (which bundles a Python draw.io MCP server for diagrams with official Azure, Microsoft, and GitHub icons).
-- **Validation** (the equivalent of hooks; GitHub Copilot has no hooks primitive): VS Code tasks in [../.vscode/tasks.json](../.vscode/tasks.json) (run "Validate workspace") and CI in [workflows/validate.yml](workflows/validate.yml) run on every push and pull request. The engine check verifies the canonical numbers; [scripts/audit-skills.sh](scripts/audit-skills.sh) audits the skills; [scripts/audit-primitives.sh](scripts/audit-primitives.sh) audits the agents, prompts, and instructions; [scripts/audit-external-content.sh](scripts/audit-external-content.sh) audits external provenance; [scripts/generate-llms-txt.sh](scripts/generate-llms-txt.sh) keeps [../llms.txt](../llms.txt) current. The skill output gates (deck, identity HTML, architecture, research) run together through [scripts/validate-deliverables.sh](scripts/validate-deliverables.sh): with no argument it is a regression guard over the committed example assets, and with a folder it validates real deliverables.
-- **External content governance**: [instructions/external-copilot-content.instructions.md](instructions/external-copilot-content.instructions.md) applies to imported or adapted agents, skills, prompts, and instructions. External content must keep provenance metadata, pass [scripts/audit-external-content.sh](scripts/audit-external-content.sh), and avoid automatic installation or overwrites.
+## Documentation And Deliverables
 
-## Repository hygiene
+- Markdown docs under `docs/` and `workshop/` use YAML frontmatter, versioned filenames, a change log, a table of contents when useful, and a References section for claims.
+- Deck HTML sources live directly under `decks/`.
+- Deck derivatives live under `decks/pdf/<DeckBase>/` and `decks/pptx/<DeckBase>/`.
+- Deck previews live under `decks/previews/`; deck-only support assets live under `decks/assets/`.
+- Architecture source lives in `diagrams/*.drawio`; exported SVGs live beside it.
+- Keep `README.md`, [../decks/README.md](../decks/README.md), and workshop indexes current when adding logical artifacts.
 
-- Do not commit build output (`dist/`, `build/`), `node_modules/`, Vite `*.timestamp-*.mjs` artifacts, or `.DS_Store`. These are covered by the root `.gitignore`.
-- Each folder has a `README.md` describing its purpose, contents, status, and how to run it. Keep them current.
+## Development Conventions
+
+- Shell scripts are Bash or zsh as already used in `local-otel/`. Preserve macOS compatibility.
+- Avoid writing secrets, tokens, local logs, state JSON, DuckDB files, or generated runtime output to git.
+- For zsh scripts, do not use reserved names such as `path` or `status` for variables.
+- Dashboard JSON lives under `local-otel/stack/grafana/` for local Grafana and `local-otel/azure/` for Azure Managed Grafana.
+- For diagrams, use official Azure, Microsoft, and GitHub icons when product icons are required.
+- For decks and Microsoft-identity deliverables, load the relevant `ms-identity` or deck skill first.
+
+## Customizations
+
+- Path-scoped instructions live under `.github/instructions/`.
+- Agents live under `.github/agents/`.
+- Prompts live under `.github/prompts/`.
+- Skills live under `.github/skills/`.
+- Specky SDD assets and MCP configuration are present. Use Specky flows when the user asks for spec-driven requirements, design, tasks, verification, or release planning.
+- External GitHub Copilot primitives must keep provenance metadata and pass external-content validation.
+
+## Validation
+
+Use the VS Code task **Validate workspace** for the full repository gate.
+
+Important individual checks:
+
+```bash
+bash .github/scripts/audit-primitives.sh
+bash .github/scripts/audit-skills.sh
+bash .github/scripts/audit-external-content.sh
+bash .github/scripts/validate-deliverables.sh
+bash .github/scripts/generate-llms-txt.sh --check
+```
+
+For local runtime validation:
+
+```bash
+local-otel/check-otel-local.sh
+local-otel/demo-ready.sh
+```
+
+For deck validation, follow [../decks/README.md](../decks/README.md) and use the `ms-presentation-deck` audit and derivative validators.
+
+## Repository Hygiene
+
+Do not commit `.DS_Store`, `.playwright-mcp/`, local OpenTelemetry logs, local runtime state, DuckDB files, Azure `.env`, token files, GitHub Enterprise JSON exports, Docker generated data, or `_archive/` contents. These are covered by `.gitignore`.
 
 ## Pointers
 
 - Root overview: [../README.md](../README.md)
-- Platform build prompt: [prompts/build-ubb-platform.prompt.md](prompts/build-ubb-platform.prompt.md)
-- Reference case: [../gh-btg/README.md](../gh-btg/README.md)
-- Canonical BTG numbers: [../gh-btg/btg-gh-ubb-mini-site/CONTEXT.md](../gh-btg/btg-gh-ubb-mini-site/CONTEXT.md)
+- Local OpenTelemetry kit: [../local-otel/README.md](../local-otel/README.md)
+- Operations runbook: [../docs/FrontierCockpit_OperationsRunbook_v1_0_0_2026-06-17_en.md](../docs/FrontierCockpit_OperationsRunbook_v1_0_0_2026-06-17_en.md)
+- Local links: [../docs/FrontierCockpit_LocalLinksGuide_v1_0_0_2026-06-19_en.md](../docs/FrontierCockpit_LocalLinksGuide_v1_0_0_2026-06-19_en.md)
+- Deck rules: [../decks/README.md](../decks/README.md)
+- Workshop entry point: [../workshop/README.md](../workshop/README.md)

@@ -5,13 +5,8 @@ set -u
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$ROOT/llms.txt"
-TMP="${TMPDIR:-/tmp}/frontier-cockpit-hq-llms.$$"
+TMP="${TMPDIR:-/tmp}/frontier-cockpit-llms.$$"
 MODE="${1:-write}"
-
-count_files() {
-  local pattern="$1"
-  find "$ROOT" -path "$pattern" -type f 2>/dev/null | wc -l | tr -d ' '
-}
 
 agents_count="$(find "$ROOT/.github/agents" -maxdepth 1 -name '*.agent.md' -type f 2>/dev/null | wc -l | tr -d ' ')"
 skills_count="$(find "$ROOT/.github/skills" -maxdepth 2 -name 'SKILL.md' -type f 2>/dev/null | wc -l | tr -d ' ')"
@@ -19,10 +14,10 @@ prompts_count="$(find "$ROOT/.github/prompts" -maxdepth 1 -name '*.prompt.md' -t
 instructions_count="$(find "$ROOT/.github/instructions" -maxdepth 1 -name '*.instructions.md' -type f 2>/dev/null | wc -l | tr -d ' ')"
 
 {
-  printf '# Frontier Cockpit Team Agents Hub\n\n'
-  printf '> Central workspace for Frontier Cockpit Team GitHub Copilot agents, skills, prompts, instructions, validation scripts, generated content, and reusable assets.\n\n'
+  printf '# Frontier Cockpit\n\n'
+  printf '> GitHub Copilot and agentic development observability workspace for local developer learning and Azure FinOps governance.\n\n'
   printf '## Repository Purpose\n\n'
-  printf 'This repository is the durable context hub for GitHub Copilot customization primitives, Microsoft identity deliverables, UBB transition material, AI-native architecture guidance, and validation gates.\n\n'
+  printf 'This repository contains Frontier Cockpit, a local-to-enterprise observability package for GitHub Copilot. It combines Frontier Developer Cockpit for local private optimization with Frontier FinOps Cockpit for sanitized Azure rollups, governance, adoption, and leadership views.\n\n'
   printf '## Primitive Inventory\n\n'
   printf '| Primitive | Count | Location |\n'
   printf '| --- | ---: | --- |\n'
@@ -32,6 +27,11 @@ instructions_count="$(find "$ROOT/.github/instructions" -maxdepth 1 -name '*.ins
   printf '| Instructions | %s | `.github/instructions/` |\n\n' "$instructions_count"
   printf '## Key Entry Points\n\n'
   printf '%s\n' '- `README.md`: repository map and operating overview.'
+  printf '%s\n' '- `docs/`: approved strategy, playbook, guides, runbooks, and taxonomy.'
+  printf '%s\n' '- `local-otel/`: local OpenTelemetry kit, Docker stack, Azure forwarding, GitHub Enterprise ingestion, and demo scripts.'
+  printf '%s\n' '- `decks/`: trilingual HTML deck sources plus PDF, PPTX, previews, and deck assets.'
+  printf '%s\n' '- `diagrams/`: editable draw.io architecture source and SVG exports.'
+  printf '%s\n' '- `workshop/`: hands-on labs and participant checklist.'
   printf '%s\n' '- `.github/copilot-instructions.md`: repository-wide GitHub Copilot guidance.'
   printf '%s\n' '- `.github/prompts/`: reusable task entry points.'
   printf '%s\n' '- `.github/skills/`: reusable capability packs.'
@@ -46,13 +46,22 @@ instructions_count="$(find "$ROOT/.github/instructions" -maxdepth 1 -name '*.ins
   printf 'bash .github/scripts/validate-deliverables.sh\n'
   printf 'bash .github/scripts/generate-llms-txt.sh --check\n'
   printf '```\n\n'
+  printf 'For local runtime readiness, run:\n\n'
+  printf '```bash\n'
+  printf 'local-otel/check-otel-local.sh\n'
+  printf 'local-otel/demo-ready.sh\n'
+  printf '```\n\n'
   printf '## External Content\n\n'
   printf 'External agents, skills, prompts, and instructions must keep source metadata, pass portability checks, and avoid automatic installation. Curated Awesome GitHub Copilot comparisons use the `suggest-awesome-github-copilot-*` skills.\n\n'
   printf '## Important Documents\n\n'
   printf '%s\n' '- `.github/CONTRIBUTING.md`'
   printf '%s\n' '- `.github/SECURITY.md`'
-  printf '%s\n' '- `md/repository/Repository_Central_Operating_Model_v1_0_0_2026-06-17_en.md`'
-  printf '%s\n\n' '- `md/repository/Repository_Context_Map_v1_0_0_2026-06-17_en.md`'
+  printf '%s\n' '- `docs/FrontierCockpit_Playbook_v1_0_0_2026-06-17_en.md`'
+  printf '%s\n' '- `docs/FrontierCockpit_Strategy_v1_0_0_2026-06-17_en.md`'
+  printf '%s\n' '- `docs/FrontierCockpit_TaxonomyAndPlatformLayers_v1_0_0_2026-06-18_en.md`'
+  printf '%s\n' '- `docs/FrontierCockpit_OperationsRunbook_v1_0_0_2026-06-17_en.md`'
+  printf '%s\n' '- `docs/FrontierCockpit_LocalLinksGuide_v1_0_0_2026-06-19_en.md`'
+  printf '%s\n\n' '- `local-otel/README.md`'
   printf '## Primitive Files\n\n'
   printf '### Agents\n\n'
   find "$ROOT/.github/agents" -maxdepth 1 -name '*.agent.md' -type f 2>/dev/null | sed "s#^$ROOT/##" | sort | sed 's#^#- `#; s#$#`#'

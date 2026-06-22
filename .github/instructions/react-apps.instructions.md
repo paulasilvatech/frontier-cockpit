@@ -1,47 +1,35 @@
 ---
-description: "Conventions for the React/Vite client apps and learning sites (engine, persistence, design system, i18n)."
-applyTo: "gh-btg/**,gh-ubb-learning-site/**,ubb-platform/**"
+description: "Conventions for future React, Vue, Vite, and TypeScript frontend work in Frontier Cockpit."
+applyTo: "apps/**,web/**,frontend/**,**/*.{ts,tsx,js,jsx}"
 ---
 
-# React / Vite App Conventions
+# Frontend App Conventions
 
-These rules apply to the React applications in this workspace (the BTG control center, the learning site, and any future `ubb-platform/` or calculator app).
+These rules apply when adding or changing frontend application code in this workspace.
 
 ## Stack
 
-- **React 18 + Vite.** Use **TypeScript** for new code; the BTG app is JS and should be ported rather than rewritten when reused.
-- **Hash routing** so single-file builds open from `file://`. For an Azure Static Web Apps target, switch to history routing with an SPA fallback (`staticwebapp.config.json`) and `base: '/'`.
-- **Single-file build** via `vite-plugin-singlefile` when the artifact must open from the file system.
+- Prefer TypeScript for new frontend code.
+- Use React or Vue with Vite unless a stronger local pattern exists.
+- Use hash routing when a built app must open from `file://`.
+- For hosted Azure Static Web Apps targets, use history routing with an SPA fallback and `base: '/'`.
 
-## Reuse, do not rewrite
+## Design System
 
-The BTG app contains validated building blocks. Port and parametrize them by `clientId`; do not reimplement:
+- Use the Microsoft-aligned palette `#F25022`, `#7FBA00`, `#00A4EF`, `#FFB900`, and Azure blue `#0078D4` where product identity calls for it.
+- Use SVG for icons, favicons, logos, diagrams, and professional visual assets.
+- Keep dashboards and operational tools dense, scannable, and calm.
+- Prefer hand-authored SVG charts for deliverables and deck-like web artifacts unless the app already has a charting library.
 
-- **Engine** (UBB formulas: pools, overage, FY27 curve, leverage, budgets, maturity, ROI), keep as pure functions; cover with a node assertion script against canonical outputs.
-- **`useDB` hook**: `localStorage` persistence + export/import + File System Access save. Namespace keys per client (for example `ubb-${clientId}-${dbName}`).
-- **Editable Grid** + toolbar, **i18n** dictionaries and `t()` helper, and the **design system** stylesheet.
+## Data And Privacy
 
-## Design system (ms-identity)
+- Do not invent metrics or demo data without labeling it as synthetic.
+- Distinguish local operational telemetry from official GitHub billing, adoption, and API data.
+- Keep raw prompts, responses, tool arguments, and tool results local unless an approved workflow explicitly sends sanitized data onward.
 
-- Palette: `#F25022` / `#7FBA00` / `#00A4EF` / `#FFB900` with 50/500/700 ramps; light and dark themes.
-- Fonts: **Inter** for text, **JetBrains Mono** for data.
-- Sticky header with the 4-square logo; cards with colored top accents; editorial tables.
-- **Charts are hand-rolled SVG.** Do not add chart libraries.
-- Favicon and icons are **SVG** (inline data-URI favicon preferred).
+## Verification Before Done
 
-## i18n
-
-- Trilingual **EN / PT-BR / ES** through the existing `t()` pattern; persist the chosen locale.
-- Never let one language leak into another. Sweep all three languages on sampled routes before considering work done.
-
-## Data
-
-- Render audited numbers exactly; never invent or alter canonical values.
-- Keep the documented note explaining the small difference between the live FY27 formula and the canonical hand-rounded curve.
-
-## Verification before done
-
-1. `npm run build` succeeds.
-2. Every route renders with **zero** console/page errors (check the single-file `dist` from `file://` when applicable).
-3. Editing a grid cell recomputes derived values and toggles the dirty badge; reset restores canonical data.
-4. All three languages and dark mode work on sampled routes.
+1. Build succeeds with the local package manager.
+2. Routes render with zero console or page errors where rendering verification is available.
+3. UI copy follows repository naming rules: Frontier Cockpit, Frontier Developer Cockpit, Frontier FinOps Cockpit, and GitHub Copilot.
+4. Dark mode, responsive layout, and language switching work when the app implements them.

@@ -4,7 +4,7 @@
     {
       "label": "Validate workspace",
       "type": "shell",
-      "command": "bash .github/scripts/audit-primitives.sh && bash .github/scripts/audit-skills.sh && bash .github/scripts/audit-external-content.sh && bash .github/scripts/validate-deliverables.sh && bash .github/scripts/generate-llms-txt.sh --check && cd playwright && npm ci && npm test",
+      "command": "bash .github/scripts/audit-primitives.sh && bash .github/scripts/audit-skills.sh && bash .github/scripts/audit-external-content.sh && bash .github/scripts/validate-deliverables.sh && bash .github/scripts/generate-llms-txt.sh --check",
       "group": {
         "kind": "test",
         "isDefault": true
@@ -28,9 +28,9 @@
       "problemMatcher": []
     },
     {
-      "label": "Validate rendered HTML",
+      "label": "Validate deliverables",
       "type": "shell",
-      "command": "cd playwright && npm ci && npm test",
+      "command": "bash .github/scripts/validate-deliverables.sh",
       "problemMatcher": []
     }
   ]

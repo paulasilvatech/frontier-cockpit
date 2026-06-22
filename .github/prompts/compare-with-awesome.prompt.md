@@ -23,9 +23,9 @@ Load these skills before comparing or recommending changes: `suggest-awesome-git
 
 ## Rules
 
-- Preserve HQ conventions from `.github/copilot-instructions.md`.
+- Preserve Frontier Cockpit conventions from `.github/copilot-instructions.md`.
 - Prefer small, high-value imports over broad catalog mirroring.
-- Keep Microsoft identity and UBB data integrity rules intact.
+- Keep Microsoft identity, telemetry privacy, and source integrity rules intact.
 - Never fabricate metrics, prices, benchmarks, or source claims.
 - External content must pass `audit-external-content.sh` after implementation.
 

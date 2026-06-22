@@ -1,42 +1,42 @@
 ---
-description: "Scaffold a new GitHub Copilot UBB client case from the Contoso template, following the BTG reference structure."
+description: "Scaffold a new sourced client or customer package, using audited data and repository placement rules."
 agent: agent
 argument-hint: "client name, target folder, case type, and audited data source"
 ---
 
-# New Client Case
+# New Client Package
 
-Scaffold a new GitHub Copilot Usage-Based Billing (UBB) client case in this workspace.
+Scaffold a new sourced client or customer package in this workspace.
 
 ## Inputs
 
 Ask for any that are missing:
 
-- **Client name** and the target folder (convention: `gh-<client>/`).
-- Whether the case needs a **control center app** (port from `gh-btg/`), a **deliverables package** (from `gh-contoso-template/`), or both.
-- The **audited data source** for the client (workbook or numbers). If none is available yet, scaffold structure only and mark numbers as `TODO (pending audit)`, do not invent values.
+- **Client name** and target folder.
+- Package type: documentation, deck, report, dashboard export, app, or mixed deliverables.
+- The **audited data source** for the client, such as a workbook, GitHub API export, billing export, or approved source document. If none is available yet, scaffold structure only and mark numbers as `TODO (pending audited source)`, do not invent values.
 
 ## Steps
 
-1. Read [../../gh-btg/README.md](../../gh-btg/README.md) and [../../gh-contoso-template/README.md](../../gh-contoso-template/README.md) to mirror the reference structure.
-2. Create the client folder with a `README.md` (purpose, contents, status, how to run, references) in English.
-3. If a deliverables package is requested, copy the relevant Contoso template files and replace branding and placeholder numbers with the client's audited data.
-4. If an app is requested, port the BTG app parametrized by the client id; reuse the engine, `useDB` hook, grid, i18n, and design system. Do not rewrite them.
-5. Add a `CONTEXT.md` capturing decisions and canonical numbers, with a References section.
-6. Update the root [../../README.md](../../README.md) inventory table: set the client's status.
+1. Read [../copilot-instructions.md](../copilot-instructions.md), [../instructions/document-organization.instructions.md](../instructions/document-organization.instructions.md), and [../instructions/documentation.instructions.md](../instructions/documentation.instructions.md).
+2. Create the package folder with a `README.md` covering purpose, contents, status, how to run or review, and references.
+3. If a deliverable is requested, use the relevant skill and replace placeholders only with audited or cited data.
+4. If an app is requested, use existing repository patterns and verify build/render behavior.
+5. Add a context or assumptions file capturing decisions, sources, unresolved gaps, and canonical values when available.
+6. Update the root [../../README.md](../../README.md) or relevant folder README if this is a new logical package.
 
 ## Rules
 
-- Never fabricate metrics. Use only audited data and cite the source.
-- Keep `gh-contoso-template/` anonymized; never copy real client numbers into it.
-- Documentation in English; app UI copy trilingual EN / PT-BR / ES.
+- Never fabricate metrics. Use only audited or cited data and cite the source.
+- Keep anonymized templates anonymized.
+- Documentation is English unless the deliverable explicitly requires another language.
 - Write "GitHub Copilot"; no em dashes in UI copy.
 
 ## Done when
 
-- The client folder exists with a complete English `README.md`.
-- Any copied deliverables and/or ported app build and render without errors.
-- The root README inventory reflects the new case.
+- The package folder exists with a complete English `README.md`.
+- Any generated deliverables or apps validate with the relevant gates.
+- The root README or relevant folder README reflects the new package when applicable.
 
 ## Output
 

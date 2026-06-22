@@ -1,38 +1,38 @@
 ---
-description: "Conventions for client case folders: structure, audited data integrity, and how to seed a new client from the template."
-applyTo: "gh-btg/**,gh-bb/**,gh-bradesco/**,gh-caixa/**,gh-petrobras/**,gh-serpro/**,gh-contoso-template/**"
+description: "Conventions for generated client or customer deliverable packages, including audited data integrity and source traceability."
+applyTo: "client-ubb-transition-kits/**,customer-packages/**,account-packages/**"
 ---
 
-# Client Case Conventions
+# Client Package Conventions
 
-These rules apply to per-client transition packages and the Contoso template.
+These rules apply when generating client-specific or customer-specific packages in this repository.
 
 ## Structure
 
-A complete client case (model: `gh-btg/`) contains:
+A complete client package should include:
 
-- A control center **app** (React/Vite) and/or
-- A **deliverables package** (executive deck, business case, control center HTML, transition kit workbook, audited billing, consolidated data source) plus a `CONTEXT.md` capturing decisions and canonical numbers.
-- A `README.md` describing the case, its status, and how to run any app.
+- a `README.md` describing purpose, contents, status, how to run or review the package, and references;
+- a context or assumptions file capturing source data, decisions, and any unresolved gaps;
+- generated deliverables in the correct repository folder or package subfolder;
+- validation evidence for every rendered artifact.
 
-Placeholder client folders contain only a `README.md` marked **Planned** until work begins.
+## Data Integrity
 
-## Data integrity (non-negotiable)
+- Financial, billing, usage, seat, ROI, benchmark, and adoption numbers must come from audited client sources or official vendor sources.
+- If a number is unavailable, mark it as `TODO (pending audited source)` or omit it.
+- Do not fill gaps with guesses.
+- Do not round differently from the audited source unless the document explicitly states the rounding rule.
+- Every data document must include a References section.
 
-- All financial, billing, usage, seat, and ROI numbers are **audited**. Never invent, estimate, round differently, or alter canonical values.
-- The single source of truth for a client's numbers is that client's `CONTEXT.md` and audited workbooks. Pull from there and cite it.
-- If a number is not available, mark it as an explicit assumption or omit it. Do not fill gaps with guesses.
-- Treat files in the deliverables package as audited outputs. Update `CONTEXT.md` when context changes, but do not silently rewrite figures.
+## Seeding A New Package
 
-## Seeding a new client
-
-1. Start from the brand-safe deliverables in `gh-contoso-template/`.
-2. Mirror the reference structure in `gh-btg/`.
-3. Replace placeholder branding and numbers with the client's audited data.
-4. Keep `gh-contoso-template/` anonymized; never copy real client numbers into it.
+1. Start from an approved template or a clearly labeled new structure.
+2. Replace placeholder branding and numbers only with audited client data.
+3. Keep anonymized templates anonymized.
+4. Record every source and assumption in the package context file.
 
 ## Copy rules
 
-- Write "GitHub Copilot", never "Copilot" alone.
-- Documentation (`.md`, README, `CONTEXT.md`) is in English; app UI copy is trilingual EN / PT-BR / ES.
-- No em dashes in user-facing copy.
+- Write "GitHub Copilot", never bare product shorthand.
+- Documentation is English unless the deliverable explicitly requires another language.
+- Do not use em dashes in user-facing copy.

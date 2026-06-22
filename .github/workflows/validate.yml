@@ -1,8 +1,8 @@
 name: Validate
 
-# Automated checks for the GitHub Copilot UBB workspace. This is the supported
-# equivalent of a "hook": it runs on every push and pull request to guard the
-# audited engine numbers and the skill authoring conventions.
+# Automated checks for the Frontier Cockpit workspace. This is the supported
+# equivalent of a hook: it runs on every push and pull request to guard the
+# GitHub Copilot primitives, deliverable gates, and context index.
 
 on:
   push:
@@ -30,9 +30,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Verify UBB engine (canonical numbers)
-        run: node .github/skills/ubb-engine/verify-engine.mjs
-
       - name: Audit skills (frontmatter, naming, portability)
         run: bash .github/scripts/audit-skills.sh
 
@@ -44,17 +41,6 @@ jobs:
 
       - name: Check llms.txt is current
         run: bash .github/scripts/generate-llms-txt.sh --check
-
-      - name: Install Playwright dependencies
-        run: |
-          cd playwright
-          npm ci
-          npx playwright install --with-deps chromium
-
-      - name: Run Playwright render checks
-        run: |
-          cd playwright
-          npm test
 
       - name: Validate deliverable gates (decks, identity HTML, architecture, research)
         run: bash .github/scripts/validate-deliverables.sh

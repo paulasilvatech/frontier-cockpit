@@ -1,12 +1,12 @@
 ---
-description: "Bring a ms-identity HTML deck up to the Specky gold standard: declarative slide engine, trilingual EN/PT-BR/ES i18n, full speaker notes, presenter view and overview, a clear storytelling arc, varied per-slide layouts, and at least one hand-built SVG diagram or animated simulation per major section. Validates against the two skill gates and never invents data. Use to audit or fix any deck under html/decks, to standardize a deck that looks monotone or text-only, or to port a deck off a divergent engine."
+description: "Bring a ms-identity HTML deck up to the Specky gold standard: declarative slide engine, trilingual EN/PT-BR/ES i18n, full speaker notes, presenter view and overview, a clear storytelling arc, varied per-slide layouts, and at least one hand-built SVG diagram or animated simulation per major section. Validates against the two skill gates and never invents data. Use to audit or fix any deck under decks/, to standardize a deck that looks monotone or text-only, or to port a deck off a divergent engine."
 agent: agent
-argument-hint: "the deck file under html/decks, for example GitHubCopilotHooksLifecycle_Deck_v2_1_0_2026-06-11_multi.html"
+argument-hint: "the deck file under decks/, for example GitHubCopilotHooksLifecycle_Deck_v2_1_0_2026-06-11_multi.html"
 ---
 
 # Standardize Deck
 
-Bring `${input:deck:the deck HTML file under html/decks, for example GitHubCopilotHooksLifecycle_Deck_v2_1_0_2026-06-11_multi.html}` up to the gold standard set by the reference deck [../../html/decks/SpeckySpecDrivenDevelopment_Deck_v1_0_0_2026-06-01_multi.html](../../html/decks/SpeckySpecDrivenDevelopment_Deck_v1_0_0_2026-06-01_multi.html).
+Bring `${input:deck:the deck HTML file under decks/, for example GitHubCopilotHooksLifecycle_Deck_v2_1_0_2026-06-11_multi.html}` up to the gold standard set by the reference deck [../../decks/SpeckySpecDrivenDevelopment_Deck_v1_0_0_2026-06-01_multi.html](../../decks/SpeckySpecDrivenDevelopment_Deck_v1_0_0_2026-06-01_multi.html).
 
 You are a senior presentation engineer working in the ms-identity Microsoft identity. Your job is to make the target deck match the reference on engine, storytelling, layout variety, and diagram richness, without inventing a single number.
 
@@ -36,7 +36,7 @@ A deck is in standard only when every criterion holds. Audit the target against 
 2. **Port the engine if needed (criterion B).** If the deck stores slides as escaped HTML strings or otherwise diverges from the declarative engine, port it first: move slide bodies into real `.slide` sections with `data-i18n` keys, consolidate copy into one `I18N` object, and move notes into the standard `notes` structure. Reuse the reference deck's chrome, presenter view, and overview wiring verbatim where possible.
 3. **Fill gaps smallest first.** In order: i18n completeness (D), then speaker notes (E), then the storytelling arc and layout variety (H, I), then diagrams (J), then didactic depth (K). Keep each edit focused.
 4. **Add diagrams from existing content only (criterion J).** For each major section that has no visual, add one design-system SVG diagram or simulation that illustrates content already in the deck. Pick the archetype that fits the idea: sequence or flow for a process, a layered stack for an architecture, a decision tree for a choice, a loop or cycle for a feedback model, bars or a line for a quantity that the deck already states, a role or RACI grid for governance. Follow the SVG conventions below.
-5. **Preserve every number.** Keep all figures identical to the source. For GitHub Copilot Usage-Based Billing or client figures, pull only from the audited source (for BTG, [../../gh-btg/btg-gh-ubb-mini-site/CONTEXT.md](../../gh-btg/btg-gh-ubb-mini-site/CONTEXT.md)) and the `ubb-engine` skill. Never invent, estimate, or re-round a value to make a chart look fuller.
+5. **Preserve every number.** Keep all figures identical to the source. For GitHub Copilot billing, usage, ROI, telemetry, or client figures, pull only from the audited source, official GitHub exports or APIs, or cited source documents. Never invent, estimate, or re-round a value to make a chart look fuller.
 6. **Verify by rendering.** Run both gates, open the file from `file://`, and walk the criteria.
 
 ## SVG diagram conventions (criterion J)
@@ -52,14 +52,14 @@ A deck is in standard only when every criterion holds. Audit the target against 
 - Write "GitHub Copilot", never the bare product name alone, in user-facing copy. No em dashes anywhere; use commas, parentheses, or restructure.
 - Documentation is English. UI copy is trilingual EN / PT-BR / ES through the existing `t()` and `data-i18n` pattern. Never let one language leak into another.
 - Do not modify audited numbers. Do not add a chart whose values you cannot trace to content already in the deck or to an audited source.
-- Keep the file in `html/decks/`. When you supersede a version, move the previous file into `html/decks/archive/` per [../instructions/document-organization.instructions.md](../instructions/document-organization.instructions.md). Follow the repository conventions in [../copilot-instructions.md](../copilot-instructions.md).
+- Keep the file in `decks/`. When you supersede a version, move the previous file into `decks/archive/` per [../instructions/document-organization.instructions.md](../instructions/document-organization.instructions.md). Follow the repository conventions in [../copilot-instructions.md](../copilot-instructions.md).
 - Reuse the reference deck's validated engine and chrome rather than rewriting them.
 
 ## Done when
 
 - Both gates pass:
-  - `python3 .github/skills/ms-identity/scripts/validate_html.py html/decks/${input:deck}`
-  - `python3 .github/skills/ms-presentation-deck/scripts/audit.py html/decks/${input:deck}`
+  - `python3 .github/skills/ms-identity/scripts/validate_html.py decks/${input:deck}`
+  - `python3 .github/skills/ms-presentation-deck/scripts/audit.py decks/${input:deck}`
 - Criteria A to K all hold, with at least one design-system SVG diagram or simulation per major section and no three consecutive content slides sharing an archetype.
 - The deck opens from `file://` with zero console errors, and EN, PT-BR, ES, and the dark slides are verified on sampled slides.
 - Every number traces to the source. Nothing was invented, estimated, or re-rounded.
