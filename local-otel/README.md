@@ -90,7 +90,9 @@ Remove the copied plist files too:
 $HOME/frontier-cockpit/local-otel/uninstall-launchagents.sh --delete
 ```
 
-The LaunchAgents cover user environment setup, stack autostart, session materialization every five minutes, VS Code process memory sampling every minute, daily rollups, GitHub Enterprise ingestion, organization status ingestion, and audit stream renewal. They do not contain secrets. Runtime logs and state are ignored by git.
+The LaunchAgents cover user environment setup, stack autostart, OTel coverage audit every hour, session materialization every five minutes, VS Code process memory sampling every minute, 24-hour workspace rollup refresh every hour, GitHub Enterprise ingestion every hour, organization status ingestion every hour, and audit stream renewal. They do not contain secrets. Runtime logs and state are ignored by git.
+
+The hourly jobs keep dashboard support data fresh. They cannot create events that have not happened, so rare GitHub Copilot signals can still appear as `not_observed_yet`, but the coverage and data-quality dashboards should refresh at least hourly while the local stack is running.
 
 ## Workspace tags
 

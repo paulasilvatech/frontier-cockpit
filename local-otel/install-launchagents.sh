@@ -28,9 +28,18 @@ for template_file in "$template_dir"/*.plist(N); do
   launchctl bootstrap "$gui_domain" "$target_file"
   launchctl enable "$gui_domain/$label" >/dev/null 2>&1 || true
 
-  if [[ "$label" == "com.frontier.copilot-otel-env" || "$label" == "com.frontier.copilot-otel-autostart" ]]; then
-    launchctl kickstart -k "$gui_domain/$label" >/dev/null 2>&1 || true
-  fi
+  case "$label" in
+    com.frontier.copilot-otel-env|\
+    com.frontier.copilot-otel-autostart|\
+    com.frontier.copilot-otel-coverage|\
+    com.frontier.copilot-otel-materializer|\
+    com.frontier.copilot-otel-vscode-memory|\
+    com.frontier.copilot-otel-daily-rollup|\
+    com.frontier.copilot-otel-github-enterprise|\
+    com.frontier.copilot-otel-github-orgs)
+      launchctl kickstart -k "$gui_domain/$label" >/dev/null 2>&1 || true
+      ;;
+  esac
 
   print "Installed $label"
 done

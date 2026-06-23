@@ -194,6 +194,7 @@ launchagent_target_dir="$HOME/Library/LaunchAgents"
 expected_launchagents=(
   com.frontier.copilot-otel-env
   com.frontier.copilot-otel-autostart
+  com.frontier.copilot-otel-coverage
   com.frontier.copilot-otel-materializer
   com.frontier.copilot-otel-vscode-memory
   com.frontier.copilot-otel-daily-rollup

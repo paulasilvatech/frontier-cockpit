@@ -54,6 +54,7 @@ This checklist defines what must be true before presenting Frontier Cockpit as a
 | Materialization | Real `copilot-chat` traces are summarized into `copilot_real_session_*` metrics. | Required |
 | Daily rollup | `copilot_daily_workspace_*` metrics and logs are emitted from real workspace telemetry. | Required |
 | LaunchAgents | Versioned templates exist and can be installed or removed with repository scripts. | Required |
+| Hourly dashboard data refresh | Coverage metadata, rolling 24-hour workspace rollups, GitHub Enterprise ingestion, and organization status ingestion refresh at least hourly while the local stack and credentials are available. | Required |
 | Local insights | DuckDB local insight store is optional and documented as complementary to Prometheus and Grafana. | Recommended |
 
 ## 3. Azure Enterprise

@@ -67,6 +67,19 @@ Delete copied plist files too:
 ~/.copilot-otel/uninstall-launchagents.sh --delete
 ```
 
+The scheduled jobs use these cadences:
+
+| Job | Cadence | Purpose |
+| --- | --- | --- |
+| `com.frontier.copilot-otel-coverage` | Hourly and at load | Refresh OTel coverage metadata for the coverage dashboard. |
+| `com.frontier.copilot-otel-materializer` | Every five minutes | Re-materialize recent real GitHub Copilot traces for Grafana. |
+| `com.frontier.copilot-otel-vscode-memory` | Every minute | Sample VS Code process memory. |
+| `com.frontier.copilot-otel-daily-rollup` | Hourly | Refresh the rolling 24-hour workspace rollup. |
+| `com.frontier.copilot-otel-github-enterprise` | Hourly | Refresh GitHub Enterprise audit and metrics availability signals. |
+| `com.frontier.copilot-otel-github-orgs` | Hourly | Refresh organization GitHub Copilot billing/settings and metrics availability. |
+
+Hourly jobs keep dashboards populated with current support data, but they do not synthesize events that have not happened. Rare signals remain `not_observed_yet` until GitHub Copilot emits them or the corresponding GitHub API becomes available.
+
 ### 1.2 Real Session Materialization
 
 ```bash
@@ -90,6 +103,8 @@ Expected outcome:
 - `copilot_daily_workspace_*` metrics appear in Prometheus.
 - Rollup logs appear in Loki.
 - When hybrid mode is enabled, rollups appear in Azure Log Analytics.
+
+The LaunchAgent refreshes this rolling 24-hour summary every hour. The script name remains `daily-rollup.sh` because the aggregation window is 24 hours.
 
 ## 2. Local Operations
 

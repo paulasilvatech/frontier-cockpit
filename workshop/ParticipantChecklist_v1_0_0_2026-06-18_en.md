@@ -38,6 +38,7 @@ Use this checklist to confirm each participant leaves the workshop with a workin
 - [ ] GitHub Copilot Chat works.
 - [ ] Local stack starts with `~/.copilot-otel/start-full-stack.sh`.
 - [ ] `~/.copilot-otel/check-otel-local.sh` reports ready.
+- [ ] Hourly LaunchAgents are installed with `~/.copilot-otel/install-launchagents.sh` when scheduled dashboard refresh is expected.
 - [ ] Aspire opens at `http://localhost:18888`.
 - [ ] Grafana opens at `http://localhost:3000`.
 
@@ -63,6 +64,7 @@ Use this checklist to confirm each participant leaves the workshop with a workin
 - [ ] Participant can explain AIU as an operational signal.
 - [ ] Participant can explain why model names are telemetry labels.
 - [ ] Participant can explain `workspace_real` vs `non_workspace_real`.
+- [ ] Participant can explain that hourly jobs keep support metrics current, but cannot synthesize rare events that have not happened.
 - [ ] Participant can identify one prompt improvement from telemetry.
 
 ## 4. Azure Understanding

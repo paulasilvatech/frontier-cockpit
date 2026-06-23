@@ -1,23 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>com.frontier.copilot-otel-daily-rollup</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>$HOME/frontier-cockpit/local-otel/daily-rollup.sh</string>
-  </array>
-  <key>StartCalendarInterval</key>
   <dict>
-    <key>Hour</key>
-    <integer>18</integer>
-    <key>Minute</key>
-    <integer>0</integer>
+    <key>Label</key>
+    <string>com.frontier.copilot-otel-daily-rollup</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>$HOME/frontier-cockpit/local-otel/daily-rollup.sh</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>3600</integer>
+    <key>RunAtLoad</key>
+    <true />
+    <key>StandardOutPath</key>
+    <string>$HOME/frontier-cockpit/local-otel/launchagent-daily-rollup.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/frontier-cockpit/local-otel/launchagent-daily-rollup.err</string>
   </dict>
-  <key>StandardOutPath</key>
-  <string>$HOME/frontier-cockpit/local-otel/launchagent-daily-rollup.log</string>
-  <key>StandardErrorPath</key>
-  <string>$HOME/frontier-cockpit/local-otel/launchagent-daily-rollup.err</string>
-</dict>
 </plist>
