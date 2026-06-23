@@ -12,6 +12,10 @@
     <dict>
       <key>COPILOT_MATERIALIZE_FORCE_REPLAY</key>
       <string>true</string>
+      <key>COPILOT_MATERIALIZE_CONTENT</key>
+      <string>true</string>
+      <key>COPILOT_MATERIALIZE_TRACE_LIMIT</key>
+      <string>1000</string>
     </dict>
     <key>StartInterval</key>
     <integer>300</integer>

@@ -3,7 +3,7 @@ title: "Frontier Developer Cockpit Local OpenTelemetry Kit"
 description: "User-level local OpenTelemetry runtime for Frontier Developer Cockpit, including Aspire, Grafana, Prometheus, Tempo, Loki, local materialization, and Azure hybrid forwarding."
 author: "Frontier Cockpit Team"
 date: "2026-06-23"
-version: "1.0.2"
+version: "1.0.3"
 status: "approved"
 tags: ["frontier-developer-cockpit", "github-copilot", "opentelemetry", "aspire", "grafana", "local-runtime"]
 ---
@@ -18,6 +18,7 @@ This user-level kit configures the local runtime for Frontier Developer Cockpit.
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.0.3 | 2026-06-23 | Frontier Cockpit Team | Enabled full local content materialization by default and increased trace replay coverage across workspaces. |
 | 1.0.2 | 2026-06-23 | Frontier Cockpit Team | Standardized local Tempo, Prometheus, and Loki retention to 30 days and clarified the Docker and Azure sync boundary. |
 | 1.0.1 | 2026-06-22 | Frontier Cockpit Team | Aligned title, frontmatter, and settings with the Frontier Developer Cockpit offer. |
 | 1.0.0 | 2026-06-17 | Frontier Cockpit Team | Initial local OpenTelemetry kit. |
@@ -55,6 +56,11 @@ VS Code Insiders user settings are configured with:
 - `github.copilot.chat.otel.maxAttributeSizeChars`: `0`
 - `github.copilot.chat.otel.dbSpanExporter.enabled`: `true`
 
+Local materialization is also enabled for full-fidelity content records:
+
+- `COPILOT_MATERIALIZE_CONTENT=true`
+- `COPILOT_MATERIALIZE_TRACE_LIMIT=1000`
+
 The integrated terminal user environment also receives OTel variables so terminal sessions can inherit the local endpoint.
 
 Terminal-launched apps get these Aspire defaults:
@@ -73,7 +79,7 @@ The shell and macOS user environment are configured through:
 - `$HOME/frontier-cockpit/local-otel/install-launchagents.sh`
 - `~/Library/LaunchAgents/com.frontier.copilot-otel-*.plist`
 
-This covers new terminal sessions, integrated terminals, and GUI apps launched after the user environment is enabled. GitHub Copilot spans still add per-project attributes such as repository, branch, and commit when the workspace is inside a Git repository.
+This covers new terminal sessions, integrated terminals, and GUI apps launched after the user environment is enabled. GitHub Copilot spans still add per-project attributes such as repository, branch, and commit when the workspace is inside a Git repository. The materializer replays recent traces across all observed workspaces and writes full local content records to Loki for local debugging.
 
 Install the scheduled user automation from the versioned templates:
 

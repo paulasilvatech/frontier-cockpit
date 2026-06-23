@@ -26,7 +26,7 @@ current_repo="$(git config --get remote.origin.url 2>/dev/null || print unknown)
 "$HOME/frontier-cockpit/local-otel/check-otel-local.sh"
 "$HOME/frontier-cockpit/local-otel/register-workspace.sh"
 
-COPILOT_MATERIALIZE_FORCE_REPLAY=true COPILOT_MATERIALIZE_ACTIVE_WORKSPACE=true "$HOME/frontier-cockpit/local-otel/materialize-copilot-sessions.sh"
+COPILOT_MATERIALIZE_FORCE_REPLAY=true COPILOT_MATERIALIZE_CONTENT=true COPILOT_MATERIALIZE_TRACE_LIMIT=1000 COPILOT_MATERIALIZE_ACTIVE_WORKSPACE=true "$HOME/frontier-cockpit/local-otel/materialize-copilot-sessions.sh"
 "$HOME/frontier-cockpit/local-otel/sample-vscode-memory.sh" >/dev/null 2>&1 || true
 "$HOME/frontier-cockpit/local-otel/audit-coverage.sh" >/dev/null 2>&1 || true
 "$HOME/frontier-cockpit/local-otel/daily-rollup.sh" >/dev/null 2>&1 || true

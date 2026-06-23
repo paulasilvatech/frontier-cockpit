@@ -4,14 +4,15 @@ set -euo pipefail
 # Materialize real copilot-chat Tempo traces into local Prometheus metrics and Loki logs.
 # This does not create fake usage. It summarizes real Tempo traces so Grafana can filter by
 # repository, branch, session, mode/shape, model label, token counts, and content-capture size.
-# Raw content is sent to Loki only when COPILOT_MATERIALIZE_CONTENT=true.
+# Raw content is materialized to local Loki by default. Azure forwarding still redacts raw
+# content through the hybrid Collector overlay before enterprise ingestion.
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
 metrics_endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v1/metrics}"
 logs_endpoint="${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://localhost:4318/v1/logs}"
 tempo_url="${TEMPO_URL:-http://localhost:3200}"
-show_content="${COPILOT_MATERIALIZE_CONTENT:-false}"
-limit="${COPILOT_MATERIALIZE_TRACE_LIMIT:-50}"
+show_content="${COPILOT_MATERIALIZE_CONTENT:-true}"
+limit="${COPILOT_MATERIALIZE_TRACE_LIMIT:-1000}"
 state_file="$HOME/frontier-cockpit/local-otel/materialized-traces.json"
 
 python3 - "$tempo_url" "$metrics_endpoint" "$logs_endpoint" "$state_file" "$show_content" "$limit" <<'PY'
