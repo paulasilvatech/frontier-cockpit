@@ -33,6 +33,7 @@ for template_file in "$template_dir"/*.plist(N); do
     com.frontier.copilot-otel-autostart|\
     com.frontier.copilot-otel-coverage|\
     com.frontier.copilot-otel-materializer|\
+    com.frontier.copilot-otel-register-all|\
     com.frontier.copilot-otel-vscode-memory|\
     com.frontier.copilot-otel-daily-rollup|\
     com.frontier.copilot-otel-github-enterprise|\
