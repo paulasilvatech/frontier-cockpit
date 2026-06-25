@@ -156,32 +156,165 @@
     },
     {
       "id": 4,
-      "type": "text",
-      "title": "Local price registry is not configured",
+      "type": "stat",
+      "title": "Real AIU consumed (AI credits, workspace)",
+      "description": "Real AI Units reported by GitHub Copilot telemetry for workspace sessions in the selected range. AIU = copilot_chat.copilot_usage_nano_aiu / 1e9. This is the real AI-credits-equivalent signal. Official AI Credits billing still comes from GitHub usage or billing exports.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
         "y": 18
       },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max_over_time(copilot_real_session_nano_aiu_ratio{usage_scope=\"workspace_real\"}[$__range])) / 1e9",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 3,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": []
+      },
       "options": {
-        "mode": "markdown",
-        "content": "## Price registry intentionally disabled\n\nThis environment does not currently publish `copilot_model_price_usd_per_million_ratio`. That is expected. Local telemetry shows token, AIU, context, and tool behavior. Official spend and AI Credits must come from GitHub billing or usage exports. Register local planning prices only when there is a trusted source."
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
     {
       "id": 5,
-      "type": "text",
-      "title": "Estimated spend is disabled until trusted prices exist",
+      "type": "table",
+      "title": "Estimated local spend by model (USD what-if, planning prices)",
+      "description": "Token counts per model multiplied by local planning prices. Prices are local assumptions (price_source=local-planning-assumption), not official billing and not provider-confirmed for these labels. Official spend and AI Credits come from GitHub billing or usage exports. Use register-model-price.sh or seed-model-prices.sh to set your own source-of-truth prices.",
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 24,
         "x": 0,
         "y": 26
       },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (gen_ai_request_model) ((increase(gen_ai_client_token_usage_sum{service_name=\"copilot-chat\"}[$__range]) / 1e6) * on (gen_ai_request_model, gen_ai_token_type) group_left() max by (gen_ai_request_model, gen_ai_token_type) (copilot_model_price_usd_per_million_ratio))",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "job": true,
+              "instance": true
+            },
+            "indexByName": {
+              "gen_ai_request_model": 0,
+              "Value": 1
+            },
+            "renameByName": {
+              "gen_ai_request_model": "Requested model label",
+              "Value": "Estimated spend (USD, what-if)"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "field": "Estimated spend (USD, what-if)",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Estimated spend (USD, what-if)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      },
       "options": {
-        "mode": "markdown",
-        "content": "## No estimated local spend shown\n\nThis dashboard avoids fake precision. It does not estimate spend unless a trusted local price registry has been explicitly loaded. Use AIU and token trends for developer coaching, and use GitHub billing or usage exports for official FinOps reporting."
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "fields": [
+            "Estimated spend (USD, what-if)"
+          ]
+        }
       }
     },
     {
@@ -387,6 +520,6 @@
   "timezone": "browser",
   "title": "GitHub Copilot Sessions and Model Labels (Local)",
   "uid": "copilot-sessions-models-local",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }

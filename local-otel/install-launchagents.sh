@@ -35,6 +35,7 @@ for template_file in "$template_dir"/*.plist(N); do
     com.frontier.copilot-otel-materializer|\
     com.frontier.copilot-otel-register-all|\
     com.frontier.copilot-otel-model-registry|\
+    com.frontier.copilot-otel-price-registry|\
     com.frontier.copilot-otel-vscode-memory|\
     com.frontier.copilot-otel-daily-rollup|\
     com.frontier.copilot-otel-github-enterprise|\

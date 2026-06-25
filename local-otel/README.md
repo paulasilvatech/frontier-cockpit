@@ -105,7 +105,7 @@ Remove the copied plist files too:
 $HOME/frontier-cockpit/local-otel/uninstall-launchagents.sh --delete
 ```
 
-The LaunchAgents cover user environment setup, stack autostart, OTel coverage audit every hour, session materialization every five minutes, VS Code process memory sampling every minute, 24-hour workspace rollup refresh every hour, GitHub Enterprise ingestion every hour, organization status ingestion every hour, model multiplier registry refresh every five minutes, and audit stream renewal. They do not contain secrets. Runtime logs and state are ignored by git.
+The LaunchAgents cover user environment setup, stack autostart, OTel coverage audit every hour, session materialization every five minutes, VS Code process memory sampling every minute, 24-hour workspace rollup refresh every hour, GitHub Enterprise ingestion every hour, organization status ingestion every hour, model multiplier registry refresh every five minutes, model price registry refresh every five minutes, and audit stream renewal. They do not contain secrets. Runtime logs and state are ignored by git.
 
 The hourly jobs keep dashboard support data fresh. They cannot create events that have not happened, so rare GitHub Copilot signals can still appear as `not_observed_yet`, but the coverage and data-quality dashboards should refresh at least hourly while the local stack is running.
 
@@ -132,6 +132,27 @@ $HOME/frontier-cockpit/local-otel/seed-model-multipliers.sh
 The `com.frontier.copilot-otel-model-registry` LaunchAgent re-seeds these gauges every five minutes because the local Collector expires one-shot metrics after about five minutes. The Sessions and Model Labels dashboard then estimates premium-request-equivalents per model by multiplying local LLM `chat` call counts by the official multiplier.
 
 This is a local planning aid only. The local call count is telemetry and agent mode makes several model calls per user prompt, so the estimate over-counts versus GitHub per-user-request billing. Official premium-request totals and AI Credits still require GitHub billing exports or the Copilot usage metrics API. Optional local price registration with `register-model-price.sh` adds a what-if USD estimate and is also not official billing.
+
+### AI credits and USD in the dashboard
+
+The Sessions and Model Labels dashboard now shows both signals directly:
+
+- **Real AIU consumed (AI credits)** is a stat panel backed by `copilot_real_session_nano_aiu_ratio / 1e9`. This is the real AI-Units-equivalent reported by GitHub Copilot for workspace sessions.
+- **Estimated local spend by model (USD what-if)** is a table that multiplies token counts by local planning prices.
+
+Seed the local planning prices, then they persist through the price LaunchAgent:
+
+```bash
+$HOME/frontier-cockpit/local-otel/seed-model-prices.sh
+```
+
+The prices in `seed-model-prices.sh` are **local planning assumptions** (`price_source=local-planning-assumption`), not official billing and not provider-confirmed for these telemetry labels. Edit that file with your own source-of-truth prices, or override one model:
+
+```bash
+$HOME/frontier-cockpit/local-otel/register-model-price.sh gpt-4o-mini-2024-07-18 0.15 0.60
+```
+
+The `com.frontier.copilot-otel-price-registry` LaunchAgent re-seeds prices every five minutes for the same collector-expiry reason. Official spend and AI Credits always require GitHub billing exports or the Copilot usage metrics API.
 
 The `daily-rollup.sh` job also updates DuckDB when available:
 
