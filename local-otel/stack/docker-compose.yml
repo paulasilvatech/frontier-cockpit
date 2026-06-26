@@ -88,6 +88,28 @@ services:
     networks:
       - observability
 
+  registry:
+    build:
+      context: ..
+      dockerfile: registry/Dockerfile
+    container_name: copilot-otel-registry
+    environment:
+      FRONTIER_SKIP_ENV_ZSH: "true"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "http://otel-collector:4318/v1/metrics"
+      REGISTRY_REFRESH_SECONDS: "300"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/frontier-registry.last-ok && test $$(($$(date +%s) - $$(cat /tmp/frontier-registry.last-ok))) -lt 900"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - observability
+
   postgres:
     image: postgres:16-alpine
     container_name: copilot-otel-postgres
@@ -139,6 +161,69 @@ services:
         condition: service_started
       loki:
         condition: service_started
+    networks:
+      - observability
+
+  frontier-dashboard-api:
+    build:
+      context: ../frontend/api
+    container_name: frontier-dashboard-api
+    environment:
+      PORT: "8080"
+      PROMETHEUS_URL: "http://prometheus:9090"
+      TEMPO_URL: "http://tempo:3200"
+      LOKI_URL: "http://loki:3100"
+      GRAFANA_URL: "http://grafana:3000"
+      ASPIRE_URL: "http://aspire-dashboard:18888"
+      COLLECTOR_METRICS_URL: "http://otel-collector:9464/metrics"
+      POSTGRES_HOST: "postgres"
+      POSTGRES_PORT: "5432"
+      PUBLIC_GRAFANA_URL: "http://localhost:3000"
+      PUBLIC_ASPIRE_URL: "http://localhost:18888"
+      PUBLIC_PROMETHEUS_URL: "http://localhost:9090"
+      PUBLIC_TEMPO_URL: "http://localhost:3200"
+      PUBLIC_LOKI_URL: "http://localhost:3100"
+    expose:
+      - "8080"
+    depends_on:
+      prometheus:
+        condition: service_started
+      grafana:
+        condition: service_started
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      registry:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - observability
+
+  frontier-dashboard-web:
+    build:
+      context: ../frontend/web
+    container_name: frontier-dashboard-web
+    ports:
+      - "127.0.0.1:3300:80"
+    depends_on:
+      frontier-dashboard-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/healthz"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
     networks:
       - observability
 

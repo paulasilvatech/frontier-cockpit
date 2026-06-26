@@ -3,6 +3,8 @@
 
 # Local editor and test scratch
 .playwright-mcp/
+node_modules/
+local-otel/frontend/**/node_modules/
 
 # Frontier Cockpit local runtime state
 local-otel/.venv/

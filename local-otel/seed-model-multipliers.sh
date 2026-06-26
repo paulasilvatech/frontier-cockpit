@@ -25,10 +25,18 @@ set -euo pipefail
 #                       locally, so the full official table is visible as reference.
 #
 # All multipliers are re-emitted as ONE OTLP payload. The collector's Prometheus
-# exporter expires metrics after a few minutes, so a LaunchAgent re-runs this seed
-# (see com.frontier.copilot-otel-model-registry) to keep the gauges live.
+# exporter expires metrics after a few minutes, so the Docker registry sidecar
+# re-runs this seed every five minutes to keep the gauges live.
 
-source "$HOME/frontier-cockpit/local-otel/env.zsh"
+if [[ "${FRONTIER_SKIP_ENV_ZSH:-false}" != "true" ]]; then
+  env_file="${FRONTIER_ENV_ZSH:-$HOME/frontier-cockpit/local-otel/env.zsh}"
+  if [[ ! -f "$env_file" ]]; then
+    print -u2 "Environment file not found: $env_file"
+    print -u2 "Set FRONTIER_SKIP_ENV_ZSH=true when running in a container with explicit OTLP endpoint variables."
+    exit 1
+  fi
+  source "$env_file"
+fi
 
 otlp_endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v1/metrics}"
 quiet="false"

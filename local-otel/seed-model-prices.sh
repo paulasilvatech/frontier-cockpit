@@ -15,8 +15,8 @@ set -euo pipefail
 #     then re-run. Or override a single model with register-model-price.sh.
 #
 # Values are emitted as copilot_model_price_usd_per_million_ratio, kept alive by the
-# com.frontier.copilot-otel-price-registry LaunchAgent (collector expires one-shot
-# gauges after about five minutes).
+# Docker registry sidecar because the collector expires one-shot gauges after about
+# five minutes.
 
 here="${0:A:h}"
 register="$here/register-model-price.sh"
