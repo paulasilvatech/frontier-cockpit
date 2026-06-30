@@ -2,8 +2,8 @@
 title: "Frontier Developer Cockpit Local OpenTelemetry Kit"
 description: "User-level local OpenTelemetry runtime for Frontier Developer Cockpit, including Aspire, Grafana, Prometheus, Tempo, Loki, local materialization, and Azure hybrid forwarding."
 author: "Frontier Cockpit Team"
-date: "2026-06-23"
-version: "1.0.3"
+date: "2026-06-30"
+version: "1.0.4"
 status: "approved"
 tags: ["frontier-developer-cockpit", "github-copilot", "opentelemetry", "aspire", "grafana", "local-runtime"]
 ---
@@ -18,6 +18,7 @@ This user-level kit configures the local runtime for Frontier Developer Cockpit.
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.0.4 | 2026-06-30 | Frontier Cockpit Team | Added the local workshop-ready flow, the workshop validation gate, and the Frontier Developer Cockpit mini app entry point. |
 | 1.0.3 | 2026-06-23 | Frontier Cockpit Team | Enabled full local content materialization by default and increased trace replay coverage across workspaces. |
 | 1.0.2 | 2026-06-23 | Frontier Cockpit Team | Standardized local Tempo, Prometheus, and Loki retention to 30 days and clarified the Docker and Azure sync boundary. |
 | 1.0.1 | 2026-06-22 | Frontier Cockpit Team | Aligned title, frontmatter, and settings with the Frontier Developer Cockpit offer. |
@@ -35,6 +36,7 @@ The full local stack runs in Docker and keeps trace, metric, and log history loc
 
 Default local endpoints:
 
+- Frontier Developer Cockpit mini app: `http://localhost:3300`
 - Aspire UI: `http://localhost:18888`
 - Grafana local UI: `http://localhost:3000`
 - Prometheus UI: `http://localhost:9090`
@@ -195,6 +197,22 @@ Aspire Dashboard runs with anonymous browser access for local convenience and is
 
 Docker Desktop must be running.
 
+Workshop-ready local setup, run from the participant Git repository:
+
+```bash
+$HOME/frontier-cockpit/local-otel/workshop-ready.sh
+```
+
+This command is local-only. It does not enable hybrid mode or forward data to Azure. It enables the local OpenTelemetry environment, starts the full Docker Desktop stack, registers the current Git workspace, sends a synthetic validation span, materializes recent GitHub Copilot sessions, refreshes support metrics, and runs the workshop validation gate.
+
+Open the local mini app after setup:
+
+```bash
+open http://localhost:3300
+```
+
+If the mini app has no workspace-attributed sessions yet, open the repository in VS Code Insiders, run one GitHub Copilot Chat or agent request, then rerun `workshop-ready.sh` or click Refresh after the local materializer runs.
+
 Aspire-only, fastest live demo:
 
 ```bash
@@ -252,6 +270,18 @@ source $HOME/frontier-cockpit/local-otel/use-otlp-grpc.zsh
 
 ```bash
 $HOME/frontier-cockpit/local-otel/check-otel-local.sh
+```
+
+For workshop participants, use the focused gate:
+
+```bash
+$HOME/frontier-cockpit/local-otel/check-workshop-local.sh
+```
+
+After the participant has generated one real GitHub Copilot Chat or agent session in the repository, use strict data mode:
+
+```bash
+$HOME/frontier-cockpit/local-otel/check-workshop-local.sh --strict-data
 ```
 
 Expected result:

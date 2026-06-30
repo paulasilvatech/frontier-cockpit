@@ -6,6 +6,10 @@
 node_modules/
 local-otel/frontend/**/node_modules/
 
+# Frontier dashboard build artifacts
+local-otel/frontend/**/dist/
+local-otel/frontend/**/*.tsbuildinfo
+
 # Frontier Cockpit local runtime state
 local-otel/.venv/
 local-otel/**/*.log
