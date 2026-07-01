@@ -46,7 +46,7 @@
       "description": "Friendly mappings created locally by register-workspace.sh. These are labels, not usage volume.",
       "gridPos": { "h": 6, "w": 6, "x": 12, "y": 7 },
       "datasource": { "type": "prometheus", "uid": "prometheus-local" },
-      "targets": [ { "refId": "A", "expr": "count(copilot_workspace_registry_ratio)", "datasource": { "type": "prometheus", "uid": "prometheus-local" } } ],
+      "targets": [ { "refId": "A", "expr": "count(max_over_time(copilot_workspace_registry_ratio[$__range]))", "datasource": { "type": "prometheus", "uid": "prometheus-local" } } ],
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "none", "colorMode": "value" }
     },
@@ -66,7 +66,7 @@
       "title": "Workspace registry, friendly names for hashes",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 },
       "datasource": { "type": "prometheus", "uid": "prometheus-local" },
-      "targets": [ { "refId": "A", "expr": "copilot_workspace_registry_ratio", "format": "table", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus-local" } } ],
+      "targets": [ { "refId": "A", "expr": "max_over_time(copilot_workspace_registry_ratio[$__range])", "format": "table", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus-local" } } ],
       "transformations": [
         { "id": "labelsToFields", "options": { "mode": "columns" } },
         { "id": "organize", "options": { "excludeByName": { "Time": true, "Value": true, "__name__": true, "instance": true, "job": true, "otel_scope_name": true, "service_name": true, "service_version": true, "collector_instance": true, "exported_job": true }, "renameByName": { "workspace_name": "Workspace", "workspace_kind": "Kind", "workspace_path_hash": "Hash", "git_repository_owner": "Owner", "git_repository_name": "Repository", "git_branch": "Branch", "github_copilot_git_repository": "Remote" } } }

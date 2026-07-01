@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.frontier.copilot-otel-materializer</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>$HOME/frontier-cockpit/local-otel/materialize-copilot-sessions.sh</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>COPILOT_MATERIALIZE_FORCE_REPLAY</key>
+      <string>true</string>
+      <key>COPILOT_MATERIALIZE_CONTENT</key>
+      <string>true</string>
+      <key>COPILOT_MATERIALIZE_TRACE_LIMIT</key>
+      <string>1000</string>
+    </dict>
+    <key>StartInterval</key>
+    <integer>300</integer>
+    <key>RunAtLoad</key>
+    <true />
+    <key>StandardOutPath</key>
+    <string>$HOME/frontier-cockpit/local-otel/launchagent-materializer.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/frontier-cockpit/local-otel/launchagent-materializer.err</string>
+  </dict>
+</plist>

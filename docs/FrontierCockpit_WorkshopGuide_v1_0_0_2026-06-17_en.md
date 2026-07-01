@@ -14,6 +14,8 @@ tags: ["github-copilot", "workshop", "developer-enablement", "opentelemetry", "a
 
 This guide helps facilitators teach developers and platform teams how to observe, understand, and improve GitHub Copilot Chat and agent work using the Frontier Developer Cockpit and Frontier FinOps Cockpit.
 
+For participant-facing lab navigation, use [../workshop/README.md](../workshop/README.md). This document is the facilitator guide for agenda, talking points, and demo framing.
+
 ## Change Log
 
 | Version | Date | Author | Changes |
@@ -110,7 +112,7 @@ Discuss:
 
 - Peak context utilization.
 - Hot/warm/cold token split.
-- Real AIU from `copilot_chat.copilot_usage_nano_aiu`.
+- Runtime-reported AIU from `copilot_chat.copilot_usage_nano_aiu`.
 - Model labels emitted by telemetry.
 - Difference between telemetry labels and billing model names.
 

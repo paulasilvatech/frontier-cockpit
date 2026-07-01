@@ -30,7 +30,7 @@ This guide defines how Frontier FinOps Cockpit consolidates local GitHub Copilot
 - [6. Azure Storage And Query Model](#6-azure-storage-and-query-model)
 - [7. Dashboard Joins](#7-dashboard-joins)
 - [8. Data Quality Rules](#8-data-quality-rules)
-- [9. Implementation Plan](#9-implementation-plan)
+- [9. Implementation Roadmap](#9-implementation-roadmap)
 - [References](#references)
 
 ## 1. Purpose
@@ -42,11 +42,11 @@ Local OpenTelemetry data explains how agent sessions behave. GitHub APIs explain
 | Source | Type | Purpose | Status |
 | --- | --- | --- | --- |
 | Local OTel rollups | Operational telemetry | Workspace sessions, tokens, AIU, tools, context, errors | Implemented |
-| GitHub Copilot usage metrics API | Official adoption metrics | Active users, feature use, editor and language adoption | Planned |
-| GitHub billing or usage exports | Official cost source | AI Credits, billed usage, plan-level reconciliation | Planned |
-| GitHub REST API | Metadata | Repositories, teams, org ownership, workflow runs | Planned |
-| GitHub GraphQL API | Metadata | Rich repository and organization joins | Planned |
-| GitHub audit log | Governance | Enterprise security and policy events | Planned |
+| GitHub Copilot usage metrics API | Official adoption metrics | Active users, feature use, editor and language adoption | Roadmap, availability is currently recorded when APIs return 404, 403, or 422. |
+| GitHub billing or usage exports | Official cost source | AI Credits, billed usage, plan-level reconciliation | Roadmap, official source required before cost claims. |
+| GitHub REST API | Metadata | Repositories, teams, org ownership, workflow runs | Partially implemented for organization policy and metrics availability status. |
+| GitHub GraphQL API | Metadata | Rich repository and organization joins | Roadmap. |
+| GitHub audit log | Governance | Enterprise security and policy events | Implemented for bounded API ingestion and Azure Blob Storage audit streaming. |
 | Azure Resource Graph | Platform metadata | Azure resource inventory and cost joins | Optional |
 
 ## 3. Canonical Data Model
@@ -184,7 +184,9 @@ Recommended reconciliation:
 - Keep raw prompts and tool results out of Azure by default.
 - Mark all joined data with source and freshness timestamp.
 
-## 9. Implementation Plan
+## 9. Implementation Roadmap
+
+The current implementation records real availability and policy signals from GitHub APIs. It does not synthesize official adoption or billing data when those APIs are unavailable. Future work should add official exports and normalized joins only when approved sources are available.
 
 1. Define GitHub App or token scope.
 2. Create ingestion runtime in Azure.

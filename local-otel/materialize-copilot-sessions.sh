@@ -4,14 +4,15 @@ set -euo pipefail
 # Materialize real copilot-chat Tempo traces into local Prometheus metrics and Loki logs.
 # This does not create fake usage. It summarizes real Tempo traces so Grafana can filter by
 # repository, branch, session, mode/shape, model label, token counts, and content-capture size.
-# Raw content is sent to Loki only when COPILOT_MATERIALIZE_CONTENT=true.
+# Raw content is materialized to local Loki by default. Azure forwarding still redacts raw
+# content through the hybrid Collector overlay before enterprise ingestion.
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
 metrics_endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v1/metrics}"
 logs_endpoint="${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://localhost:4318/v1/logs}"
 tempo_url="${TEMPO_URL:-http://localhost:3200}"
-show_content="${COPILOT_MATERIALIZE_CONTENT:-false}"
-limit="${COPILOT_MATERIALIZE_TRACE_LIMIT:-50}"
+show_content="${COPILOT_MATERIALIZE_CONTENT:-true}"
+limit="${COPILOT_MATERIALIZE_TRACE_LIMIT:-1000}"
 state_file="$HOME/frontier-cockpit/local-otel/materialized-traces.json"
 
 python3 - "$tempo_url" "$metrics_endpoint" "$logs_endpoint" "$state_file" "$show_content" "$limit" <<'PY'
@@ -116,9 +117,10 @@ def load_workspace_registry():
     try:
         data = fetch_json(f"{prometheus_url}/api/v1/query?query={query}")
     except Exception:
-        return {}, None
+        return {}, {}, None
 
     by_hash = {}
+    by_commit = {}
     candidates = []
     for item in data.get("data", {}).get("result", []):
         metric = item.get("metric", {})
@@ -137,14 +139,19 @@ def load_workspace_registry():
             "branch": metric.get("git_branch", "unknown"),
             "repo_owner": repo_owner,
             "repo_name": repo_name,
+            "head_commit": metric.get("git_head_commit", ""),
         }
         by_hash[workspace_hash] = record
+        for commit in str(record["head_commit"] or "").split():
+            commit = commit.strip().lower()
+            if len(commit) >= 7:
+                by_commit[commit] = record
         candidates.append(record)
 
     active = candidates[-1] if len(candidates) == 1 else None
-    return by_hash, active
+    return by_hash, by_commit, active
 
-workspace_registry, active_workspace = load_workspace_registry()
+workspace_registry, commit_registry, active_workspace = load_workspace_registry()
 
 def run_git(args):
     try:
@@ -180,6 +187,22 @@ def apply_workspace_record(summary, record, source):
     summary["workspace_kind"] = record.get("workspace_kind", summary["workspace_kind"])
     summary["workspace_path_hash"] = record.get("workspace_path_hash", summary["workspace_path_hash"])
     return source
+
+def apply_commit_record(summary, record):
+    # Authoritative attribution from the per-window HEAD commit hash. This is the
+    # only signal that distinguishes every workspace at once, because GitHub Copilot
+    # does not emit the repository name per window and the global launchd resource
+    # attributes can describe only one workspace. Preserve the per-window branch and
+    # commit, which are more accurate than the registry snapshot.
+    if not record:
+        return "span_commit_registry"
+    summary["repo"] = record.get("repo", summary["repo"])
+    if not meaningful(summary["branch"]):
+        summary["branch"] = record.get("branch", summary["branch"])
+    summary["workspace_name"] = record.get("workspace_name", summary["workspace_name"])
+    summary["workspace_kind"] = record.get("workspace_kind", "git")
+    summary["workspace_path_hash"] = record.get("workspace_path_hash", summary["workspace_path_hash"])
+    return "span_commit_registry"
 
 trace_ids = []
 trace_ids.extend(search_trace_ids('service.name="copilot-chat"', limit))
@@ -331,7 +354,15 @@ for trace_id in trace_ids:
                             ],
                         })
 
-    if meaningful(summary["repo"]):
+    commit_key = str(summary["commit"] or "").strip().lower()
+    commit_record = commit_registry.get(commit_key) if len(commit_key) >= 7 else None
+
+    if commit_record:
+        # Primary path: per-window HEAD commit -> registry. Works for every workspace
+        # simultaneously and overrides a possibly stale or wrong resource-level repo
+        # inherited from the shared global environment.
+        summary["attribution_source"] = apply_commit_record(summary, commit_record)
+    elif meaningful(summary["repo"]):
         registry_record = workspace_registry.get(summary["workspace_path_hash"])
         if registry_record:
             summary["attribution_source"] = apply_workspace_record(summary, registry_record, "span_registry_hash_enriched")

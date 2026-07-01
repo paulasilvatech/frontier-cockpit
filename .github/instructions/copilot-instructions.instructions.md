@@ -1,5 +1,5 @@
 ---
-description: "Specky SDD guidance for GitHub Copilot: scoped spec artifacts, EARS requirements, REQ-ID traceability, companion skill loading, orchestrated phase flow, and concise artifact-first output."
+description: "Specky SDD guidance for GitHub Copilot: scoped spec artifacts, EARS requirements, REQ-ID traceability, companion skill loading, phase flow, and concise artifact-first output."
 applyTo: ".specs/**,.sdd-state.json,.github/agents/**"
 ---
 
@@ -16,7 +16,7 @@ This repository can use Spec-Driven Development (SDD) through the Specky pipelin
 5. **Do not assume automatic hooks.** Treat hooks and MCP gates as active only when the configured MCP server, VS Code tasks, or CI validation proves they are running.
 6. **Keep outputs concise.** Return artifact paths, validation status, next required action, and critical blockers. Do not narrate process steps.
 7. **Respect repository editing rules.** Do not create branches, commits, or pull requests unless the user explicitly asks.
-8. **Never fabricate metrics.** Cite sources or state assumptions. For GitHub Copilot UBB numbers, use audited client sources and the `ubb-engine` skill.
+8. **Never fabricate metrics.** Cite sources or state assumptions. For Frontier Cockpit telemetry, distinguish operational local OpenTelemetry from official GitHub billing or adoption data.
 
 ## Specky Artifacts
 

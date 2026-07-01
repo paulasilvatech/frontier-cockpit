@@ -24,6 +24,19 @@ if ! command -v "$gh_bin" >/dev/null 2>&1; then
   exit 1
 fi
 
+auth_status="$($gh_bin auth status -h github.com 2>&1 || true)"
+if [[ "$auth_status" != *"Logged in"* ]]; then
+    print -u2 "GitHub CLI is not authenticated for github.com. Run gh auth login or gh auth status -h github.com."
+    print -u2 "$auth_status"
+    exit 1
+fi
+
+for required_scope in admin:enterprise read:enterprise manage_billing:copilot read:org; do
+    if [[ "$auth_status" != *"$required_scope"* ]]; then
+        print -u2 "WARN  GitHub CLI auth output does not show scope $required_scope. Some enterprise signals may be unavailable."
+    fi
+done
+
 now_iso="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
 # Audit log is enterprise-admin protected. Keep a bounded page for local control tower ingestion.

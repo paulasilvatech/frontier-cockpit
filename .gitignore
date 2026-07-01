@@ -3,6 +3,15 @@
 
 # Local editor and test scratch
 .playwright-mcp/
+node_modules/
+local-otel/frontend/**/node_modules/
+
+# Frontier dashboard build artifacts
+local-otel/frontend/**/dist/
+local-otel/frontend/**/*.tsbuildinfo
+
+# Workshop participant identity (local only, never commit personal values)
+local-otel/workshop.env
 
 # Frontier Cockpit local runtime state
 local-otel/.venv/
@@ -12,6 +21,10 @@ local-otel/*.out
 local-otel/*.err
 local-otel/materialized-traces.json
 local-otel/frontier-insights.duckdb
+local-otel/frontier-otel-export.duckdb
+local-otel/agent-host-traces/
+local-otel/*agent-traces*.db
+local-otel/*agent-traces*.sqlite
 local-otel/workspaces/
 
 # Local Azure and GitHub state, secrets, and exports

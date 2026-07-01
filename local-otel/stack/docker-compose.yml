@@ -7,6 +7,7 @@ services:
     env_file:
       - ./aspire-api-key.env
     environment:
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
       DOTNET_DASHBOARD_OTLP_ENDPOINT_URL: "http://0.0.0.0:18889"
       DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL: "http://0.0.0.0:18890"
       DASHBOARD__OTLP__AUTHMODE: "ApiKey"
@@ -19,7 +20,7 @@ services:
       DASHBOARD__TELEMETRYLIMITS__MAXMETRICSCOUNT: "50000"
       DASHBOARD__TELEMETRYLIMITS__MAXATTRIBUTECOUNT: "512"
     ports:
-      - "18888:18888"
+      - "127.0.0.1:18888:18888"
     restart: unless-stopped
     networks:
       - observability
@@ -87,6 +88,28 @@ services:
     networks:
       - observability
 
+  registry:
+    build:
+      context: ..
+      dockerfile: registry/Dockerfile
+    container_name: copilot-otel-registry
+    environment:
+      FRONTIER_SKIP_ENV_ZSH: "true"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "http://otel-collector:4318/v1/metrics"
+      REGISTRY_REFRESH_SECONDS: "300"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/frontier-registry.last-ok && test $$(($$(date +%s) - $$(cat /tmp/frontier-registry.last-ok))) -lt 900"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - observability
+
   postgres:
     image: postgres:16-alpine
     container_name: copilot-otel-postgres
@@ -108,7 +131,7 @@ services:
       - observability
 
   grafana:
-    image: grafana/grafana-oss:11.4.0
+    image: grafana/grafana-oss:11.6.0
     container_name: copilot-otel-grafana
     environment:
       GF_SECURITY_ADMIN_USER: admin
@@ -121,6 +144,7 @@ services:
       GF_DATABASE_USER: grafana
       GF_DATABASE_PASSWORD: grafana
       GF_DATABASE_SSL_MODE: disable
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -137,6 +161,75 @@ services:
         condition: service_started
       loki:
         condition: service_started
+    networks:
+      - observability
+
+  frontier-dashboard-api:
+    build:
+      context: ../frontend/api
+    container_name: frontier-dashboard-api
+    environment:
+      PORT: "8080"
+      PROMETHEUS_URL: "http://prometheus:9090"
+      TEMPO_URL: "http://tempo:3200"
+      LOKI_URL: "http://loki:3100"
+      GRAFANA_URL: "http://grafana:3000"
+      ASPIRE_URL: "http://aspire-dashboard:18888"
+      COLLECTOR_METRICS_URL: "http://otel-collector:9464/metrics"
+      POSTGRES_HOST: "postgres"
+      POSTGRES_PORT: "5432"
+      PUBLIC_GRAFANA_URL: "http://localhost:3000"
+      PUBLIC_ASPIRE_URL: "http://localhost:18888"
+      PUBLIC_PROMETHEUS_URL: "http://localhost:9090"
+      PUBLIC_TEMPO_URL: "http://localhost:3200"
+      PUBLIC_LOKI_URL: "http://localhost:3100"
+      FRONTIER_PARTICIPANT_NAME: "${FRONTIER_PARTICIPANT_NAME:-Workshop Participant}"
+      FRONTIER_PARTICIPANT_ROLE: "${FRONTIER_PARTICIPANT_ROLE:-Developer}"
+      FRONTIER_PARTICIPANT_EMAIL: "${FRONTIER_PARTICIPANT_EMAIL:-}"
+      FRONTIER_PARTICIPANT_TEAM: "${FRONTIER_PARTICIPANT_TEAM:-}"
+      FRONTIER_CUSTOMER_NAME: "${FRONTIER_CUSTOMER_NAME:-}"
+      FRONTIER_DASHBOARD_TITLE: "${FRONTIER_DASHBOARD_TITLE:-Frontier Developer Cockpit}"
+    expose:
+      - "8080"
+    depends_on:
+      prometheus:
+        condition: service_started
+      grafana:
+        condition: service_started
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      registry:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - observability
+
+  frontier-dashboard-web:
+    build:
+      context: ../frontend/web
+    container_name: frontier-dashboard-web
+    ports:
+      - "127.0.0.1:3300:80"
+    depends_on:
+      frontier-dashboard-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/healthz"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
     networks:
       - observability
 

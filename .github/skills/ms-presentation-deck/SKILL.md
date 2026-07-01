@@ -36,14 +36,14 @@ Don't use for: long-form documents (use `ms-identity-editorial-brief`), standalo
 | On demand | File | Trigger phrase | How |
 |-----------|------|----------------|-----|
 | When asked | `<name>_<locale>_public.html` | "gera a versão pública", "versão sem notas", "pro site" | `scripts/make_public.py` |
-| When asked | `html/decks/pdf/<DeckBase>/<DeckBase>_<locale>.pdf` | "gera o PDF", "exporta pra PDF" | `scripts/make_pdf.py` |
-| When asked | `html/decks/pptx/<DeckBase>/<DeckBase>_{pt-BR,en,es}.pptx` | "exporta pra PPTX", "versão PowerPoint editável" | native PPTX generator + `scripts/validate_derivatives.py` |
+| When asked | `decks/pdf/<DeckBase>/<DeckBase>_<locale>.pdf` | "gera o PDF", "exporta pra PDF" | `scripts/make_pdf.py` |
+| When asked | `decks/pptx/<DeckBase>/<DeckBase>_{pt-BR,en,es}.pptx` | "exporta pra PPTX", "versão PowerPoint editável" | native PPTX generator + `scripts/validate_derivatives.py` |
 
 After delivering the HTML, it is fine to mention in one line that the public HTML, PDF, and PPTX versions can be generated when needed, but do not generate them unless asked.
 
 Filename pattern for deck deliverables: `<EnglishTopicCamelCase>_Deck_v<major>_<minor>_<patch>_<YYYY-MM-DD>_<variant>.<ext>`
 
-Use English for filenames even when the deck UI copy is PT-BR or ES. Translate Portuguese title fragments in the filename only, for example a Portuguese "legacy modernization with agents" title becomes `LegacyModernizationWithAgents`. Remove duplicate download suffixes like `_1`, `_2`, and `_5` from the logical filename. Store the HTML in `html/decks/`, preview images in `html/decks/previews/`, loose deck-only screenshots or simulations in `html/decks/assets/`, deck PDFs in `html/decks/pdf/<DeckBase>/`, and deck PPTX files in `html/decks/pptx/<DeckBase>/`.
+Use English for filenames even when the deck UI copy is PT-BR or ES. Translate Portuguese title fragments in the filename only, for example a Portuguese "legacy modernization with agents" title becomes `LegacyModernizationWithAgents`. Remove duplicate download suffixes like `_1`, `_2`, and `_5` from the logical filename. Store the HTML in `decks/`, preview images in `decks/previews/`, loose deck-only screenshots or simulations in `decks/assets/`, deck PDFs in `decks/pdf/<DeckBase>/`, and deck PPTX files in `decks/pptx/<DeckBase>/`.
 
 Variants: `multi` (trilíngue com notas, the default), `<locale>_public` (sem notas), `<locale>` (PDF per locale). PPTX exports are always a three-file locale package: `pt-BR`, `en`, and `es`.
 
@@ -66,8 +66,8 @@ This is what runs when the user asks for a deck. It stops at the HTML.
 Run the relevant one ONLY when the user asks for that specific format. Each reads the existing multi.html.
 
 - **Public HTML** (no notes): `scripts/make_public.py`, forcing the target locale. Removes notes panel, presenter view, formatNote, broadcastState, key handlers N/F/P, and the N/F kbd hints.
-- **PDF**: `scripts/make_pdf.py` via Playwright, slide by slide, each slide a 13.333x7.5" page, chrome hidden. Save the result under `html/decks/pdf/<DeckBase>/`.
-- **PPTX package**: generate three native editable PowerPoint files, one per locale (`pt-BR`, `en`, `es`). Each file must contain the requested locale's visible slide text and speaker notes. Save all three under `html/decks/pptx/<DeckBase>/`. Never create a screenshot-based PPTX.
+- **PDF**: `scripts/make_pdf.py` via Playwright, slide by slide, each slide a 13.333x7.5" page, chrome hidden. Save the result under `decks/pdf/<DeckBase>/`.
+- **PPTX package**: generate three native editable PowerPoint files, one per locale (`pt-BR`, `en`, `es`). Each file must contain the requested locale's visible slide text and speaker notes. Save all three under `decks/pptx/<DeckBase>/`. Never create a screenshot-based PPTX.
 
 After generating a PDF or any PPTX file, run `scripts/validate_derivatives.py` against the source HTML and the derivative. For PPTX, run the gate three times, once for each locale. Do not present the PPTX package unless all three files pass.
 
@@ -106,7 +106,7 @@ The `scripts/` folder contains:
 - **`make_pdf.py`**: Generates the PDF via Playwright, slide by slide. Each slide becomes a 13.333x7.5" page. Hides chrome (deck-controls, kbd-hint, lang-switcher) via injected CSS. Preflights its dependencies (Playwright, Chromium, pypdf) and validates the output page count.
 - **`build_native_pptx.py`**: Produces native editable PPTX derivatives from the HTML source. Use `--all-locales` to build the three-file PPTX package for a deck (`pt-BR`, `en`, `es`). It uses native PowerPoint shapes, text, and notes, not full-slide images, and runs `validate_derivatives.py` after each file. The current `make_pptx.js` remains a per-deck template/reference for bespoke high-fidelity generators.
 - **`audit.py`**: Runs the identity and structure audit: em dashes, abbreviated "Copilot", missing contact email, favicon, social meta, divider style, notes coverage. Pass `--check-assets` to also verify referenced preview images exist.
-- **`validate_derivatives.py`**: Validates exported PDF and PPTX against the source HTML. PDF must live under `html/decks/pdf/<DeckBase>/`, match slide count, be 16:9, and expose selectable text. PPTX must live under `html/decks/pptx/<DeckBase>/`, match slide count, keep native editable shapes, avoid full-slide screenshots, and embed speaker notes for the requested locale. Use `--allow-notes-derived-content` only for PPTX packages when the HTML visible text is incomplete but localized speaker notes are complete; never use this flag for PDF.
+- **`validate_derivatives.py`**: Validates exported PDF and PPTX against the source HTML. PDF must live under `decks/pdf/<DeckBase>/`, match slide count, be 16:9, and expose selectable text. PPTX must live under `decks/pptx/<DeckBase>/`, match slide count, keep native editable shapes, avoid full-slide screenshots, and embed speaker notes for the requested locale. Use `--allow-notes-derived-content` only for PPTX packages when the HTML visible text is incomplete but localized speaker notes are complete; never use this flag for PDF.
 - **`requirements.txt`**: Python dependencies for `make_pdf.py` and `validate_derivatives.py`. Install with `pip install -r scripts/requirements.txt`, then `python -m playwright install chromium`.
 
 ## Critical lessons learned

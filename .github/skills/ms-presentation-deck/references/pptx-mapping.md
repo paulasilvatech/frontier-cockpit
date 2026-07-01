@@ -149,9 +149,9 @@ function slideN() {
 NODE_PATH=/path/to/global/node_modules node make_pptx.js
 
 # Validate the full three-language PPTX package against the HTML source
-python3 scripts/validate_derivatives.py --html html/decks/<DeckBase>_multi.html --locale pt-BR --pptx html/decks/pptx/<DeckBase>/<DeckBase>_pt-BR.pptx
-python3 scripts/validate_derivatives.py --html html/decks/<DeckBase>_multi.html --locale en --pptx html/decks/pptx/<DeckBase>/<DeckBase>_en.pptx
-python3 scripts/validate_derivatives.py --html html/decks/<DeckBase>_multi.html --locale es --pptx html/decks/pptx/<DeckBase>/<DeckBase>_es.pptx
+python3 scripts/validate_derivatives.py --html decks/<DeckBase>_multi.html --locale pt-BR --pptx decks/pptx/<DeckBase>/<DeckBase>_pt-BR.pptx
+python3 scripts/validate_derivatives.py --html decks/<DeckBase>_multi.html --locale en --pptx decks/pptx/<DeckBase>/<DeckBase>_en.pptx
+python3 scripts/validate_derivatives.py --html decks/<DeckBase>_multi.html --locale es --pptx decks/pptx/<DeckBase>/<DeckBase>_es.pptx
 
 # Convert to PDF for visual inspection
 soffice --headless --convert-to pdf deck.pptx

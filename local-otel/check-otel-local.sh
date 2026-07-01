@@ -148,6 +148,8 @@ terminal_required = {
   "COPILOT_OTEL_PROTOCOL": "http",
   "COPILOT_OTEL_CAPTURE_CONTENT": "true",
   "COPILOT_OTEL_MAX_ATTRIBUTE_SIZE_CHARS": "0",
+  "COPILOT_MATERIALIZE_CONTENT": "true",
+  "COPILOT_MATERIALIZE_TRACE_LIMIT": "1000",
   "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "true",
   "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4318",
   "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
@@ -180,7 +182,19 @@ else
   err "VS Code Insiders user settings file was not found."
 fi
 
-for name in COPILOT_OTEL_ENABLED COPILOT_OTEL_ENDPOINT OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_TRACES_ENDPOINT OTEL_EXPORTER_OTLP_METRICS_ENDPOINT OTEL_EXPORTER_OTLP_LOGS_ENDPOINT OTEL_TRACES_EXPORTER OTEL_METRICS_EXPORTER OTEL_LOGS_EXPORTER CLAUDE_CODE_ENABLE_TELEMETRY; do
+agent_host_db="$HOME/Library/Application Support/Code - Insiders/User/globalStorage/github.copilot-chat/agent-traces.db"
+if [[ -f "$agent_host_db" ]]; then
+  span_count="$(sqlite3 "$agent_host_db" 'select count(*) from spans;' 2>/dev/null || print 0)"
+  if [[ "$span_count" -gt 0 ]]; then
+    ok "VS Code Agent Host OTel SQLite DB is present with $span_count spans."
+  else
+    warn "VS Code Agent Host OTel SQLite DB is present but has no spans yet."
+  fi
+else
+  warn "VS Code Agent Host OTel SQLite DB was not found yet. Use GitHub Copilot Chat after dbSpanExporter is enabled."
+fi
+
+for name in COPILOT_OTEL_ENABLED COPILOT_OTEL_ENDPOINT COPILOT_MATERIALIZE_CONTENT COPILOT_MATERIALIZE_TRACE_LIMIT OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_TRACES_ENDPOINT OTEL_EXPORTER_OTLP_METRICS_ENDPOINT OTEL_EXPORTER_OTLP_LOGS_ENDPOINT OTEL_TRACES_EXPORTER OTEL_METRICS_EXPORTER OTEL_LOGS_EXPORTER CLAUDE_CODE_ENABLE_TELEMETRY; do
   value="$(launchctl getenv "$name" 2>/dev/null || true)"
   if [[ -n "$value" ]]; then
     ok "launchd user environment $name is set."
@@ -188,6 +202,38 @@ for name in COPILOT_OTEL_ENABLED COPILOT_OTEL_ENDPOINT OTEL_INSTRUMENTATION_GENA
     err "launchd user environment $name is not set. Run $HOME/frontier-cockpit/local-otel/enable-user-env.sh"
   fi
 done
+
+launchagent_template_dir="$HOME/frontier-cockpit/local-otel/launchagents"
+launchagent_target_dir="$HOME/Library/LaunchAgents"
+expected_launchagents=(
+  com.frontier.copilot-otel-env
+  com.frontier.copilot-otel-autostart
+  com.frontier.copilot-otel-coverage
+  com.frontier.copilot-otel-materializer
+  com.frontier.copilot-otel-vscode-memory
+  com.frontier.copilot-otel-daily-rollup
+  com.frontier.copilot-otel-github-enterprise
+  com.frontier.copilot-otel-github-orgs
+  com.frontier.copilot-otel-github-audit-stream-renewal
+)
+
+if [[ -d "$launchagent_template_dir" ]]; then
+  ok "Versioned LaunchAgent templates are present."
+  for label in $expected_launchagents; do
+    if [[ -f "$launchagent_template_dir/$label.plist" ]]; then
+      ok "LaunchAgent template $label is present."
+    else
+      warn "LaunchAgent template $label is missing from $launchagent_template_dir."
+    fi
+    if [[ -f "$launchagent_target_dir/$label.plist" ]]; then
+      ok "LaunchAgent $label is installed for this user."
+    else
+      warn "LaunchAgent $label is not installed. Run $HOME/frontier-cockpit/local-otel/install-launchagents.sh to enable scheduled automation."
+    fi
+  done
+else
+  warn "Versioned LaunchAgent templates directory is missing: $launchagent_template_dir"
+fi
 
 if [[ "$OTEL_RESOURCE_ATTRIBUTES" == *"workspace.name="* ]]; then
   ok "Current shell OTEL_RESOURCE_ATTRIBUTES includes workspace.name."

@@ -1,6 +1,6 @@
 # Local Loki config (single binary) for log history.
 # Accepts native OTLP logs from the local Collector at /otlp and stores chunks on local
-# disk. Retention is 14 days, matching the agreed local retention window.
+# disk. Retention is 30 days, matching the agreed local retention window.
 
 auth_enabled: false
 
@@ -31,7 +31,7 @@ schema_config:
         period: 24h
 
 limits_config:
-  retention_period: 336h
+  retention_period: 720h
   allow_structured_metadata: true
 
 compactor:

@@ -1,20 +1,35 @@
 {
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "graphTooltip": 0,
   "links": [
-    { "title": "Real Workspace Usage", "url": "/d/copilot-real-workspace-usage-local/github-copilot-real-workspace-usage-local", "targetBlank": false },
-    { "title": "Tempo Explore", "url": "/explore?left={\"datasource\":\"tempo-local\",\"queries\":[{\"query\":\"{service.name=\\\"copilot-chat\\\" && github.copilot.git.repository!=\\\"\\\"}\"}],\"range\":{\"from\":\"now-3h\",\"to\":\"now\"}}", "targetBlank": false }
+    {
+      "title": "Real Workspace Usage",
+      "url": "/d/copilot-real-workspace-usage-local/github-copilot-real-workspace-usage-local",
+      "targetBlank": false
+    },
+    {
+      "title": "Tempo Explore",
+      "url": "/explore?left={\"datasource\":\"tempo-local\",\"queries\":[{\"query\":\"{service.name=\\\"copilot-chat\\\" && github.copilot.git.repository!=\\\"\\\"}\"}],\"range\":{\"from\":\"now-3h\",\"to\":\"now\"}}",
+      "targetBlank": false
+    }
   ],
   "panels": [
     {
       "id": 1,
       "type": "text",
-      "title": "Context, cache temperature, and real cost",
-      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 0 },
+      "title": "Context, cache temperature, and operational AIU",
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "options": {
         "mode": "markdown",
-        "content": "# Real context and cost, workspace sessions only\n\nAll values come from real `copilot-chat` traces that carry a repository attribute.\n\n- **Context window use:** `peak input tokens / copilot_chat.request.max_prompt_tokens`. This is how full the context window got at its busiest turn.\n- **Context temperature (hot/warm/cold):** based on real cache token attributes. **Warm/hot** is `gen_ai.usage.cache_read.input_tokens` (prompt prefix reused). **Warming** is `gen_ai.usage.cache_creation.input_tokens` (new cache written). **Cold** is the remaining uncached input. Cache reuse depends on the model and provider, so some sessions are fully cold and that is real, not an error.\n- **Real cost:** `copilot_chat.copilot_usage_nano_aiu` divided by 1e9 gives AI Units (AIU) actually reported by GitHub Copilot. This is real local telemetry. For official invoiced totals, reconcile with GitHub billing."
+        "content": "# Real context and operational AIU, workspace sessions only\n\nAll values come from real `copilot-chat` traces that carry a repository attribute.\n\n- **Context window use:** `peak input tokens / copilot_chat.request.max_prompt_tokens`. This is how full the context window got at its busiest turn.\n- **Context temperature (hot/warm/cold):** based on real cache token attributes. **Warm/hot** is `gen_ai.usage.cache_read.input_tokens` (prompt prefix reused). **Warming** is `gen_ai.usage.cache_creation.input_tokens` (new cache written). **Cold** is the remaining uncached input. Cache reuse depends on the model and provider, so some sessions are fully cold and that is real, not an error.\n- **Operational AIU:** `copilot_chat.copilot_usage_nano_aiu` divided by 1e9 gives AI Units (AIU) reported by GitHub Copilot telemetry. This is local operational telemetry, not official billing. For official invoiced totals, reconcile with GitHub billing or usage exports."
       }
     },
     {
@@ -22,64 +37,317 @@
       "type": "gauge",
       "title": "Peak context window utilization",
       "description": "Peak input tokens vs max_prompt_tokens, per session. High values mean the agent is close to context limits and may compact memory.",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 7 },
-      "datasource": { "type": "prometheus", "uid": "prometheus-local" },
-      "targets": [ { "refId": "A", "expr": "max(copilot_real_session_context_utilization_pct_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"})", "datasource": { "type": "prometheus", "uid": "prometheus-local" } } ],
-      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 70 }, { "color": "red", "value": 90 } ] } }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": false, "showThresholdMarkers": true }
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(max_over_time(copilot_real_session_context_utilization_pct_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range]))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
     },
     {
       "id": 3,
       "type": "bargauge",
       "title": "Context temperature, tokens (hot/warm vs cold)",
       "description": "Warm = cache_read tokens reused. Warming = cache_creation tokens. Cold = uncached input tokens.",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 7 },
-      "datasource": { "type": "prometheus", "uid": "prometheus-local" },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-local"
+      },
       "targets": [
-        { "refId": "A", "expr": "sum(copilot_real_session_cache_read_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"})", "legendFormat": "warm (cache read)", "datasource": { "type": "prometheus", "uid": "prometheus-local" } },
-        { "refId": "B", "expr": "sum(copilot_real_session_cache_creation_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"})", "legendFormat": "warming (cache create)", "datasource": { "type": "prometheus", "uid": "prometheus-local" } },
-        { "refId": "C", "expr": "sum(copilot_real_session_cold_input_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"})", "legendFormat": "cold (uncached)", "datasource": { "type": "prometheus", "uid": "prometheus-local" } }
+        {
+          "refId": "A",
+          "expr": "sum(max_over_time(copilot_real_session_cache_read_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range]))",
+          "legendFormat": "warm (cache read)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "sum(max_over_time(copilot_real_session_cache_creation_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range]))",
+          "legendFormat": "warming (cache create)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "sum(max_over_time(copilot_real_session_cold_input_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range]))",
+          "legendFormat": "cold (uncached)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        }
       ],
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "options": { "displayMode": "gradient", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] } }
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
     },
     {
       "id": 4,
       "type": "stat",
-      "title": "Real cost (AI Units)",
-      "description": "Sum of copilot_chat.copilot_usage_nano_aiu / 1e9 across selected sessions. Real local telemetry, not the official invoice.",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 7 },
-      "datasource": { "type": "prometheus", "uid": "prometheus-local" },
-      "targets": [ { "refId": "A", "expr": "sum(copilot_real_session_nano_aiu_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}) / 1e9", "datasource": { "type": "prometheus", "uid": "prometheus-local" } } ],
-      "fieldConfig": { "defaults": { "unit": "short", "decimals": 3, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area", "colorMode": "value" }
+      "title": "Operational AIU",
+      "description": "Sum of copilot_chat.copilot_usage_nano_aiu / 1e9 across selected sessions. Local operational telemetry, not the official invoice.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max_over_time(copilot_real_session_nano_aiu_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range])) / 1e9",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 3,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "area",
+        "colorMode": "value"
+      }
     },
     {
       "id": 5,
       "type": "table",
-      "title": "Per-session context window and cost",
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 15 },
-      "datasource": { "type": "prometheus", "uid": "prometheus-local" },
+      "title": "Per-session context window and operational AIU",
+      "description": "AIU in this table is local operational telemetry, not official billing.",
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-local"
+      },
       "targets": [
-        { "refId": "WIN", "expr": "copilot_real_session_peak_turn_input_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}", "format": "table", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus-local" } },
-        { "refId": "MAX", "expr": "copilot_real_session_max_prompt_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}", "format": "table", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus-local" } },
-        { "refId": "UTL", "expr": "copilot_real_session_context_utilization_pct_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}", "format": "table", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus-local" } },
-        { "refId": "AIU", "expr": "copilot_real_session_nano_aiu_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"} / 1e9", "format": "table", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus-local" } },
-        { "refId": "WARM", "expr": "copilot_real_session_cache_read_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}", "format": "table", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus-local" } },
-        { "refId": "COLD", "expr": "copilot_real_session_cold_input_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}", "format": "table", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus-local" } }
+        {
+          "refId": "WIN",
+          "expr": "max_over_time(copilot_real_session_peak_turn_input_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range])",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        },
+        {
+          "refId": "MAX",
+          "expr": "max_over_time(copilot_real_session_max_prompt_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range])",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        },
+        {
+          "refId": "UTL",
+          "expr": "max_over_time(copilot_real_session_context_utilization_pct_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range])",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        },
+        {
+          "refId": "AIU",
+          "expr": "max_over_time(copilot_real_session_nano_aiu_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range]) / 1e9",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        },
+        {
+          "refId": "WARM",
+          "expr": "max_over_time(copilot_real_session_cache_read_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range])",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        },
+        {
+          "refId": "COLD",
+          "expr": "max_over_time(copilot_real_session_cold_input_tokens_ratio{usage_scope=\"workspace_real\", repo=~\"$repo\"}[$__range])",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        }
       ],
       "transformations": [
-        { "id": "joinByLabels", "options": { "value": "trace_id" } },
-        { "id": "organize", "options": { "excludeByName": { "session_id": false }, "renameByName": { "trace_id": "Trace", "repo": "Repository", "branch": "Branch", "request_model": "Model label", "mode_bucket": "Mode", "Value #WIN": "Peak input", "Value #MAX": "Window limit", "Value #UTL": "Window %", "Value #AIU": "AIU", "Value #WARM": "Warm tokens", "Value #COLD": "Cold tokens" } } }
+        {
+          "id": "joinByLabels",
+          "options": {
+            "value": "trace_id"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "session_id": false
+            },
+            "renameByName": {
+              "trace_id": "Trace",
+              "repo": "Repository",
+              "branch": "Branch",
+              "request_model": "Model label",
+              "mode_bucket": "Mode",
+              "Value #WIN": "Peak input",
+              "Value #MAX": "Window limit",
+              "Value #UTL": "Window %",
+              "Value #AIU": "AIU",
+              "Value #WARM": "Warm tokens",
+              "Value #COLD": "Cold tokens"
+            }
+          }
+        }
       ],
-      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [ { "matcher": { "id": "byName", "options": "AIU" }, "properties": [ { "id": "decimals", "value": 3 } ] } ] },
-      "options": { "showHeader": true, "cellHeight": "sm" }
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "AIU"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
     },
     {
       "id": 6,
       "type": "text",
       "title": "Agent memory and context management",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 27 },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
       "options": {
         "mode": "markdown",
         "content": "## Agent memory, what is and is not collectable locally\n\n**Context window memory (collectable, real):** input tokens per turn, `max_prompt_tokens`, and the cache read/creation split above show how the agent fills and reuses its working context. Peak window % is your early warning before the model must drop or compact context.\n\n**Context compaction/summarization (collectable when triggered):** GitHub Copilot emits `copilot_chat.agent.summarization.count` when it summarizes context, and the CLI runtime emits compaction and truncation events with token deltas. These appear only after a long session forces compaction. The coverage dashboard tracks whether they have fired yet.\n\n**VS Code process memory (separate, OS level):** RSS of the VS Code/Electron processes is not part of GitHub Copilot OTel. It is sampled locally by `$HOME/frontier-cockpit/local-otel/sample-vscode-memory.sh` and shown in the VS Code Process Memory dashboard. That is operating system memory, not model context.\n\n**Chat memory files (project level):** the memory tool writes files under your repo or user profile. Those are inspected as files, not as OTel signals."
@@ -88,13 +356,42 @@
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["github-copilot", "context", "cache", "cost", "aiu"],
+  "tags": [
+    "github-copilot",
+    "context",
+    "cache",
+    "cost",
+    "aiu"
+  ],
   "templating": {
     "list": [
-      { "name": "repo", "label": "Repository", "type": "query", "datasource": { "type": "prometheus", "uid": "prometheus-local" }, "query": "label_values(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}, repo)", "refresh": 2, "includeAll": true, "allValue": ".*", "multi": true, "current": { "selected": true, "text": "All", "value": ["$__all"] } }
+      {
+        "name": "repo",
+        "label": "Repository",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus-local"
+        },
+        "query": "label_values(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}, repo)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        }
+      }
     ]
   },
-  "time": { "from": "now-12h", "to": "now" },
+  "time": {
+    "from": "now-12h",
+    "to": "now"
+  },
   "timezone": "browser",
   "title": "GitHub Copilot Context and Cost (Local)",
   "uid": "copilot-context-cost-local",

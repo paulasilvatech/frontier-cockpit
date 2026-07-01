@@ -1,7 +1,7 @@
 ---
 description: "Specify a feature with the spec-driven flow: validated requirements (EARS), a design with a diagram, and a sequenced task plan with a quality gate."
 agent: agent
-argument-hint: "the feature to specify, for example the agent cost calculator page"
+argument-hint: "the feature to specify, for example a local telemetry dashboard"
 ---
 
 # Spec Feature
@@ -23,13 +23,14 @@ Use the `Spec Engineer` agent persona where helpful. Load `requirements-engineer
 
 ## Rules
 
-- Reuse the validated BTG building blocks rather than rewriting; for UBB math, pull formulas and canonical numbers from the `ubb-engine` skill, never invent values.
-- Documentation in English; app UI copy is trilingual EN, PT-BR, ES. Write "GitHub Copilot", never "Copilot" alone. No em dashes.
+- Reuse existing Frontier Cockpit scripts, dashboards, docs, and validation patterns rather than rewriting.
+- For telemetry, billing, usage, or adoption claims, distinguish local operational OpenTelemetry from official GitHub APIs, exports, or cited sources. Never invent values.
+- Documentation is English unless the artifact explicitly requires another language. Write "GitHub Copilot", never bare product shorthand. No em dashes.
 
 ## Done when
 
 - The four artifacts exist, every acceptance criterion is in EARS notation, and the traceability matrix is complete.
-- The task plan is ready to hand to the `UBB Engineer` agent for implementation.
+- The task plan is ready to hand to the appropriate implementation agent.
 
 ## Output
 

@@ -35,9 +35,10 @@ if [[ -n "$existing_id" ]]; then
   fi
 else
   docker run --rm -d \
-    -p 18888:18888 \
-    -p 4317:18889 \
-    -p 4318:18890 \
+    -e DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true \
+    -p 127.0.0.1:18888:18888 \
+    -p 127.0.0.1:4317:18889 \
+    -p 127.0.0.1:4318:18890 \
     --name "$container_name" \
     "$image_name" >/dev/null
   print "Aspire Dashboard container created and started."

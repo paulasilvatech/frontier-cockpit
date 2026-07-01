@@ -18,6 +18,19 @@ if ! command -v "$gh_bin" >/dev/null 2>&1; then
   exit 1
 fi
 
+auth_status="$($gh_bin auth status -h github.com 2>&1 || true)"
+if [[ "$auth_status" != *"Logged in"* ]]; then
+    print -u2 "GitHub CLI is not authenticated for github.com. Run gh auth login or gh auth status -h github.com."
+    print -u2 "$auth_status"
+    exit 1
+fi
+
+for required_scope in read:org manage_billing:copilot; do
+    if [[ "$auth_status" != *"$required_scope"* ]]; then
+        print -u2 "WARN  GitHub CLI auth output does not show scope $required_scope. Some organization signals may be unavailable."
+    fi
+done
+
 python3 - "$gh_bin" "$logs_endpoint" "$metrics_endpoint" "$out_dir" <<'PY'
 import json
 import pathlib

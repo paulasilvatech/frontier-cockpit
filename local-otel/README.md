@@ -1,6 +1,28 @@
-# GitHub Copilot Chat OpenTelemetry Local Kit
+---
+title: "Frontier Developer Cockpit Local OpenTelemetry Kit"
+description: "User-level local OpenTelemetry runtime for Frontier Developer Cockpit, including Aspire, Grafana, Prometheus, Tempo, Loki, local materialization, and Azure hybrid forwarding."
+author: "Frontier Cockpit Team"
+date: "2026-06-30"
+version: "1.0.4"
+status: "approved"
+tags: ["frontier-developer-cockpit", "github-copilot", "opentelemetry", "aspire", "grafana", "local-runtime"]
+---
 
-This user-level kit configures local OpenTelemetry validation for GitHub Copilot Chat in VS Code Insiders. It uses Aspire Dashboard as the local backend. It lives outside any workspace on purpose, so it applies to your user profile and can be reused while teaching customers.
+<!-- markdownlint-disable MD025 -->
+
+# Frontier Developer Cockpit Local OpenTelemetry Kit
+
+This user-level kit configures the local runtime for Frontier Developer Cockpit. It captures GitHub Copilot Chat and agent telemetry in VS Code Insiders, routes it through a local OpenTelemetry Collector, and fans out to Aspire Dashboard, Tempo, Prometheus, Loki, Grafana, and optional Azure hybrid forwarding.
+
+## Change Log
+
+| Version | Date | Author | Changes |
+| --- | --- | --- | --- |
+| 1.0.4 | 2026-06-30 | Frontier Cockpit Team | Added the local workshop-ready flow, the workshop validation gate, and the Frontier Developer Cockpit mini app entry point. |
+| 1.0.3 | 2026-06-23 | Frontier Cockpit Team | Enabled full local content materialization by default and increased trace replay coverage across workspaces. |
+| 1.0.2 | 2026-06-23 | Frontier Cockpit Team | Standardized local Tempo, Prometheus, and Loki retention to 30 days and clarified the Docker and Azure sync boundary. |
+| 1.0.1 | 2026-06-22 | Frontier Cockpit Team | Aligned title, frontmatter, and settings with the Frontier Developer Cockpit offer. |
+| 1.0.0 | 2026-06-17 | Frontier Cockpit Team | Initial local OpenTelemetry kit. |
 
 The setup is scoped to your macOS user and applies across VS Code Insiders windows, workspaces, and repositories. It also exports standard OTel environment variables for terminal-launched dev agents and tools that honor OTLP.
 
@@ -10,8 +32,11 @@ The kit has three run modes:
 - Full local stack: OpenTelemetry Collector + Aspire + Tempo + Prometheus + Loki + Grafana + PostgreSQL, with local history.
 - Hybrid Azure: full local stack plus forwarding to an Azure Container Apps Collector, Application Insights, Log Analytics, Azure Monitor workspace, and Azure Managed Grafana.
 
+The full local stack runs in Docker and keeps trace, metric, and log history locally for 30 days. Hybrid Azure mode does not wait for local retention to expire. It forwards sanitized telemetry while the stack is running, and the scheduled rollup jobs keep the Azure view refreshed with approved summary signals.
+
 Default local endpoints:
 
+- Frontier Developer Cockpit mini app: `http://localhost:3300`
 - Aspire UI: `http://localhost:18888`
 - Grafana local UI: `http://localhost:3000`
 - Prometheus UI: `http://localhost:9090`
@@ -30,8 +55,19 @@ VS Code Insiders user settings are configured with:
 - `github.copilot.chat.otel.exporterType`: `otlp-http`
 - `github.copilot.chat.otel.otlpEndpoint`: `http://localhost:4318`
 - `github.copilot.chat.otel.captureContent`: `true`
-- `github.copilot.chat.otel.maxAttributeSizeChars`: `20000`
+- `github.copilot.chat.otel.maxAttributeSizeChars`: `0`
 - `github.copilot.chat.otel.dbSpanExporter.enabled`: `true`
+
+Local materialization is also enabled for full-fidelity content records:
+
+- `COPILOT_MATERIALIZE_CONTENT=true`
+- `COPILOT_MATERIALIZE_TRACE_LIMIT=1000`
+
+Local DuckDB analytical files are also supported:
+
+- `frontier-insights.duckdb` stores derived developer rollups.
+- `frontier-otel-export.duckdb` stores local OTel export snapshots from Prometheus, Loki, Tempo, and the VS Code Agent Host SQLite span database when available.
+- DuckDB complements Tempo, Prometheus, Loki, and Grafana. It does not replace those backends.
 
 The integrated terminal user environment also receives OTel variables so terminal sessions can inherit the local endpoint.
 
@@ -47,9 +83,85 @@ The shell and macOS user environment are configured through:
 
 - `$HOME/frontier-cockpit/local-otel/env.zsh`
 - `$HOME/frontier-cockpit/local-otel/enable-user-env.sh`
-- `~/Library/LaunchAgents/com.frontier.copilot-otel-env.plist`
+- `$HOME/frontier-cockpit/local-otel/launchagents/`
+- `$HOME/frontier-cockpit/local-otel/install-launchagents.sh`
+- `~/Library/LaunchAgents/com.frontier.copilot-otel-*.plist`
 
-This covers new terminal sessions, integrated terminals, and GUI apps launched after the user environment is enabled. GitHub Copilot spans still add per-project attributes such as repository, branch, and commit when the workspace is inside a Git repository.
+This covers new terminal sessions, integrated terminals, and GUI apps launched after the user environment is enabled. GitHub Copilot spans still add per-project attributes such as repository, branch, and commit when the workspace is inside a Git repository. The materializer replays recent traces across all observed workspaces and writes full local content records to Loki for local debugging.
+
+Install the scheduled user automation from the versioned templates:
+
+```bash
+$HOME/frontier-cockpit/local-otel/install-launchagents.sh
+```
+
+Remove the scheduled automation while preserving copied plist files:
+
+```bash
+$HOME/frontier-cockpit/local-otel/uninstall-launchagents.sh
+```
+
+Remove the copied plist files too:
+
+```bash
+$HOME/frontier-cockpit/local-otel/uninstall-launchagents.sh --delete
+```
+
+The LaunchAgents cover user environment setup, stack autostart, OTel coverage audit every hour, session materialization every five minutes, VS Code process memory sampling every minute, 24-hour workspace rollup refresh every hour, GitHub Enterprise ingestion every hour, organization status ingestion every hour, model multiplier registry refresh every five minutes, model price registry refresh every five minutes, and audit stream renewal. They do not contain secrets. Runtime logs and state are ignored by git.
+
+The hourly jobs keep dashboard support data fresh. They cannot create events that have not happened, so rare GitHub Copilot signals can still appear as `not_observed_yet`, but the coverage and data-quality dashboards should refresh at least hourly while the local stack is running.
+
+## Model labels, tokens, AIU, and official multipliers
+
+Frontier Developer Cockpit separates three different cost signals so they are never confused:
+
+- **Tokens by model** are real telemetry. Inspect them in the Sessions and Model Labels dashboard. Model labels are telemetry labels, not official billing model names.
+- **AIU** is real. GitHub Copilot emits `copilot_chat.copilot_usage_nano_aiu` per session, materialized as `copilot_real_session_nano_aiu` and shown as real AIU in the Context and Cost dashboard. AIU equals `nano_aiu / 1e9`.
+- **Official premium-request multipliers** are registered locally as `copilot_model_premium_request_multiplier_ratio`. The multiplier value is official, sourced from the [GitHub model multipliers reference](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/model-multipliers-for-annual-plans). These are the legacy annual request-based multipliers and are subject to change.
+
+Register one official multiplier from the GitHub pricing docs:
+
+```bash
+$HOME/frontier-cockpit/local-otel/register-model-multiplier.sh gpt-5.5 57 "GPT-5.5"
+```
+
+Seed the full official table, both the locally observed model labels and the reference catalog:
+
+```bash
+$HOME/frontier-cockpit/local-otel/seed-model-multipliers.sh
+```
+
+The `com.frontier.copilot-otel-model-registry` LaunchAgent re-seeds these gauges every five minutes because the local Collector expires one-shot metrics after about five minutes. The Sessions and Model Labels dashboard then estimates premium-request-equivalents per model by multiplying local LLM `chat` call counts by the official multiplier.
+
+This is a local planning aid only. The local call count is telemetry and agent mode makes several model calls per user prompt, so the estimate over-counts versus GitHub per-user-request billing. Official premium-request totals and AI Credits still require GitHub billing exports or the Copilot usage metrics API. Optional local price registration with `register-model-price.sh` adds a what-if USD estimate and is also not official billing.
+
+### AI credits and USD in the dashboard
+
+The Sessions and Model Labels dashboard now shows both signals directly:
+
+- **Real AIU consumed (AI credits)** is a stat panel backed by `copilot_real_session_nano_aiu_ratio / 1e9`. This is the real AI-Units-equivalent reported by GitHub Copilot for workspace sessions.
+- **Estimated local spend by model (USD what-if)** is a table that multiplies token counts by local planning prices.
+
+Seed the local planning prices, then they persist through the price LaunchAgent:
+
+```bash
+$HOME/frontier-cockpit/local-otel/seed-model-prices.sh
+```
+
+The prices in `seed-model-prices.sh` are **local planning assumptions** (`price_source=local-planning-assumption`), not official billing and not provider-confirmed for these telemetry labels. Edit that file with your own source-of-truth prices, or override one model:
+
+```bash
+$HOME/frontier-cockpit/local-otel/register-model-price.sh gpt-4o-mini-2024-07-18 0.15 0.60
+```
+
+The `com.frontier.copilot-otel-price-registry` LaunchAgent re-seeds prices every five minutes for the same collector-expiry reason. Official spend and AI Credits always require GitHub billing exports or the Copilot usage metrics API.
+
+The `daily-rollup.sh` job also updates DuckDB when available:
+
+- `frontier-local-insights.sh` writes derived workspace rollups to `local-otel/frontier-insights.duckdb`.
+- `export-otel-duckdb.sh` writes recent OTel export snapshots to `local-otel/frontier-otel-export.duckdb`, including Agent Host spans from the local SQLite exporter at `~/Library/Application Support/Code - Insiders/User/globalStorage/github.copilot-chat/agent-traces.db` when present.
+
+Both files are local runtime state and ignored by git.
 
 ## Workspace tags
 
@@ -77,9 +189,29 @@ Use these attributes to filter traces by project in Aspire Dashboard, Applicatio
 
 Content capture is enabled for teaching and local validation. It can include prompts, source code, file paths, tool inputs, and tool results. Keep this local for demos, and disable content capture before using this with sensitive customer repositories unless the customer explicitly approves it.
 
+Frontier Developer Cockpit telemetry is operational telemetry. It is useful for coaching, debugging, context analysis, and cost-awareness education. Official billing, AI Credits, and adoption reporting require GitHub billing exports, usage metrics, or another approved source.
+
+Aspire Dashboard runs with anonymous browser access for local convenience and is bound to localhost only. Do not expose port `18888` publicly. OTLP and Dashboard API ingestion still use the local API key configured in `local-otel/stack/aspire-api-key.env` when the full stack is running.
+
 ## Start local backends
 
 Docker Desktop must be running.
+
+Workshop-ready local setup, run from the participant Git repository:
+
+```bash
+$HOME/frontier-cockpit/local-otel/workshop-ready.sh
+```
+
+This command is local-only. It does not enable hybrid mode or forward data to Azure. It enables the local OpenTelemetry environment, starts the full Docker Desktop stack, registers the current Git workspace, sends a synthetic validation span, materializes recent GitHub Copilot sessions, refreshes support metrics, and runs the workshop validation gate.
+
+Open the local mini app after setup:
+
+```bash
+open http://localhost:3300
+```
+
+If the mini app has no workspace-attributed sessions yet, open the repository in VS Code Insiders, run one GitHub Copilot Chat or agent request, then rerun `workshop-ready.sh` or click Refresh after the local materializer runs.
 
 Aspire-only, fastest live demo:
 
@@ -138,6 +270,18 @@ source $HOME/frontier-cockpit/local-otel/use-otlp-grpc.zsh
 
 ```bash
 $HOME/frontier-cockpit/local-otel/check-otel-local.sh
+```
+
+For workshop participants, use the focused gate:
+
+```bash
+$HOME/frontier-cockpit/local-otel/check-workshop-local.sh
+```
+
+After the participant has generated one real GitHub Copilot Chat or agent session in the repository, use strict data mode:
+
+```bash
+$HOME/frontier-cockpit/local-otel/check-workshop-local.sh --strict-data
 ```
 
 Expected result:
@@ -301,11 +445,11 @@ Export the local VS Code span database:
 ## What is persisted
 
 - Aspire Dashboard: live, in-memory diagnostic view.
-- Tempo: local trace history, 14 days.
+- Tempo: local trace history, 30 days.
 - Prometheus: local metric history, 30 days.
-- Loki: local log history, 14 days.
+- Loki: local log history, 30 days.
 - PostgreSQL: Grafana metadata, dashboards, datasources, users, and preferences.
-- Azure: Application Insights and Log Analytics hold the cloud telemetry after hybrid forwarding is enabled.
+- Azure: Application Insights and Log Analytics hold sanitized telemetry and rollups after hybrid forwarding is enabled. Raw local content is not batch-sent when the 30-day local retention expires.
 
 ## Architecture outputs
 

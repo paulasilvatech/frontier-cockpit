@@ -16,6 +16,7 @@ git_branch=""
 git_remote=""
 git_repo_name=""
 git_repo_owner=""
+git_head_commits=""
 
 if git_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
   workspace_kind="git"
@@ -39,6 +40,15 @@ if git_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
   else
     git_repo_name="${slug:-$workspace_name}"
   fi
+  # Capture the HEAD commit of every local branch. GitHub Copilot emits the
+  # per-window HEAD commit hash, which is the only reliable signal to attribute
+  # a workspace when VS Code is launched from the GUI and inherits a shared
+  # global environment. The materializer matches these commits back to this repo.
+  git_head_commits="$(git for-each-ref --format='%(objectname)' refs/heads 2>/dev/null | sort -u | tr '\n' ' ' | sed -e 's/  */ /g' -e 's/^ //' -e 's/ $//')"
+  git_head="$(git rev-parse HEAD 2>/dev/null || true)"
+  if [[ -n "$git_head" && " $git_head_commits " != *" $git_head "* ]]; then
+    git_head_commits="$git_head $git_head_commits"
+  fi
 fi
 
 workspace_hash="$(print -rn -- "$workspace_path" | shasum -a 256 | awk '{print $1}')"
@@ -56,6 +66,7 @@ attrs = {
     "git_repository_owner": "${git_repo_owner}",
     "git_repository_name": "${git_repo_name}",
     "git_repository_remote": "${git_remote}",
+    "git_head_commit": "${git_head_commits}",
 }
 
 def attr(key, value):
@@ -75,6 +86,7 @@ payload = {
                     attr("git.repository.owner", attrs["git_repository_owner"]),
                     attr("git.repository.name", attrs["git_repository_name"]),
                     attr("github.copilot.git.repository", attrs["git_repository_remote"]),
+                    attr("git.head_commit", attrs["git_head_commit"]),
                 ]
             },
             "scopeMetrics": [
@@ -104,9 +116,11 @@ payload = {
 print(json.dumps(payload, separators=(",", ":")))
 PY
 
-if command -v launchctl >/dev/null 2>&1; then
-  launchctl setenv OTEL_RESOURCE_ATTRIBUTES "$OTEL_RESOURCE_ATTRIBUTES" 2>/dev/null || true
-fi
+# Intentionally do NOT push workspace tags into the global launchd environment.
+# macOS launchd holds a single global OTEL_RESOURCE_ATTRIBUTES, so exporting one
+# workspace there would mislabel every other GUI-launched VS Code window. Per-window
+# attribution comes from the per-shell environment (terminal-launched windows) and
+# from commit-hash matching against this registry in materialize-copilot-sessions.sh.
 
 print "Registered workspace for local OTel dashboards:"
 print "  workspace_name=$workspace_name"

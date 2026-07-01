@@ -24,6 +24,12 @@ if [[ -x "$HOME/frontier-cockpit/local-otel/frontier-local-insights.sh" ]]; then
     FRONTIER_INSIGHTS_RANGE="$period" "$HOME/frontier-cockpit/local-otel/frontier-local-insights.sh" >/dev/null || true
 fi
 
+# Snapshot recent local OTel backend data into DuckDB for offline analysis and export.
+# This keeps raw content local and complements Tempo, Prometheus, Loki, and Grafana.
+if [[ -x "$HOME/frontier-cockpit/local-otel/export-otel-duckdb.sh" ]]; then
+    FRONTIER_OTEL_EXPORT_RANGE="${FRONTIER_OTEL_EXPORT_RANGE:-1h}" "$HOME/frontier-cockpit/local-otel/export-otel-duckdb.sh" >/dev/null || true
+fi
+
 python3 - "$prometheus_url" "$metrics_endpoint" "$logs_endpoint" "$period" <<'PY'
 import json
 import sys

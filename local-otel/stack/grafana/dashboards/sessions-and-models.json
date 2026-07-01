@@ -156,32 +156,165 @@
     },
     {
       "id": 4,
-      "type": "text",
-      "title": "Local price registry is not configured",
+      "type": "stat",
+      "title": "Real AIU consumed (AI credits, workspace)",
+      "description": "Real AI Units reported by GitHub Copilot telemetry for workspace sessions in the selected range. AIU = copilot_chat.copilot_usage_nano_aiu / 1e9. This is the real AI-credits-equivalent signal. Official AI Credits billing still comes from GitHub usage or billing exports.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
         "y": 18
       },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max_over_time(copilot_real_session_nano_aiu_ratio{usage_scope=\"workspace_real\"}[$__range])) / 1e9",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 3,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": []
+      },
       "options": {
-        "mode": "markdown",
-        "content": "## Price registry intentionally disabled\n\nThis environment does not currently publish `copilot_model_price_usd_per_million_ratio`. That is expected. Local telemetry shows token, AIU, context, and tool behavior. Official spend and AI Credits must come from GitHub billing or usage exports. Register local planning prices only when there is a trusted source."
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
       }
     },
     {
       "id": 5,
-      "type": "text",
-      "title": "Estimated spend is disabled until trusted prices exist",
+      "type": "table",
+      "title": "Estimated local spend by model (USD what-if, planning prices)",
+      "description": "Token counts per model multiplied by local planning prices. Prices are local assumptions (price_source=local-planning-assumption), not official billing and not provider-confirmed for these labels. Official spend and AI Credits come from GitHub billing or usage exports. Use register-model-price.sh or seed-model-prices.sh to set your own source-of-truth prices.",
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 24,
         "x": 0,
         "y": 26
       },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (gen_ai_request_model) ((increase(gen_ai_client_token_usage_sum{service_name=\"copilot-chat\"}[$__range]) / 1e6) * on (gen_ai_request_model, gen_ai_token_type) group_left() max by (gen_ai_request_model, gen_ai_token_type) (copilot_model_price_usd_per_million_ratio))",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "job": true,
+              "instance": true
+            },
+            "indexByName": {
+              "gen_ai_request_model": 0,
+              "Value": 1
+            },
+            "renameByName": {
+              "gen_ai_request_model": "Requested model label",
+              "Value": "Estimated spend (USD, what-if)"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "field": "Estimated spend (USD, what-if)",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Estimated spend (USD, what-if)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      },
       "options": {
-        "mode": "markdown",
-        "content": "## No estimated local spend shown\n\nThis dashboard avoids fake precision. It does not estimate spend unless a trusted local price registry has been explicitly loaded. Use AIU and token trends for developer coaching, and use GitHub billing or usage exports for official FinOps reporting."
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "fields": [
+            "Estimated spend (USD, what-if)"
+          ]
+        }
       }
     },
     {
@@ -197,6 +330,174 @@
       "options": {
         "mode": "markdown",
         "content": "## Content capture\n\nContent capture is not shown in Grafana dashboards by default because it may include prompts, file snippets, tool arguments, and tool results.\n\nUse one of these paths:\n\n1. **Aspire:** open `http://localhost:18888`, go to Traces, select a `copilot-chat` trace, open a `chat` or `execute_tool` span, inspect attributes like `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.tool.call.arguments`, and `gen_ai.tool.call.result`.\n\n2. **Grafana Tempo Explore:** open Explore, choose Tempo, query `{service.name=\"copilot-chat\"}`, select a trace, inspect span attributes.\n\n3. **CLI safe inspection:** use `$HOME/frontier-cockpit/local-otel/show-trace-content.sh` to list content-capture keys without printing raw content. Use `--show-content` only in trusted local demos.\n\nFor customer environments, keep content capture off unless the customer explicitly approves it."
+      }
+    },
+    {
+      "id": 7,
+      "type": "text",
+      "title": "Official model multipliers, what this is and is not",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 46
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "# Official premium-request multipliers\n\nThe multiplier per model comes from the official GitHub Copilot pricing docs and is registered locally with `register-model-multiplier.sh` / `seed-model-multipliers.sh`. It is published as `copilot_model_premium_request_multiplier_ratio`, kept alive by the `com.frontier.copilot-otel-model-registry` LaunchAgent.\n\n- **Multiplier value is official.** Source: [GitHub model multipliers, legacy annual plans](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/model-multipliers-for-annual-plans). These are the legacy annual request-based multipliers. GitHub moved to usage-based billing on 2026-06-01, so they apply only to subscribers on a legacy annual plan and are subject to change.\n- **The request count is local telemetry, an estimate.** The table below multiplies the number of `chat` LLM calls per model by the multiplier. Agent mode makes several model calls per user prompt, so this **over-counts** versus GitHub's per-user-request billing. Use it for relative model-cost comparison, not invoice reconciliation.\n- **Official premium-request totals and AI Credits still come from GitHub billing exports or the Copilot usage metrics API.** This panel never replaces them.\n- Rows are limited to `model_key_kind=\"telemetry_label\"`, the models actually observed locally. The full official catalog is also registered under `model_key_kind=\"official_catalog\"` for reference."
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Estimated premium-request-equivalents by model (local estimate x official multiplier)",
+      "description": "LLM chat calls per model multiplied by the official premium-request multiplier. The multiplier is official, the call count is local telemetry, and agent mode over-counts versus per-user-request billing. Planning aid only, not official billing.",
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 54
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-local"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (gen_ai_request_model, model_display_name) (copilot_model_premium_request_multiplier_ratio{model_key_kind=\"telemetry_label\"})",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (gen_ai_request_model) (increase(gen_ai_client_operation_duration_count{service_name=\"copilot-chat\"}[$__range]))",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "sum by (gen_ai_request_model) (increase(gen_ai_client_operation_duration_count{service_name=\"copilot-chat\"}[$__range])) * on (gen_ai_request_model) group_left() max by (gen_ai_request_model) (copilot_model_premium_request_multiplier_ratio{model_key_kind=\"telemetry_label\"})",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-local"
+          }
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "job": true,
+              "instance": true,
+              "model_key_kind": true
+            },
+            "indexByName": {
+              "gen_ai_request_model": 0,
+              "model_display_name": 1,
+              "Value #A": 2,
+              "Value #B": 3,
+              "Value #C": 4
+            },
+            "renameByName": {
+              "gen_ai_request_model": "Requested model label",
+              "model_display_name": "Model (official name)",
+              "Value #A": "Official multiplier",
+              "Value #B": "LLM chat calls (range, estimate)",
+              "Value #C": "Estimated premium-request-equiv."
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "field": "Estimated premium-request-equiv.",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Official multiplier"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "LLM chat calls (range, estimate)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Estimated premium-request-equiv."
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
       }
     }
   ],
@@ -219,6 +520,6 @@
   "timezone": "browser",
   "title": "GitHub Copilot Sessions and Model Labels (Local)",
   "uid": "copilot-sessions-models-local",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }

@@ -34,15 +34,15 @@ This guide lists the local links used by **Frontier Developer Cockpit** and expl
 
 | Link | What It Is | Use It For |
 | --- | --- | --- |
-| [Frontier Developer Cockpit Starter](http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-starter-local) | Local Grafana starter dashboard | Start here for local GitHub Copilot telemetry and links to deeper dashboards. |
+| [Frontier Developer Cockpit Home](http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-home-local) | Local Grafana home dashboard | Start here for local GitHub Copilot telemetry and links to deeper dashboards. |
 | [Aspire Dashboard](http://localhost:18888) | Live local GenAI trace viewer | Inspect live traces, spans, tool calls, logs, metrics, and GenAI visualization. |
 | [Grafana Home](http://localhost:3000) | Local dashboard portal | Browse all local dashboards under the GitHub Copilot folder. |
 
 ## 2. Primary Developer Views
 
-### 2.1 Frontier Developer Cockpit Starter
+### 2.1 Frontier Developer Cockpit Home
 
-[http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-starter-local](http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-starter-local)
+[http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-home-local](http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-home-local)
 
 This is the local entry point for Frontier Developer Cockpit. It is the friendly landing page for developers. Use it to orient yourself before opening deeper dashboards.
 
@@ -221,7 +221,7 @@ This is not model context memory.
    ~/.copilot-otel/materialize-copilot-sessions.sh
    ```
 
-7. Open the Frontier Developer Cockpit Starter dashboard.
+7. Open the Frontier Developer Cockpit Home dashboard.
 8. Use Context and Cost, Real Workspace Usage, and Developer Coach to improve the next prompt.
 9. Run the daily rollup when needed:
 

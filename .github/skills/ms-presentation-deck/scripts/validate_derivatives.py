@@ -127,10 +127,13 @@ def deck_base(html_path: Path) -> str:
 
 
 def require_in_folder(path: Path, html_path: Path, folder_name: str) -> None:
-    wanted = ("html", "decks", folder_name, deck_base(html_path))
+    wanted = ("decks", folder_name, deck_base(html_path))
+    legacy_wanted = ("html", "decks", folder_name, deck_base(html_path))
     parts = path.resolve().parts
-    if not any(parts[i : i + 4] == wanted for i in range(len(parts) - 3)):
-        fail(f"{path.name} must be stored under html/decks/{folder_name}/{deck_base(html_path)}/")
+    has_current = any(parts[i : i + 3] == wanted for i in range(len(parts) - 2))
+    has_legacy = any(parts[i : i + 4] == legacy_wanted for i in range(len(parts) - 3))
+    if not has_current and not has_legacy:
+        fail(f"{path.name} must be stored under decks/{folder_name}/{deck_base(html_path)}/")
 
 
 def validate_pdf(path: Path, html_path: Path, total: int) -> None:

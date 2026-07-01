@@ -1,6 +1,6 @@
 # Local Tempo config (single binary) for trace history. Pinned to Tempo 2.6.x.
 # Receives OTLP from the local Collector and stores blocks on local disk.
-# Block retention is 14 days (336h), matching the agreed local retention window.
+# Block retention is 30 days (720h), matching the agreed local retention window.
 
 server:
   http_listen_port: 3200
@@ -19,7 +19,7 @@ ingester:
 
 compactor:
   compaction:
-    block_retention: 336h
+    block_retention: 720h
 
 storage:
   trace:

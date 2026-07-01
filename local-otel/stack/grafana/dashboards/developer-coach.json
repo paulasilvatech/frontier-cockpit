@@ -55,7 +55,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "copilot_workspace_registry_ratio",
+          "expr": "max_over_time(copilot_workspace_registry_ratio[$__range])",
           "format": "table",
           "instant": true,
           "datasource": {
@@ -129,7 +129,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}) or vector(0)",
+          "expr": "sum(max_over_time(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}[$__range])) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus-local"
@@ -190,7 +190,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}) or vector(0)",
+          "expr": "sum(max_over_time(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}[$__range])) or vector(0)",
           "legendFormat": "input",
           "datasource": {
             "type": "prometheus",
@@ -203,7 +203,7 @@
             "type": "prometheus",
             "uid": "prometheus-local"
           },
-          "expr": "sum(copilot_real_session_output_tokens_ratio{usage_scope=\"workspace_real\"}) or vector(0)",
+          "expr": "sum(max_over_time(copilot_real_session_output_tokens_ratio{usage_scope=\"workspace_real\"}[$__range])) or vector(0)",
           "legendFormat": "output"
         }
       ],
@@ -241,7 +241,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (request_model) (copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"})",
+          "expr": "sum by (request_model) (max_over_time(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}[$__range]))",
           "legendFormat": "{{request_model}}",
           "datasource": {
             "type": "prometheus",
@@ -286,7 +286,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(copilot_real_session_nano_aiu_ratio{usage_scope=\"workspace_real\"}) / 1e9 or vector(0)",
+          "expr": "sum(max_over_time(copilot_real_session_nano_aiu_ratio{usage_scope=\"workspace_real\"}[$__range])) / 1e9 or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus-local"

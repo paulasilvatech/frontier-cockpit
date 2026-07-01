@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.frontier.copilot-otel-autostart</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$HOME/frontier-cockpit/local-otel/auto-start.sh</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>$HOME/frontier-cockpit/local-otel/launchagent-autostart.log</string>
+  <key>StandardErrorPath</key>
+  <string>$HOME/frontier-cockpit/local-otel/launchagent-autostart.err</string>
+</dict>
+</plist>

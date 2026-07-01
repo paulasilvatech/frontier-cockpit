@@ -358,7 +358,7 @@ Azure dashboards should:
 
 ### 10.2 Documentation Placement
 
-Repository documents should live under `md/otel_aspire/`. User-level implementation files remain under `~/.copilot-otel/` because they configure the local machine and are not workspace-scoped.
+Repository strategy, guide, runbook, and architecture index documents live under `docs/`. Hands-on lab material lives under `workshop/`, editable diagrams and SVG exports live under `diagrams/`, deck deliverables live under `decks/`, and the local runtime source lives under `local-otel/`. The user-level compatibility path remains `~/.copilot-otel/` because it configures the local machine and can be reused across workspaces.
 
 ### 10.3 Documentation Standards
 
@@ -422,9 +422,9 @@ Azure Monitor and Application Insights can reject or truncate attributes that ex
 
 ### 13.2 Phase 2, Recommended
 
-- GitHub Copilot usage metrics API ingestion.
-- GitHub billing and AI Credits export ingestion.
-- GitHub org, repo, team, and branch reference tables.
+- GitHub Copilot usage metrics API ingestion for organizations where the API is available.
+- GitHub billing and AI Credits export ingestion from official sources.
+- GitHub organization, repository, team, and branch reference tables.
 - Azure Managed Grafana enterprise dashboard suite.
 - Frontier Developer Cockpit Home dashboard with card-based UX.
 - Python materializer using DuckDB for local analytical state.

@@ -50,7 +50,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(copilot_otel_coverage_status_ratio{signal_type=~\".*metric.*\", status=\"observed\"}) or vector(0)",
+          "expr": "sum(max_over_time(copilot_otel_coverage_status_ratio{signal_type=~\".*metric.*\", status=\"observed\"}[$__range])) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus-local"
@@ -90,7 +90,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(copilot_otel_coverage_status_ratio{signal_type=~\".*attribute.*\", status=\"observed\"}) or vector(0)",
+          "expr": "sum(max_over_time(copilot_otel_coverage_status_ratio{signal_type=~\".*attribute.*\", status=\"observed\"}[$__range])) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus-local"
@@ -131,7 +131,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(copilot_otel_coverage_status_ratio{status!=\"observed\"}) or vector(0)",
+          "expr": "count(max_over_time(copilot_otel_coverage_status_ratio{status!=\"observed\"}[$__range])) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus-local"
@@ -171,7 +171,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "copilot_otel_coverage_status_ratio",
+          "expr": "max_over_time(copilot_otel_coverage_status_ratio[$__range])",
           "format": "table",
           "instant": true,
           "datasource": {

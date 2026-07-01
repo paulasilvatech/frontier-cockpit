@@ -50,7 +50,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}) or vector(0)",
+          "expr": "count(max_over_time(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}[$__range])) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus-local"
@@ -90,7 +90,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}) or vector(0)",
+          "expr": "sum(max_over_time(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}[$__range])) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus-local"
@@ -130,7 +130,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(copilot_real_session_output_tokens_ratio{usage_scope=\"workspace_real\"}) or vector(0)",
+          "expr": "sum(max_over_time(copilot_real_session_output_tokens_ratio{usage_scope=\"workspace_real\"}[$__range])) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus-local"
@@ -170,7 +170,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(copilot_real_session_cache_read_tokens_ratio{usage_scope=\"workspace_real\"}) or vector(0)",
+          "expr": "sum(max_over_time(copilot_real_session_cache_read_tokens_ratio{usage_scope=\"workspace_real\"}[$__range])) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus-local"
@@ -210,7 +210,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(copilot_real_session_content_capture_chars_ratio{usage_scope=\"workspace_real\"}) or vector(0)",
+          "expr": "sum(max_over_time(copilot_real_session_content_capture_chars_ratio{usage_scope=\"workspace_real\"}[$__range])) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus-local"
@@ -250,7 +250,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count by (mode_bucket) (copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"})",
+          "expr": "count by (mode_bucket) (max_over_time(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}[$__range]))",
           "legendFormat": "{{mode_bucket}}",
           "instant": true,
           "datasource": {
@@ -291,7 +291,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (request_model) (copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"})",
+          "expr": "sum by (request_model) (max_over_time(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}[$__range]))",
           "legendFormat": "input {{request_model}}",
           "instant": true,
           "datasource": {
@@ -301,7 +301,7 @@
         },
         {
           "refId": "B",
-          "expr": "sum by (request_model) (copilot_real_session_output_tokens_ratio{usage_scope=\"workspace_real\"})",
+          "expr": "sum by (request_model) (max_over_time(copilot_real_session_output_tokens_ratio{usage_scope=\"workspace_real\"}[$__range]))",
           "legendFormat": "output {{request_model}}",
           "instant": true,
           "datasource": {
@@ -342,7 +342,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (trace_id) (copilot_real_session_tool_calls_ratio{usage_scope=\"workspace_real\"})",
+          "expr": "sum by (trace_id) (max_over_time(copilot_real_session_tool_calls_ratio{usage_scope=\"workspace_real\"}[$__range]))",
           "legendFormat": "tools {{trace_id}}",
           "instant": true,
           "datasource": {
@@ -352,7 +352,7 @@
         },
         {
           "refId": "B",
-          "expr": "sum by (trace_id) (copilot_real_session_error_count_ratio{usage_scope=\"workspace_real\"})",
+          "expr": "sum by (trace_id) (max_over_time(copilot_real_session_error_count_ratio{usage_scope=\"workspace_real\"}[$__range]))",
           "legendFormat": "errors {{trace_id}}",
           "instant": true,
           "datasource": {
@@ -393,7 +393,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}",
+          "expr": "max_over_time(copilot_real_session_input_tokens_ratio{usage_scope=\"workspace_real\"}[$__range])",
           "format": "table",
           "instant": true,
           "datasource": {

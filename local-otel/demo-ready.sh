@@ -26,8 +26,10 @@ current_repo="$(git config --get remote.origin.url 2>/dev/null || print unknown)
 "$HOME/frontier-cockpit/local-otel/check-otel-local.sh"
 "$HOME/frontier-cockpit/local-otel/register-workspace.sh"
 
-COPILOT_MATERIALIZE_FORCE_REPLAY=true COPILOT_MATERIALIZE_ACTIVE_WORKSPACE=true "$HOME/frontier-cockpit/local-otel/materialize-copilot-sessions.sh"
+COPILOT_MATERIALIZE_FORCE_REPLAY=true COPILOT_MATERIALIZE_CONTENT=true COPILOT_MATERIALIZE_TRACE_LIMIT=1000 COPILOT_MATERIALIZE_ACTIVE_WORKSPACE=true "$HOME/frontier-cockpit/local-otel/materialize-copilot-sessions.sh"
 "$HOME/frontier-cockpit/local-otel/sample-vscode-memory.sh" >/dev/null 2>&1 || true
+"$HOME/frontier-cockpit/local-otel/audit-coverage.sh" >/dev/null 2>&1 || true
+"$HOME/frontier-cockpit/local-otel/daily-rollup.sh" >/dev/null 2>&1 || true
 
 CURRENT_REPO="$current_repo" python3 <<'PY'
 import json
@@ -59,6 +61,8 @@ checks.append(("Grafana dashboard data", scalar("count(copilot_real_session_inpu
 checks.append(("Workspace registry", scalar("count(copilot_workspace_registry_ratio{workspace_kind=\"git\"})") > 0))
 checks.append(("Token telemetry", scalar("count(gen_ai_client_token_usage_sum)") > 0))
 checks.append(("VS Code memory telemetry", scalar("count(vscode_process_memory_rss_bytes)") > 0))
+checks.append(("OTel coverage metadata", scalar("count(copilot_otel_coverage_status_ratio)") > 0))
+checks.append(("24h workspace rollup", scalar("count(copilot_daily_workspace_sessions_ratio)") > 0))
 current_repo_expr = 'count(copilot_real_session_input_tokens_ratio{usage_scope="workspace_real", repo="' + CURRENT_REPO.replace('\\', '\\\\').replace('"', '\\"') + '"})'
 checks.append(("Workspace-attributed sessions for current repo", scalar(current_repo_expr) > 0))
 

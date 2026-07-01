@@ -47,6 +47,38 @@ Expected outcome:
 - Tempo, Loki, Prometheus, Grafana, and PostgreSQL running.
 - VS Code OTel user settings enabled.
 - Launchd user environment configured.
+- Versioned LaunchAgent templates present and installed when scheduled automation is expected.
+
+Install user-level scheduled automation from repository templates:
+
+```bash
+~/.copilot-otel/install-launchagents.sh
+```
+
+Remove scheduled automation:
+
+```bash
+~/.copilot-otel/uninstall-launchagents.sh
+```
+
+Delete copied plist files too:
+
+```bash
+~/.copilot-otel/uninstall-launchagents.sh --delete
+```
+
+The scheduled jobs use these cadences:
+
+| Job | Cadence | Purpose |
+| --- | --- | --- |
+| `com.frontier.copilot-otel-coverage` | Hourly and at load | Refresh OTel coverage metadata for the coverage dashboard. |
+| `com.frontier.copilot-otel-materializer` | Every five minutes | Re-materialize recent real GitHub Copilot traces for Grafana. |
+| `com.frontier.copilot-otel-vscode-memory` | Every minute | Sample VS Code process memory. |
+| `com.frontier.copilot-otel-daily-rollup` | Hourly | Refresh the rolling 24-hour workspace rollup. |
+| `com.frontier.copilot-otel-github-enterprise` | Hourly | Refresh GitHub Enterprise audit and metrics availability signals. |
+| `com.frontier.copilot-otel-github-orgs` | Hourly | Refresh organization GitHub Copilot billing/settings and metrics availability. |
+
+Hourly jobs keep dashboards populated with current support data, but they do not synthesize events that have not happened. Rare signals remain `not_observed_yet` until GitHub Copilot emits them or the corresponding GitHub API becomes available.
 
 ### 1.2 Real Session Materialization
 
@@ -71,6 +103,8 @@ Expected outcome:
 - `copilot_daily_workspace_*` metrics appear in Prometheus.
 - Rollup logs appear in Loki.
 - When hybrid mode is enabled, rollups appear in Azure Log Analytics.
+
+The LaunchAgent refreshes this rolling 24-hour summary every hour. The script name remains `daily-rollup.sh` because the aggregation window is 24 hours.
 
 ## 2. Local Operations
 
@@ -114,6 +148,17 @@ az account set --subscription "your-subscription-name"
 ~/.copilot-otel/azure/validate.sh
 ```
 
+For non-dev environments, set the deployment parameters before validation:
+
+```bash
+export AZURE_LOCATION=eastus
+export AZURE_WORKLOAD=agentobs
+export AZURE_ENVIRONMENT_NAME=dev
+export AZURE_REGION_ABBR=eus
+export AZURE_INSTANCE=001
+~/.copilot-otel/azure/validate.sh
+```
+
 ### 3.3 Deploy
 
 ```bash
@@ -134,6 +179,12 @@ az containerapp show \
   -n ca-otelcol-dev-eus-001 \
   --query '{runningStatus:properties.runningStatus,provisioningState:properties.provisioningState,fqdn:properties.configuration.ingress.fqdn}' \
   -o json
+```
+
+Run the consolidated read-only runtime gate:
+
+```bash
+~/.copilot-otel/azure/check-azure-runtime.sh
 ```
 
 ## 4. Dashboard Operations

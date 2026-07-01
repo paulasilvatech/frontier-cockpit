@@ -38,6 +38,7 @@ Use this checklist to confirm each participant leaves the workshop with a workin
 - [ ] GitHub Copilot Chat works.
 - [ ] Local stack starts with `~/.copilot-otel/start-full-stack.sh`.
 - [ ] `~/.copilot-otel/check-otel-local.sh` reports ready.
+- [ ] Hourly LaunchAgents are installed with `~/.copilot-otel/install-launchagents.sh` when scheduled dashboard refresh is expected.
 - [ ] Aspire opens at `http://localhost:18888`.
 - [ ] Grafana opens at `http://localhost:3000`.
 
@@ -53,11 +54,17 @@ Use this checklist to confirm each participant leaves the workshop with a workin
 ## 3. Dashboard Understanding
 
 - [ ] Participant can explain Aspire vs Grafana.
+- [ ] Participant opened Frontier Developer Cockpit Home at `http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-home-local`.
+- [ ] Participant opened GitHub Copilot Real Workspace Usage at `http://localhost:3000/d/copilot-real-workspace-usage-local/github-copilot-real-workspace-usage-local`.
+- [ ] Participant opened GitHub Copilot Context and Cost at `http://localhost:3000/d/copilot-context-cost-local/github-copilot-context-and-cost-local`.
+- [ ] Participant opened GitHub Copilot Data Quality at `http://localhost:3000/d/copilot-data-quality-local/github-copilot-data-quality-local`.
+- [ ] Participant opened GitHub Copilot Developer Coach at `http://localhost:3000/d/copilot-developer-coach-local/github-copilot-developer-coach-local`.
 - [ ] Participant can explain input tokens and output tokens.
 - [ ] Participant can explain hot/warm/cold context.
 - [ ] Participant can explain AIU as an operational signal.
 - [ ] Participant can explain why model names are telemetry labels.
 - [ ] Participant can explain `workspace_real` vs `non_workspace_real`.
+- [ ] Participant can explain that hourly jobs keep support metrics current, but cannot synthesize rare events that have not happened.
 - [ ] Participant can identify one prompt improvement from telemetry.
 
 ## 4. Azure Understanding

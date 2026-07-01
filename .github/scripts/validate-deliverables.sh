@@ -25,6 +25,7 @@ DECK_DERIV="$SK/ms-presentation-deck/scripts/validate_derivatives.py"
 DECK_PPTX="$SK/ms-presentation-deck/scripts/build_native_pptx.py"
 HTML="$SK/ms-identity/scripts/validate_html.py"
 REPORT="$SK/ms-research-report/scripts/validate_report.py"
+DASHBOARDS="$ROOT/.github/scripts/validate-dashboards.sh"
 fail=0
 
 run() {  # run <label> <command...>
@@ -41,11 +42,17 @@ run() {  # run <label> <command...>
 echo "==> Validator scripts are runnable"
 for s in "$ARCH" "$DRAWIO" "$DECK" "$DECK_DERIV" "$DECK_PPTX" "$HTML" "$REPORT"; do
   if [ -f "$s" ]; then
-    run "compile $(basename "$s")" python3 -c "import py_compile,sys; py_compile.compile('$s', doraise=True)"
+    run "compile $(basename "$s")" python3 -c "import os,py_compile,tempfile; py_compile.compile(r'$s', cfile=os.path.join(tempfile.gettempdir(), '$(basename "$s").pyc'), doraise=True)"
   else
     echo "  FAIL  missing validator: $s"; fail=1
   fi
 done
+
+if [ -f "$DASHBOARDS" ]; then
+  run "dashboard validator" bash -n "$DASHBOARDS"
+else
+  echo "  FAIL  missing validator: $DASHBOARDS"; fail=1
+fi
 
 dispatch() {  # dispatch <file>
   local f="$1" base; base="$(basename "$f")"
@@ -82,6 +89,7 @@ else
   MPD="$SK/ms-presentation-deck/assets"
   run "deck example_deck_multi.html" python3 "$DECK" "$MPD/example_deck_multi.html"
   run "deck example_deck_public.html" python3 "$DECK" "$MPD/example_deck_public.html"
+  run "grafana dashboards" bash "$DASHBOARDS"
 fi
 
 rm -f /tmp/vd_out

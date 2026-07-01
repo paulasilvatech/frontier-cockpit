@@ -1,50 +1,48 @@
 ---
-description: "How every generated or saved document must be placed, versioned, archived, and validated in this repository: one folder per file type, latest version in the folder root, old and duplicate versions in that folder's archive/."
-applyTo: "html/**,pdf/**,xlsx/**,pptx/**,docx/**,md/**,README.md"
+description: "How generated or saved Frontier Cockpit documents, decks, diagrams, and workshop assets must be placed, versioned, archived, and validated."
+applyTo: "docs/**,workshop/**,decks/**,diagrams/**,README.md"
 ---
 
 # Document Organization
 
-These rules apply whenever GitHub Copilot generates, saves, updates, or reorganizes a document in this repository. The repository is a document store organized by file type. The full document map and "how it works" live in [../../README.md](../../README.md).
+These rules apply whenever GitHub Copilot generates, saves, updates, or reorganizes a document or deliverable in this repository. The root map lives in [../../README.md](../../README.md).
 
-## Placement (always)
+## Placement
 
-- **One folder per file type.** Save each file under the folder matching its extension:
-  - `.html` to `html/`
-  - `.pdf` / `.PDF` to `pdf/`
-  - `.xlsx` to `xlsx/`
-  - `.pptx` / `.PPTX` to `pptx/`
-  - `.docx` to `docx/`
-  - `.md` to `md/` (the root `README.md` is the only Markdown file that stays at the root)
-- **Deck derivative exception.** Files derived directly from a deck HTML under `html/decks/` stay with the deck family:
-  - deck `.pdf` files to `html/decks/pdf/<DeckBase>/`
-  - deck `.pptx` files to `html/decks/pptx/<DeckBase>/`
-  - deck preview images to `html/decks/previews/`
-  - deck-only screenshots and simulation images to `html/decks/assets/`
-- **Never leave a new document loose at the repository root.** The root holds only `README.md`, the type folders, `.github/`, and `agentic-roi-calculator/`.
-- The `agentic-roi-calculator/` app is self-contained; do not move its files into the type folders.
+- Root `README.md` is the package index and stays at the repository root.
+- Markdown strategy, guide, runbook, and architecture index documents live under `docs/`.
+- Hands-on lab Markdown and participant material live under `workshop/`.
+- Editable architecture diagram sources and SVG exports live under `diagrams/`.
+- Deck HTML source files live under `decks/`.
+- Deck PDF derivatives live under `decks/pdf/<DeckBase>/`.
+- Deck native editable PPTX derivatives live under `decks/pptx/<DeckBase>/`.
+- Deck preview images live under `decks/previews/`.
+- Deck-only support images and simulations live under `decks/assets/`.
+- Runtime files under `local-otel/` are operational state, not authored deliverables. Keep logs, state, secrets, DuckDB files, and generated exports out of git.
 
-## Versioning and archive (always)
+## Versioning And Archive
 
-- **Keep only the latest version of a document in its type folder root.**
-- When a newer version arrives, move the previous version into that folder's `archive/` (create `archive/` if it does not exist).
-- Treat duplicate downloads as old versions and move them to `archive/` too: `name (1).pdf`, `name_4.html`, `name copy.pptx`, and similar suffixes.
-- "Latest" is decided by the version and date in the filename (`Name_vMAJOR_MINOR_PATCH_YYYY-MM-DD_lang.ext`). If two files are the same logical document, the higher version or later date wins and the other goes to `archive/`.
-- Two files that are genuinely different documents (for example `..._Architecture_1.html` and `..._Architecture_2.html` being distinct diagrams) both stay in the folder root. When unsure whether something is a new version or a separate document, ask before archiving.
-
-## Naming
-
-- For authored deliverables, follow `Name_vMAJOR_MINOR_PATCH_YYYY-MM-DD_lang.ext` (for example `BTG_BusinessCase_UBB_v2_0_0_2026-06-05_pt-BR.html`).
+- Use `Name_vMAJOR_MINOR_PATCH_YYYY-MM-DD_lang.ext` for authored versioned deliverables when the existing family uses that pattern.
+- Keep only the latest version of a logical document in the active folder.
+- Move superseded versions or duplicate downloads into that folder's `archive/` directory when an archive exists or when you create a new version.
+- For deck derivatives, keep PDFs and PPTX files grouped by deck base under `decks/pdf/<DeckBase>/` and `decks/pptx/<DeckBase>/`.
+- Keep files that are genuinely different documents in the active folder. Ask before archiving if the difference is unclear.
 - Keep the original names of external source files (vendor PDFs, arXiv papers).
 
-## Validate in place (before considering done)
+## Validate In Place
 
-1. The new file is in the correct type folder, not at the root.
-2. Any previous version of the same document is in that folder's `archive/`, and only the latest version remains in the folder root.
-3. For HTML deliverables, the file opens and renders with no console errors.
-4. If a new logical document was added (not just a new version), the document map in [../../README.md](../../README.md) is updated to list it.
+Before considering a generated or changed artifact done:
+
+1. Confirm the file is in the correct repository folder.
+2. Confirm superseded versions are archived when applicable.
+3. For deck HTML, run the `ms-presentation-deck` audit gate.
+4. For deck PDF or PPTX derivatives, run `validate_derivatives.py` as documented in [../../decks/README.md](../../decks/README.md).
+5. For architecture diagrams, validate the draw.io source and confirm exported SVGs render.
+6. If a new logical document was added, update [../../README.md](../../README.md) or the relevant folder README.
 
 ## Copy rules
 
-- Documentation is written in English. Write "GitHub Copilot", never "Copilot" alone. No em dashes.
-- Never fabricate metrics. BTG financial, billing, usage, and ROI numbers are audited; pull them from the audited workbooks under `xlsx/` and cite the source.
+- Documentation is written in English unless an artifact explicitly requires another language.
+- Write "GitHub Copilot", never bare product shorthand.
+- Do not use em dashes.
+- Never fabricate metrics. Cite GitHub Docs, Microsoft Learn, OpenTelemetry documentation, Grafana or Aspire documentation, named analyst sources, or clearly state assumptions.
