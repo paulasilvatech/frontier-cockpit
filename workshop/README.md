@@ -30,6 +30,7 @@ The complete local cockpit requires Aspire, Prometheus, Grafana, Tempo, Loki, an
 | [Lab 03, Optimization Loop](Lab_03_ContextCostAndPromptOptimization_v1_0_0_2026-06-18_en.md) | Use dashboards to improve prompts, context, model choices, and cost awareness. |
 | [Lab 04, Azure Sync](Lab_04_AzureEnterpriseSync_v1_0_0_2026-06-18_en.md) | Connect the Frontier Developer Cockpit to the Frontier FinOps Cockpit. |
 | [Lab 05, GitHub Enterprise Signals](Lab_05_GitHubEnterpriseSignals_v1_0_0_2026-06-18_en.md) | Add GitHub Enterprise audit log, org settings, and Copilot metrics availability. |
+| [Lab 06, Frontier Developer Cockpit Mini App](Lab_06_FrontierDeveloperCockpitMiniApp_v1_0_0_2026-06-30_en.md) | Run the local mini app from the template, set your identity, and read token efficiency and AI credits. |
 | [Dashboard UX Guide](DashboardUXGuide_v1_0_0_2026-06-18_en.md) | Improve local and Azure Grafana dashboards for developer usability. |
 | [Participant Checklist](ParticipantChecklist_v1_0_0_2026-06-18_en.md) | Confirm each participant leaves with a working setup. |
 
