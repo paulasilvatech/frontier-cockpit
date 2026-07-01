@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Frontier Developer Cockpit</title>
+  <desc id="desc">Local AI credits, token efficiency, and GitHub Copilot telemetry for workshop participants.</desc>
+  <rect width="1200" height="630" fill="#f7f7f5" />
+  <rect x="64" y="64" width="1072" height="502" rx="18" fill="#ffffff" stroke="#e5e5e0" />
+  <g transform="translate(104 104)">
+    <rect x="0" y="0" width="52" height="52" fill="#F25022" />
+    <rect x="60" y="0" width="52" height="52" fill="#7FBA00" />
+    <rect x="0" y="60" width="52" height="52" fill="#00A4EF" />
+    <rect x="60" y="60" width="52" height="52" fill="#FFB900" />
+  </g>
+  <text x="104" y="278" fill="#0076ac" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" letter-spacing="2">FRONTIER COCKPIT</text>
+  <text x="104" y="352" fill="#1a1a1a" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="66" font-weight="700">Frontier Developer Cockpit</text>
+  <text x="104" y="420" fill="#3a3a3a" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="34" font-weight="500">Local AI credits, token efficiency, and</text>
+  <text x="104" y="464" fill="#3a3a3a" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="34" font-weight="500">GitHub Copilot telemetry for workshops.</text>
+  <g transform="translate(104 510)">
+    <rect width="244" height="42" rx="6" fill="#e5f6fd" stroke="#00A4EF" />
+    <text x="18" y="27" fill="#0076ac" font-family="JetBrains Mono, Menlo, monospace" font-size="18" font-weight="600">EN · LOCAL-FIRST</text>
+  </g>
+  <circle cx="1024" cy="158" r="72" fill="#e5f6fd" />
+  <circle cx="1080" cy="218" r="34" fill="#fff7e0" />
+  <rect x="846" y="394" width="220" height="18" rx="4" fill="#00A4EF" />
+  <rect x="846" y="430" width="148" height="18" rx="4" fill="#7FBA00" />
+  <rect x="846" y="466" width="186" height="18" rx="4" fill="#FFB900" />
+  <rect x="846" y="502" width="116" height="18" rx="4" fill="#F25022" />
+</svg>
