@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type {
     Alert,
+    AlertSeverity,
     HistoryPoint,
     MetricStatus,
     SeriesMetric,
@@ -72,12 +73,12 @@ export function Panel({
     status,
     aside,
     children
-}: {
+}: Readonly<{
     title: string;
     status?: MetricStatus | ServiceStatus;
     aside?: ReactNode;
     children: ReactNode;
-}) {
+}>) {
     return (
         <section className="panel">
             <div className="panel-header">
@@ -95,13 +96,13 @@ export function Kpi({
     sub,
     tone,
     available
-}: {
+}: Readonly<{
     label: string;
     value: string;
     sub: string;
     tone: string;
     available: boolean;
-}) {
+}>) {
     return (
         <article className={`kpi kpi-${tone}${available ? "" : " kpi-empty"}`}>
             <span className="kpi-label">{label}</span>
@@ -111,20 +112,25 @@ export function Kpi({
     );
 }
 
-export function CompositionBar({ segments }: { segments: { label: string; value: number; tone: string }[] }) {
+export function CompositionBar({
+    segments
+}: Readonly<{ segments: ReadonlyArray<Readonly<{ label: string; value: number; tone: string }>> }>) {
     const total = segments.reduce((acc, segment) => acc + segment.value, 0) || 1;
+    let offset = 0;
     return (
         <div className="composition">
-            <div className="composition-bar">
-                {segments.map((segment) => (
-                    <div
-                        key={segment.label}
-                        className={`seg seg-${segment.tone}`}
-                        style={{ width: `${(segment.value / total) * 100}%` }}
-                        title={`${segment.label}: ${formatNumber(segment.value, 0)} (${((segment.value / total) * 100).toFixed(1)}%)`}
-                    />
-                ))}
-            </div>
+            <svg className="composition-bar" viewBox="0 0 100 10" preserveAspectRatio="none" role="img" aria-label="Token composition">
+                {segments.map((segment) => {
+                    const width = (segment.value / total) * 100;
+                    const x = offset;
+                    offset += width;
+                    return (
+                        <rect key={segment.label} className={`seg seg-${segment.tone}`} x={x} y="0" width={width} height="10">
+                            <title>{`${segment.label}: ${formatNumber(segment.value, 0)} (${width.toFixed(1)}%)`}</title>
+                        </rect>
+                    );
+                })}
+            </svg>
             <ul className="composition-legend">
                 {segments.map((segment) => (
                     <li key={segment.label}>
@@ -142,7 +148,7 @@ export function CompositionBar({ segments }: { segments: { label: string; value:
 
 export type HistoryField = "aiCredits" | "inputTokens" | "cacheReadTokens" | "coldInputTokens" | "outputTokens";
 
-export function TrendChart({ points, field, tone }: { points: HistoryPoint[]; field: HistoryField; tone: string }) {
+export function TrendChart({ points, field, tone }: Readonly<{ points: HistoryPoint[]; field: HistoryField; tone: string }>) {
     const values = points.map((point) => point[field] ?? 0);
     const max = Math.max(...values, 1);
     const width = 100;
@@ -170,14 +176,34 @@ export function TrendChart({ points, field, tone }: { points: HistoryPoint[]; fi
     );
 }
 
-export function AlertsBanner({ alerts }: { alerts: Alert[] }) {
+interface AlertBannerLabels {
+    clearTitle: string;
+    clearBody: string;
+    activeTitle: string;
+    note: string;
+    severity: Record<AlertSeverity, string>;
+}
+
+const defaultAlertLabels: AlertBannerLabels = {
+    clearTitle: "No active alerts",
+    clearBody: "Token, cache, context, and AI credit usage are within the local guardrails for this range.",
+    activeTitle: "Active alerts",
+    note: "Thresholds are local planning guardrails, not official GitHub limits. Tune them in the Settings view.",
+    severity: {
+        info: "info",
+        warning: "warning",
+        critical: "critical"
+    }
+};
+
+export function AlertsBanner({ alerts, labels = defaultAlertLabels }: Readonly<{ alerts: Alert[]; labels?: AlertBannerLabels }>) {
     if (alerts.length === 0) {
         return (
             <section className="alerts alerts-clear">
                 <span className="alerts-icon">✓</span>
                 <div>
-                    <h2>No active alerts</h2>
-                    <p>Token, cache, context, and AI credit usage are within the local guardrails for this range.</p>
+                    <h2>{labels.clearTitle}</h2>
+                    <p>{labels.clearBody}</p>
                 </div>
             </section>
         );
@@ -185,13 +211,13 @@ export function AlertsBanner({ alerts }: { alerts: Alert[] }) {
     return (
         <section className="alerts">
             <div className="alerts-head">
-                <h2>Active alerts</h2>
+                <h2>{labels.activeTitle}</h2>
                 <span className="alerts-count">{alerts.length}</span>
             </div>
             <ul className="alerts-list">
                 {alerts.map((alert) => (
                     <li key={alert.id} className={`alert alert-${alert.severity}`}>
-                        <span className="alert-tag">{alert.severity}</span>
+                        <span className="alert-tag">{labels.severity[alert.severity]}</span>
                         <div>
                             <h3>{alert.title}</h3>
                             <p>{alert.detail}</p>
@@ -199,9 +225,7 @@ export function AlertsBanner({ alerts }: { alerts: Alert[] }) {
                     </li>
                 ))}
             </ul>
-            <p className="muted">
-                Thresholds are local planning guardrails, not official GitHub limits. Tune them in the Settings view.
-            </p>
+            <p className="muted">{labels.note}</p>
         </section>
     );
 }

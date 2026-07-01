@@ -21,6 +21,7 @@ This lab uses real telemetry to improve prompt shape, context discipline, model 
 - Understand AIU as an operational signal.
 - Detect prompt patterns that create waste.
 - Produce a better prompt and compare telemetry.
+- Track AI Credits consumption and use budget controls well.
 
 ## Step 1, Open Context Dashboard
 
@@ -99,6 +100,41 @@ Recommended routing:
 | Architecture/security/migration | More context, explicit discovery, stronger reasoning model |
 | Repeatable workflow | Skill, prompt file, or MCP-backed automation |
 
+## Step 6, Use AI Credits Well
+
+GitHub Copilot usage-based billing for organizations and enterprises is measured in GitHub AI Credits. The local cockpit helps you understand which prompt, context, cache, model, and token patterns consume more credits.
+
+### How AI Credits are consumed
+
+- AI Credits are based on the model used and the tokens consumed.
+- Token classes include input tokens, output tokens, and cached tokens.
+- Agentic features can consume more AI Credits because they may perform multiple model calls and process more context inside one task.
+- Code completions and next edit suggestions are not billed in AI Credits for paid plans.
+- Business and Enterprise AI Credits are pooled at the billing entity level, so heavy usage by one user can draw from the shared pool.
+
+### Read your budget in the mini app
+
+If you completed Lab 06, open the local mini app and read the Credits view:
+
+```text
+http://localhost:3300
+```
+
+The budget panel shows local AI Credits observed this cycle against the configured credit pool, and the model cost mix panel estimates which model labels are consuming the most AI Credits. The estimate is local operational telemetry and is not official billing.
+
+### Practices that reduce AI Credits consumption
+
+| Practice | Why it helps |
+| --- | --- |
+| Choose the right model | Use the lowest-cost model that can complete the task, and reserve more expensive models for work that needs stronger reasoning. |
+| Set budgets and spending limits | Use GitHub budget controls to monitor or stop additional AI Credits usage when limits are reached. |
+| Scope prompts tightly | Smaller prompts and fewer irrelevant files reduce input tokens and model work. |
+| Reuse warm context | Cache reuse reduces unnecessary processing compared with repeatedly sending cold context. |
+| Avoid retrying large prompts | Fix the root cause first, then retry with a smaller prompt to avoid repeating expensive token use. |
+| Monitor usage regularly | Check the mini app for local patterns and use GitHub billing exports, the usage dashboard, or the Copilot usage metrics API for official totals. |
+
+Official AI Credits totals, model prices, and budget behavior are defined by GitHub and can change. Confirm current values in the GitHub Copilot billing documentation.
+
 ## Completion Criteria
 
 - [ ] Participant can explain hot/warm/cold context.
@@ -106,9 +142,13 @@ Recommended routing:
 - [ ] Participant can identify at least one waste pattern.
 - [ ] Participant can rewrite a broad prompt into a scoped prompt.
 - [ ] Participant can explain why local AIU is not official billing.
+- [ ] Participant can explain how model choice, input tokens, output tokens, cached tokens, and context size affect AI Credits.
 
 ## References
 
 - [GitHub Copilot prompt engineering](https://docs.github.com/en/copilot/using-github-copilot/prompt-engineering-for-github-copilot)
+- [GitHub Copilot usage-based billing for organizations and enterprises](https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-organizations-and-enterprises)
+- [GitHub Copilot budget controls](https://docs.github.com/en/copilot/tutorials/budgets/getting-started-with-budget-controls)
 - [OpenTelemetry GenAI semantic conventions](https://github.com/open-telemetry/semantic-conventions-genai/tree/main/docs/gen-ai/)
 - [Developer Local Guide](../docs/FrontierCockpit_DeveloperLocalGuide_v1_0_0_2026-06-17_en.md)
+- [Lab 06, Frontier Developer Cockpit Mini App](Lab_06_FrontierDeveloperCockpitMiniApp_v1_0_0_2026-06-30_en.md)

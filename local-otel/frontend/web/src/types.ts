@@ -108,6 +108,58 @@ export interface EconomySummary {
     savingsOpportunities: SavingsOpportunity[];
 }
 
+export type BudgetAlertLevel = "ok" | "warning" | "critical" | "over";
+
+export interface BudgetInsight {
+    plan: string;
+    seats: number;
+    monthlyAllowanceCredits: number;
+    observedCredits: number | null;
+    utilizationPct: number | null;
+    remainingCredits: number | null;
+    daysElapsed: number;
+    daysInCycle: number;
+    daysLeft: number;
+    projectedMonthEndCredits: number | null;
+    projectedUtilizationPct: number | null;
+    dailyRateCredits: number | null;
+    status: MetricStatus;
+    alertLevel: BudgetAlertLevel;
+    message?: string;
+}
+
+export interface ModelMixEntry {
+    model: string;
+    calls: number;
+    inputTokens: number;
+    outputTokens: number;
+    cachedTokens: number;
+    totalTokens: number;
+    estimatedAiCredits: number | null;
+    share: number | null;
+}
+
+export interface ModelMix {
+    status: MetricStatus;
+    entries: ModelMixEntry[];
+    totalCalls: number;
+    totalEstimatedAiCredits: number | null;
+    message?: string;
+}
+
+export interface ExperienceMetrics {
+    avgTimeToFirstTokenSeconds: ScalarMetric;
+    avgResponseSeconds: ScalarMetric;
+    userTurns: ScalarMetric;
+}
+
+export interface OutcomeMetrics {
+    editAcceptances: ScalarMetric;
+    linesAccepted: ScalarMetric;
+    editSurvivalNoRevert: ScalarMetric;
+    contextCompactions: ScalarMetric;
+}
+
 export interface SummaryResponse {
     range: RangeOption;
     repo: string;
@@ -119,6 +171,10 @@ export interface SummaryResponse {
     thresholds: Record<string, number>;
     alerts: Alert[];
     economy: EconomySummary;
+    budget: BudgetInsight;
+    modelMix: ModelMix;
+    experience: ExperienceMetrics;
+    outcomes: OutcomeMetrics;
     metrics: {
         aiCredits: ScalarMetric;
         sessions: ScalarMetric;

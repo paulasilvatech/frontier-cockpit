@@ -51,7 +51,7 @@ The frontend must not query every backend directly from browser code. The local 
 
 | Source | Use In Frontend | Access Pattern |
 | --- | --- | --- |
-| Prometheus | Primary metrics source for AIU, tokens, USD what-if estimates, premium-request-equivalent estimates, and stack health. | Through the dashboard API proxy container, not direct browser calls. |
+| Prometheus | Primary metrics source for AIU, tokens, local AI Credits estimates, USD what-if estimates, and stack health. | Through the dashboard API proxy container, not direct browser calls. |
 | Grafana | Existing dashboards, Explore views, drill-down, and mature visualization surfaces. | Deep links first, optional metadata API only when needed. |
 | Aspire Dashboard | Live trace tree and GenAI visualizer. | Deep links first. API access only through the backend proxy when API key handling is required. |
 | Tempo | Trace search and trace detail. | Backend proxy or Grafana Explore links. |
@@ -92,10 +92,10 @@ VS Code Insiders and GitHub Copilot remain external telemetry producers running 
 | FR-004 | The frontend shall show real AIU consumed from `copilot_real_session_nano_aiu_ratio / 1e9`. |
 | FR-005 | The frontend shall label AIU as local operational telemetry, not official billing. |
 | FR-006 | The frontend shall show token volume by `gen_ai_request_model` and `gen_ai_token_type`. |
-| FR-007 | The frontend shall show premium-request-equivalent estimates by multiplying local LLM call counts by `copilot_model_premium_request_multiplier_ratio`. |
-| FR-008 | The frontend shall label premium-request-equivalents as a planning estimate because agent mode can make multiple LLM calls per user prompt. |
-| FR-009 | The frontend shall show USD what-if estimates by multiplying token counts by `copilot_model_price_usd_per_million_ratio`. |
-| FR-010 | The frontend shall label USD values as local planning assumptions unless official GitHub billing data is connected. |
+| FR-007 | The frontend shall show local AI Credits estimates from real AIU telemetry and configured plan-level credit pools. |
+| FR-008 | The frontend shall label local AI Credits as operational estimates, not official billing, unless official GitHub billing data is connected. |
+| FR-009 | The frontend shall show model cost mix using token counts and local model price assumptions when available. |
+| FR-010 | The frontend shall label USD values and model-cost estimates as local planning assumptions unless official GitHub billing data is connected. |
 | FR-011 | The frontend shall provide deep links to Grafana dashboards, Aspire Dashboard live traces, Prometheus, Tempo Explore, and Loki or Grafana Explore. |
 | FR-012 | The frontend shall show data quality status, including `workspace_real`, `non_workspace_real`, synthetic validation spans, and `not_observed_yet` signals when available. |
 | FR-013 | The frontend shall provide model label views and explain that telemetry labels are not necessarily official billing names. |
@@ -103,13 +103,13 @@ VS Code Insiders and GitHub Copilot remain external telemetry producers running 
 | FR-015 | The frontend shall support workspace or repository filtering when repository labels are present. |
 | FR-016 | The frontend shall not display raw prompts, responses, file contents, tool arguments, or tool results by default. |
 | FR-017 | The frontend shall provide a safe trace drill-down path that opens Aspire Dashboard or Grafana Tempo rather than embedding raw trace content by default. |
-| FR-018 | The registry sidecar shall refresh model multipliers and planning prices every 300 seconds inside Docker Desktop. |
-| FR-019 | The Docker Compose stack shall not require macOS LaunchAgents for model multiplier or price refresh. |
+| FR-018 | The registry sidecar shall refresh model planning prices every 300 seconds inside Docker Desktop. |
+| FR-019 | The Docker Compose stack shall not require macOS LaunchAgents for model price refresh. |
 | FR-020 | The Docker Compose stack shall preserve Prometheus, Tempo, Loki, PostgreSQL, and Grafana data in Docker volumes. |
 | FR-021 | The system shall keep VS Code Insiders and GitHub Copilot as external telemetry producers running on the developer machine. |
 | FR-022 | The system shall document which local processes remain outside Docker because they are telemetry producers, not backend runtime services. |
 | FR-023 | The frontend shall show official billing status as unavailable until GitHub billing exports or usage metrics APIs are connected. |
-| FR-024 | The frontend shall distinguish real AIU, premium-request-equivalent estimate, and USD what-if estimate in separate cards. |
+| FR-024 | The frontend shall distinguish real AIU or AI Credits telemetry, local model-cost estimates, and USD what-if estimates in separate cards. |
 | FR-025 | The frontend shall include a "Data Boundary" panel explaining what stays local and what can be forwarded to Azure. |
 
 ## 5. Non-Functional Requirements
@@ -145,17 +145,17 @@ VS Code Insiders and GitHub Copilot remain external telemetry producers running 
 | ADR-0002 | Prometheus is the primary frontend metric API, with Grafana and Aspire Dashboard as deep-link surfaces. |
 | ADR-0003 | Browser code must not query PostgreSQL, DuckDB files, Aspire Dashboard API keys, or raw Loki content directly. |
 | ADR-0004 | Local USD values are what-if planning estimates, while official AI Credits and spend require GitHub billing or usage exports. |
-| ADR-0005 | Registry refresh for model multipliers and planning prices runs as a Docker sidecar, not macOS LaunchAgents. |
+| ADR-0005 | Registry refresh for model planning prices runs as a Docker sidecar, not macOS LaunchAgents. |
 
 ## 7. Implementation Backlog
 
 1. Add `copilot-otel-registry` to [local-otel/stack/docker-compose.yml](../local-otel/stack/docker-compose.yml).
-2. Make `register-model-price.sh` and `register-model-multiplier.sh` container-safe by allowing `FRONTIER_SKIP_ENV_ZSH=true`.
+2. Make `register-model-price.sh` container-safe by allowing `FRONTIER_SKIP_ENV_ZSH=true`.
 3. Remove model and price registry LaunchAgents from the active runtime path.
 4. Create `local-otel/frontend` with React, TypeScript, Vite, NGINX, Dockerfile, and a Prometheus proxy.
 5. Add frontend API and frontend web services to Docker Compose.
 6. Add app health cards for Docker services.
-7. Add metrics cards for AIU, tokens, USD what-if, and premium-request-equivalents.
+7. Add metrics cards for AIU, tokens, AI Credits budget, model cost mix, and USD what-if estimates.
 8. Add drill-down links to Grafana, Aspire Dashboard, Prometheus, Tempo, and Loki.
 9. Update architecture diagrams to include frontend API and registry sidecars.
 10. Add product ADRs under `docs/adr/`.
@@ -166,8 +166,8 @@ VS Code Insiders and GitHub Copilot remain external telemetry producers running 
 | ID | Criterion |
 | --- | --- |
 | AC-001 | `docker compose ps` shows the frontend, API, registry sidecar, and observability services running. |
-| AC-002 | Stopping the model and price LaunchAgents does not remove multiplier or price metrics after five minutes. |
-| AC-003 | The frontend loads at a localhost URL and shows AIU, token, USD what-if, and premium-request-equivalent cards. |
+| AC-002 | Stopping the model price LaunchAgent does not remove price metrics after five minutes. |
+| AC-003 | The frontend loads at a localhost URL and shows AIU or AI Credits, token, model cost mix, and USD what-if cards. |
 | AC-004 | The frontend still loads when Tempo or Loki is temporarily unavailable, with visible degraded status. |
 | AC-005 | No raw prompt, response, file content, or tool result appears on the frontend by default. |
 | AC-006 | Documentation states that official AI Credits and spend require GitHub billing or usage exports. |
@@ -186,4 +186,4 @@ VS Code Insiders and GitHub Copilot remain external telemetry producers running 
 - [C4 model](https://c4model.com/)
 - [GitHub Copilot documentation](https://docs.github.com/en/copilot)
 - [GitHub Copilot usage metrics API](https://docs.github.com/en/copilot/rolling-out-github-copilot-at-scale/analyzing-usage-over-time-with-the-copilot-metrics-api)
-- [GitHub model multipliers reference](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/model-multipliers-for-annual-plans)
+- [GitHub Copilot usage-based billing for organizations and enterprises](https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-organizations-and-enterprises)

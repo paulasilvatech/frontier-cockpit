@@ -107,35 +107,21 @@ Remove the copied plist files too:
 $HOME/frontier-cockpit/local-otel/uninstall-launchagents.sh --delete
 ```
 
-The LaunchAgents cover user environment setup, stack autostart, OTel coverage audit every hour, session materialization every five minutes, VS Code process memory sampling every minute, 24-hour workspace rollup refresh every hour, GitHub Enterprise ingestion every hour, organization status ingestion every hour, model multiplier registry refresh every five minutes, model price registry refresh every five minutes, and audit stream renewal. They do not contain secrets. Runtime logs and state are ignored by git.
+The LaunchAgents cover user environment setup, stack autostart, OTel coverage audit every hour, session materialization every five minutes, VS Code process memory sampling every minute, 24-hour workspace rollup refresh every hour, GitHub Enterprise ingestion every hour, organization status ingestion every hour, model price registry refresh every five minutes, and audit stream renewal. They do not contain secrets. Runtime logs and state are ignored by git.
 
 The hourly jobs keep dashboard support data fresh. They cannot create events that have not happened, so rare GitHub Copilot signals can still appear as `not_observed_yet`, but the coverage and data-quality dashboards should refresh at least hourly while the local stack is running.
 
-## Model labels, tokens, AIU, and official multipliers
+## Model labels, tokens, AIU, and AI Credits
 
 Frontier Developer Cockpit separates three different cost signals so they are never confused:
 
 - **Tokens by model** are real telemetry. Inspect them in the Sessions and Model Labels dashboard. Model labels are telemetry labels, not official billing model names.
 - **AIU** is real. GitHub Copilot emits `copilot_chat.copilot_usage_nano_aiu` per session, materialized as `copilot_real_session_nano_aiu` and shown as real AIU in the Context and Cost dashboard. AIU equals `nano_aiu / 1e9`.
-- **Official premium-request multipliers** are registered locally as `copilot_model_premium_request_multiplier_ratio`. The multiplier value is official, sourced from the [GitHub model multipliers reference](https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/model-multipliers-for-annual-plans). These are the legacy annual request-based multipliers and are subject to change.
+- **AI Credits** are the current GitHub Copilot usage-based billing unit. Current GitHub documentation states that Copilot usage consumes input, output, and cached tokens, priced by model and converted into AI Credits, where 1 AI Credit equals US$0.01. Local AIU and token telemetry are operational estimates, not official billing.
 
-Register one official multiplier from the GitHub pricing docs:
+Legacy request-based billing scripts remain in the repository only for historical analysis. They are not used by the current mini app. The current cockpit uses AI Credits, token classes, model labels, cache behavior, and local model price assumptions where available.
 
-```bash
-$HOME/frontier-cockpit/local-otel/register-model-multiplier.sh gpt-5.5 57 "GPT-5.5"
-```
-
-Seed the full official table, both the locally observed model labels and the reference catalog:
-
-```bash
-$HOME/frontier-cockpit/local-otel/seed-model-multipliers.sh
-```
-
-The `com.frontier.copilot-otel-model-registry` LaunchAgent re-seeds these gauges every five minutes because the local Collector expires one-shot metrics after about five minutes. The Sessions and Model Labels dashboard then estimates premium-request-equivalents per model by multiplying local LLM `chat` call counts by the official multiplier.
-
-This is a local planning aid only. The local call count is telemetry and agent mode makes several model calls per user prompt, so the estimate over-counts versus GitHub per-user-request billing. Official premium-request totals and AI Credits still require GitHub billing exports or the Copilot usage metrics API. Optional local price registration with `register-model-price.sh` adds a what-if USD estimate and is also not official billing.
-
-### AI credits and USD in the dashboard
+### AI Credits and USD in the dashboard
 
 The Sessions and Model Labels dashboard now shows both signals directly:
 

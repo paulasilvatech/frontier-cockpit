@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
+  Alert,
+  AlertSeverity,
   CoachResponse,
   HistoryPoint,
   RangeOption,
   SessionRecord,
+  ServiceStatus,
   SessionsResponse,
   SummaryResponse
 } from "./types";
@@ -19,39 +22,50 @@ import {
   formatNumber,
   formatPercent,
   statusClass,
-  statusLabel,
   sumSeries,
   type HistoryField
 } from "./ui";
+import { LangProvider, defaultLang, languages, useT, type Lang, type TranslateFn } from "./i18n";
+import { NavIcon } from "./icons";
 
 const rangeOptions: RangeOption[] = ["1h", "6h", "24h", "7d"];
 
-type ViewId = "overview" | "sessions" | "workspaces" | "coach" | "history" | "health" | "settings";
+type ViewId = "overview" | "credits" | "sessions" | "workspaces" | "coach" | "history" | "health" | "settings";
 
 interface ViewDef {
   id: ViewId;
   label: string;
-  icon: string;
   blurb: string;
 }
 
-const views: ViewDef[] = [
-  { id: "overview", label: "Overview", icon: "◎", blurb: "AI credits, tokens, alerts" },
-  { id: "sessions", label: "Sessions", icon: "≣", blurb: "Per-session cost and models" },
-  { id: "workspaces", label: "Workspaces", icon: "▤", blurb: "Compare all projects" },
-  { id: "coach", label: "Coach", icon: "✦", blurb: "Recommendations to save credits" },
-  { id: "history", label: "History", icon: "📈", blurb: "Usage over time" },
-  { id: "health", label: "Health", icon: "♥", blurb: "Stack and data quality" },
-  { id: "settings", label: "Settings", icon: "⚙", blurb: "Thresholds and boundary" }
+const viewOrder: ViewId[] = [
+  "overview",
+  "credits",
+  "sessions",
+  "workspaces",
+  "coach",
+  "history",
+  "health",
+  "settings"
 ];
 
-const historyFields: { field: HistoryField; label: string; tone: string }[] = [
-  { field: "aiCredits", label: "AI credits", tone: "credits" },
-  { field: "inputTokens", label: "Input tokens", tone: "input" },
-  { field: "cacheReadTokens", label: "Cached (hot)", tone: "hot" },
-  { field: "coldInputTokens", label: "Cold input", tone: "cold" },
-  { field: "outputTokens", label: "Output tokens", tone: "output" }
-];
+function buildViews(t: TranslateFn): ViewDef[] {
+  return viewOrder.map((id) => ({
+    id,
+    label: t(`nav.${id}.label`),
+    blurb: t(`nav.${id}.blurb`)
+  }));
+}
+
+function buildHistoryFields(t: TranslateFn): { field: HistoryField; label: string; tone: string }[] {
+  return [
+    { field: "aiCredits", label: t("history.field.aiCredits"), tone: "credits" },
+    { field: "inputTokens", label: t("history.field.input"), tone: "input" },
+    { field: "cacheReadTokens", label: t("history.field.cached"), tone: "hot" },
+    { field: "coldInputTokens", label: t("history.field.cold"), tone: "cold" },
+    { field: "outputTokens", label: t("history.field.output"), tone: "output" }
+  ];
+}
 
 interface DashboardData {
   summary: SummaryResponse | null;
@@ -96,117 +110,244 @@ function useDashboardData(range: RangeOption, repo: string) {
   return { data, error, isLoading, reload: load };
 }
 
-function KpiStrip({ summary }: { summary: SummaryResponse | null }) {
+function formatPctText(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "—";
+  }
+  return `${formatNumber(value, 0)}%`;
+}
+
+function secondsText(value: number | null | undefined, t: TranslateFn): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "—";
+  }
+  return t("experience.seconds", { value: formatNumber(value, 1) });
+}
+
+function formatNumberText(value: number | null | undefined, digits: number, t: TranslateFn): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return t("common.unavailable");
+  }
+  return formatNumber(value, digits);
+}
+
+function formatCurrencyText(value: number | null | undefined, t: TranslateFn): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return t("common.unavailable");
+  }
+  return formatCurrency(value);
+}
+
+function totalSub(value: number | null | undefined, t: TranslateFn): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return t("common.unavailable");
+  }
+  return t("kpi.totalSuffix", { value: formatNumber(value, 0) });
+}
+
+function statusText(status: ServiceStatus, t: TranslateFn): string {
+  return t(`status.${status}`);
+}
+
+function severityText(severity: AlertSeverity, t: TranslateFn): string {
+  return t(`severity.${severity}`);
+}
+
+function localizeAlerts(alerts: Alert[], t: TranslateFn): Alert[] {
+  return alerts.map((alert) => {
+    const severity = severityText(alert.severity, t);
+    switch (alert.id) {
+      case "ai-credits":
+        return {
+          ...alert,
+          title: t(`alert.ai-credits.${alert.severity}.title`),
+          detail: t("alert.ai-credits.detail", {
+            value: formatNumber(alert.value, 2),
+            severity,
+            threshold: formatNumber(alert.threshold, 2)
+          })
+        };
+      case "input-tokens":
+        return {
+          ...alert,
+          title: t(`alert.input-tokens.${alert.severity}.title`),
+          detail: t("alert.input-tokens.detail", {
+            value: formatNumber(alert.value, 0),
+            severity,
+            threshold: formatNumber(alert.threshold, 0)
+          })
+        };
+      case "context":
+        return {
+          ...alert,
+          title: t(`alert.context.${alert.severity}.title`),
+          detail: t("alert.context.detail", {
+            value: formatNumber(alert.value, 0),
+            severity,
+            threshold: formatNumber(alert.threshold, 0)
+          })
+        };
+      case "cache-efficiency":
+        return {
+          ...alert,
+          title: t("alert.cache-efficiency.title"),
+          detail: t("alert.cache-efficiency.detail", {
+            value: formatNumber((alert.value ?? 0) * 100, 0),
+            threshold: formatNumber((alert.threshold ?? 0) * 100, 0)
+          })
+        };
+      case "cold-context":
+        return {
+          ...alert,
+          title: t("alert.cold-context.title"),
+          detail: t("alert.cold-context.detail", {
+            value: formatNumber((alert.value ?? 0) * 100, 0),
+            threshold: formatNumber((alert.threshold ?? 0) * 100, 0)
+          })
+        };
+      case "attribution-gap":
+        return {
+          ...alert,
+          title: t("alert.attribution-gap.title"),
+          detail: t("alert.attribution-gap.detail", { value: formatNumber(alert.value, 0) })
+        };
+      case "errors":
+        return {
+          ...alert,
+          title: t("alert.errors.title"),
+          detail: t("alert.errors.detail", { value: formatNumber(alert.value, 0) })
+        };
+      case "ai-credits-budget":
+        return {
+          ...alert,
+          title: t(`alert.ai-credits-budget.${alert.severity}.title`),
+          detail: t("alert.ai-credits-budget.detail", { value: formatNumber(alert.value, 0) })
+        };
+      default:
+        return alert;
+    }
+  });
+}
+
+function KpiStrip({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
   const tokens = summary?.metrics.tokens;
+  const contextPeak = summary?.metrics.context.peak.value;
+  const contextTypical = summary?.metrics.context.typical.value;
   return (
     <section className="kpi-strip">
       <Kpi
-        label="AI credits used"
+        label={t("kpi.aiCredits")}
         tone="credits"
         available={summary?.metrics.aiCredits.value != null}
-        value={formatNumber(summary?.metrics.aiCredits.value ?? null, 2)}
-        sub="Local AIU equivalent"
+        value={formatNumberText(summary?.metrics.aiCredits.value, 2, t)}
+        sub={t("kpi.aiCreditsSub")}
       />
       <Kpi
-        label="Sessions"
+        label={t("kpi.sessions")}
         tone="neutral"
         available={summary?.metrics.sessions.value != null}
-        value={formatNumber(summary?.metrics.sessions.value ?? null, 0)}
-        sub="Workspace-attributed"
+        value={formatNumberText(summary?.metrics.sessions.value, 0, t)}
+        sub={t("kpi.sessionsSub")}
       />
       <Kpi
-        label="Input tokens"
+        label={t("kpi.input")}
         tone="input"
         available={tokens?.input.value != null}
         value={formatCompact(tokens?.input.value ?? null)}
-        sub={`${formatNumber(tokens?.input.value ?? null, 0)} total`}
+        sub={totalSub(tokens?.input.value, t)}
       />
       <Kpi
-        label="Output tokens"
+        label={t("kpi.output")}
         tone="output"
         available={tokens?.output.value != null}
         value={formatCompact(tokens?.output.value ?? null)}
-        sub={`${formatNumber(tokens?.output.value ?? null, 0)} total`}
+        sub={totalSub(tokens?.output.value, t)}
       />
       <Kpi
-        label="Cached (hot)"
+        label={t("kpi.cached")}
         tone="hot"
         available={tokens?.cacheRead.value != null}
         value={formatCompact(tokens?.cacheRead.value ?? null)}
-        sub="Cache-read tokens"
+        sub={t("kpi.cachedSub")}
       />
       <Kpi
-        label="Cold input"
+        label={t("kpi.cold")}
         tone="cold"
         available={tokens?.coldInput.value != null}
         value={formatCompact(tokens?.coldInput.value ?? null)}
-        sub="Uncached tokens"
+        sub={t("kpi.coldSub")}
       />
       <Kpi
-        label="Cache efficiency"
+        label={t("kpi.cacheEff")}
         tone="hot"
         available={tokens?.cacheEfficiency != null}
         value={formatPercent(tokens?.cacheEfficiency ?? null)}
-        sub="Higher reuse lowers cost"
+        sub={t("kpi.cacheEffSub")}
       />
       <Kpi
-        label="Context peak"
+        label={t("kpi.contextPeak")}
         tone="context"
-        available={summary?.metrics.context.peak.value != null}
-        value={summary?.metrics.context.peak.value != null ? `${formatNumber(summary.metrics.context.peak.value, 0)}%` : "—"}
-        sub={`Typical ${summary?.metrics.context.typical.value != null ? `${formatNumber(summary.metrics.context.typical.value, 0)}%` : "—"}`}
+        available={contextPeak !== null && contextPeak !== undefined}
+        value={formatPctText(contextPeak)}
+        sub={t("kpi.contextTypical", {
+          value: formatPctText(contextTypical)
+        })}
       />
     </section>
   );
 }
 
-function TokenComposition({ summary }: { summary: SummaryResponse | null }) {
+function TokenComposition({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
   const tokens = summary?.metrics.tokens;
   return (
-    <Panel title="Token composition" aside={<span className="muted">Prompt tokens split into hot, warm, and cold</span>}>
+    <Panel title={t("composition.title")} aside={<span className="muted">{t("composition.aside")}</span>}>
       {tokens && tokens.promptTotal > 0 ? (
         <CompositionBar
           segments={[
-            { label: "Cache read (hot)", value: tokens.cacheRead.value ?? 0, tone: "hot" },
-            { label: "Cache creation (warm)", value: tokens.cacheCreation.value ?? 0, tone: "warm" },
-            { label: "Cold input", value: tokens.coldInput.value ?? 0, tone: "cold" }
+            { label: t("composition.hot"), value: tokens.cacheRead.value ?? 0, tone: "hot" },
+            { label: t("composition.warm"), value: tokens.cacheCreation.value ?? 0, tone: "warm" },
+            { label: t("composition.cold"), value: tokens.coldInput.value ?? 0, tone: "cold" }
           ]}
         />
       ) : (
-        <p className="muted">No prompt-token telemetry is available for the selected range.</p>
+        <p className="muted">{t("composition.empty")}</p>
       )}
       <div className="composition-stats">
         <div>
-          <span className="stat-label">Cache efficiency</span>
+          <span className="stat-label">{t("composition.cacheEff")}</span>
           <span className="stat-value">{formatPercent(tokens?.cacheEfficiency ?? null)}</span>
         </div>
         <div>
-          <span className="stat-label">Warm ratio</span>
+          <span className="stat-label">{t("composition.warmRatio")}</span>
           <span className="stat-value">{formatPercent(tokens?.warmRatio ?? null)}</span>
         </div>
         <div>
-          <span className="stat-label">Cold ratio</span>
+          <span className="stat-label">{t("composition.coldRatio")}</span>
           <span className="stat-value">{formatPercent(tokens?.coldRatio ?? null)}</span>
         </div>
         <div>
-          <span className="stat-label">Reasoning tokens</span>
+          <span className="stat-label">{t("composition.reasoning")}</span>
           <span className="stat-value">{formatCompact(tokens?.reasoning.value ?? null)}</span>
         </div>
         <div>
-          <span className="stat-label">Tool calls</span>
-          <span className="stat-value">{formatNumber(summary?.metrics.activity.toolCalls.value ?? null, 0)}</span>
+          <span className="stat-label">{t("composition.toolCalls")}</span>
+          <span className="stat-value">{formatNumberText(summary?.metrics.activity.toolCalls.value, 0, t)}</span>
         </div>
       </div>
     </Panel>
   );
 }
 
-function HistoryPanel({ points, message }: { points: HistoryPoint[]; message?: string }) {
+function HistoryPanel({ points, message }: Readonly<{ points: HistoryPoint[]; message?: string }>) {
+  const t = useT();
   const [field, setField] = useState<HistoryField>("aiCredits");
+  const historyFields = buildHistoryFields(t);
   const tone = historyFields.find((entry) => entry.field === field)?.tone ?? "credits";
   return (
     <Panel
-      title="Usage history"
+      title={t("history.title")}
       aside={
         <div className="segmented small">
           {historyFields.map((entry) => (
@@ -220,34 +361,33 @@ function HistoryPanel({ points, message }: { points: HistoryPoint[]; message?: s
       {points.length > 0 ? (
         <TrendChart points={points} field={field} tone={tone} />
       ) : (
-        <p className="muted">{message ?? "Usage history is not available yet."}</p>
+        <p className="muted">{message ?? t("history.empty")}</p>
       )}
-      <p className="muted">
-        History is built from materialized local session telemetry. Trends reflect when sessions were observed locally and can be sparse for short ranges.
-      </p>
+      <p className="muted">{t("history.note")}</p>
     </Panel>
   );
 }
 
-function WorkspaceTable({ summary, limit }: { summary: SummaryResponse | null; limit?: number }) {
+function WorkspaceTable({ summary, limit }: Readonly<{ summary: SummaryResponse | null; limit?: number }>) {
+  const t = useT();
   const items = summary?.workspaces.items ?? [];
   const shown = limit ? items.slice(0, limit) : items;
   if (shown.length === 0) {
-    return <p className="muted">{summary?.workspaces.message ?? "No workspace telemetry is available yet."}</p>;
+    return <p className="muted">{summary?.workspaces.message ?? t("ws.empty")}</p>;
   }
   return (
     <div className="table-wrap">
       <table className="workspace-table">
         <thead>
           <tr>
-            <th>Workspace</th>
-            <th>Branch</th>
-            <th className="numeric">Sessions</th>
-            <th className="numeric">AI credits</th>
-            <th className="numeric">Input</th>
-            <th className="numeric">Cached</th>
-            <th className="numeric">Cold</th>
-            <th className="numeric">Cache eff.</th>
+            <th>{t("ws.col.workspace")}</th>
+            <th>{t("ws.col.branch")}</th>
+            <th className="numeric">{t("ws.col.sessions")}</th>
+            <th className="numeric">{t("ws.col.aiCredits")}</th>
+            <th className="numeric">{t("ws.col.input")}</th>
+            <th className="numeric">{t("ws.col.cached")}</th>
+            <th className="numeric">{t("ws.col.cold")}</th>
+            <th className="numeric">{t("ws.col.cacheEff")}</th>
           </tr>
         </thead>
         <tbody>
@@ -273,36 +413,247 @@ function WorkspaceTable({ summary, limit }: { summary: SummaryResponse | null; l
   );
 }
 
-function FirstRunPanel({ summary }: { summary: SummaryResponse | null }) {
+function FirstRunPanel({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
   const sessions = summary?.metrics.sessions.value ?? 0;
   if (sessions > 0) {
     return null;
   }
 
   return (
-    <Panel title="Workshop first run" aside={<span className="status status-degraded">Needs one real session</span>}>
+    <Panel title={t("firstRun.title")} aside={<span className="status status-degraded">{t("firstRun.badge")}</span>}>
       <div className="first-run-grid">
         <div>
           <span className="badge-step">01</span>
-          <h3>Open a Git repository</h3>
-          <p>Workspace attribution depends on Git metadata. Open the participant repository as the VS Code workspace.</p>
+          <h3>{t("firstRun.step1.title")}</h3>
+          <p>{t("firstRun.step1.body")}</p>
         </div>
         <div>
           <span className="badge-step">02</span>
-          <h3>Run GitHub Copilot Chat</h3>
-          <p>Ask GitHub Copilot to explain, edit, or test a small file in the repository.</p>
+          <h3>{t("firstRun.step2.title")}</h3>
+          <p>{t("firstRun.step2.body")}</p>
         </div>
         <div>
           <span className="badge-step">03</span>
-          <h3>Refresh local telemetry</h3>
-          <p>Run <code>local-otel/workshop-ready.sh</code> again or wait for the local materializer, then click Refresh.</p>
+          <h3>{t("firstRun.step3.title")}</h3>
+          <p>{t("firstRun.step3.body")}</p>
         </div>
       </div>
     </Panel>
   );
 }
 
-function OverviewView({ summary }: { summary: SummaryResponse | null }) {
+function budgetTone(level: string): string {
+  if (level === "warning") {
+    return "warn";
+  }
+  if (level === "critical" || level === "over") {
+    return "bad";
+  }
+  return "good";
+}
+
+function BudgetPanel({ summary, compact }: Readonly<{ summary: SummaryResponse | null; compact?: boolean }>) {
+  const t = useT();
+  const budget = summary?.budget;
+  const utilization = budget?.utilizationPct ?? null;
+  const projected = budget?.projectedUtilizationPct ?? null;
+  const tone = budgetTone(budget?.alertLevel ?? "ok");
+  const barWidth = utilization === null ? 0 : Math.min(100, utilization);
+  const projectedWidth = projected === null ? 0 : Math.min(100, projected);
+  const planLabel = budget?.plan ? budget.plan.charAt(0).toUpperCase() + budget.plan.slice(1) : "—";
+
+  return (
+    <Panel
+      title={t("budget.title")}
+      status={budget?.status}
+      aside={<span className="muted">{t("budget.aside", { plan: planLabel })}</span>}
+    >
+      <div className="budget-head">
+        <div className={`budget-figure budget-${tone}`}>
+          <span className="budget-figure-value">
+            {formatNumber(budget?.observedCredits ?? null, 0)}
+          </span>
+          <span className="budget-figure-unit">
+            {t("budget.ofAllowance", { allowance: formatNumber(budget?.monthlyAllowanceCredits ?? null, 0) })}
+          </span>
+        </div>
+        <div className="budget-facts">
+          <div>
+            <span className="stat-label">{t("budget.utilization")}</span>
+            <span className="stat-value">{utilization === null ? "—" : `${formatNumber(utilization, 0)}%`}</span>
+          </div>
+          <div>
+            <span className="stat-label">{t("budget.remaining")}</span>
+            <span className="stat-value">{formatNumber(budget?.remainingCredits ?? null, 0)}</span>
+          </div>
+          <div>
+            <span className="stat-label">{t("budget.daysLeft")}</span>
+            <span className="stat-value">{budget ? formatNumber(budget.daysLeft, 0) : "—"}</span>
+          </div>
+          <div>
+            <span className="stat-label">{t("budget.projected")}</span>
+            <span className="stat-value">{projected === null ? "—" : `${formatNumber(projected, 0)}%`}</span>
+          </div>
+        </div>
+      </div>
+      <svg className="budget-bar" viewBox="0 0 100 8" preserveAspectRatio="none" role="img" aria-label={t("budget.title")}>
+        <rect className="budget-bar-track" x="0" y="0" width="100" height="8" />
+        <rect className={`budget-bar-fill budget-${tone}`} x="0" y="0" width={barWidth} height="8" />
+        {projectedWidth > barWidth ? (
+          <rect className="budget-bar-projected" x={barWidth} y="0" width={projectedWidth - barWidth} height="8" />
+        ) : null}
+        <line className="budget-bar-warn" x1={summary?.thresholds.budgetWarnPct ?? 75} y1="0" x2={summary?.thresholds.budgetWarnPct ?? 75} y2="8" />
+        <line className="budget-bar-crit" x1={summary?.thresholds.budgetCritPct ?? 90} y1="0" x2={summary?.thresholds.budgetCritPct ?? 90} y2="8" />
+      </svg>
+      <p className="muted">{t("budget.note")}</p>
+      {compact ? null : <p className="muted">{t("budget.methodology")}</p>}
+    </Panel>
+  );
+}
+
+function ModelMixPanel({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
+  const mix = summary?.modelMix;
+  const entries = mix?.entries ?? [];
+  return (
+    <Panel
+      title={t("mix.title")}
+      status={mix?.status}
+      aside={<span className="muted">{t("mix.aside")}</span>}
+    >
+      {mix && mix.totalEstimatedAiCredits !== null ? (
+        <div className="mix-split">
+          <svg className="mix-split-bar" viewBox="0 0 100 8" preserveAspectRatio="none" role="img" aria-label={t("mix.title")}>
+            {entries.map((entry, index) => {
+              const previous = entries.slice(0, index).reduce((sum, item) => sum + ((item.share ?? 0) * 100), 0);
+              return <rect key={entry.model} className="seg-mix-cost" x={previous} y="0" width={(entry.share ?? 0) * 100} height="8" />;
+            })}
+          </svg>
+          <div className="mix-split-legend">
+            <span><i className="dot-mix-cost" /> {t("mix.total", { value: formatNumber(mix.totalEstimatedAiCredits, 1) })}</span>
+          </div>
+        </div>
+      ) : null}
+      {entries.length > 0 ? (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{t("sessions.col.model")}</th>
+                <th className="numeric">{t("mix.col.input")}</th>
+                <th className="numeric">{t("mix.col.output")}</th>
+                <th className="numeric">{t("mix.col.cached")}</th>
+                <th className="numeric">{t("mix.col.calls")}</th>
+                <th className="numeric">{t("mix.col.credits")}</th>
+                <th className="numeric">{t("mix.col.share")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <tr key={entry.model}>
+                  <td><span className="model-tag">{entry.model}</span></td>
+                  <td className="numeric">{formatCompact(entry.inputTokens)}</td>
+                  <td className="numeric">{formatCompact(entry.outputTokens)}</td>
+                  <td className="numeric">{formatCompact(entry.cachedTokens)}</td>
+                  <td className="numeric">{formatNumber(entry.calls, 0)}</td>
+                  <td className="numeric strong">{entry.estimatedAiCredits === null ? "—" : formatNumber(entry.estimatedAiCredits, 2)}</td>
+                  <td className="numeric">{formatPercent(entry.share)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="muted">{mix?.message ?? t("mix.empty")}</p>
+      )}
+      <p className="muted">{t("mix.note")}</p>
+    </Panel>
+  );
+}
+
+function ExperiencePanel({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
+  const experience = summary?.experience;
+  const outcomes = summary?.outcomes;
+  return (
+    <section className="panel two-column">
+      <div>
+        <div className="panel-header"><h2>{t("experience.title")}</h2></div>
+        <dl className="quality-grid">
+          <div>
+            <dt>{t("experience.ttft")}</dt>
+            <dd>{secondsText(experience?.avgTimeToFirstTokenSeconds.value, t)}</dd>
+          </div>
+          <div>
+            <dt>{t("experience.response")}</dt>
+            <dd>{secondsText(experience?.avgResponseSeconds.value, t)}</dd>
+          </div>
+          <div>
+            <dt>{t("experience.turns")}</dt>
+            <dd>{formatNumber(experience?.userTurns.value ?? null, 0)}</dd>
+          </div>
+        </dl>
+        <p className="muted">{t("experience.note")}</p>
+      </div>
+      <div>
+        <div className="panel-header"><h2>{t("outcomes.title")}</h2></div>
+        <dl className="quality-grid">
+          <div>
+            <dt>{t("outcomes.acceptances")}</dt>
+            <dd>{formatNumber(outcomes?.editAcceptances.value ?? null, 0)}</dd>
+          </div>
+          <div>
+            <dt>{t("outcomes.lines")}</dt>
+            <dd>{formatNumber(outcomes?.linesAccepted.value ?? null, 0)}</dd>
+          </div>
+          <div>
+            <dt>{t("outcomes.survival")}</dt>
+            <dd>{formatNumber(outcomes?.editSurvivalNoRevert.value ?? null, 0)}</dd>
+          </div>
+          <div>
+            <dt>{t("outcomes.compactions")}</dt>
+            <dd>{formatNumber(outcomes?.contextCompactions.value ?? null, 0)}</dd>
+          </div>
+        </dl>
+        <p className="muted">{t("outcomes.note")}</p>
+      </div>
+    </section>
+  );
+}
+
+function CreditsView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
+  const playbook = [
+    { id: "included", title: t("credits.play.included.title"), body: t("credits.play.included.body") },
+    { id: "budget", title: t("credits.play.budget.title"), body: t("credits.play.budget.body") },
+    { id: "batch", title: t("credits.play.batch.title"), body: t("credits.play.batch.body") },
+    { id: "cache", title: t("credits.play.cache.title"), body: t("credits.play.cache.body") },
+    { id: "retry", title: t("credits.play.retry.title"), body: t("credits.play.retry.body") },
+    { id: "monitor", title: t("credits.play.monitor.title"), body: t("credits.play.monitor.body") }
+  ];
+  return (
+    <>
+      <BudgetPanel summary={summary} />
+      <ModelMixPanel summary={summary} />
+      <ExperiencePanel summary={summary} />
+      <Panel title={t("credits.play.title")} aside={<span className="muted">{t("credits.play.aside")}</span>}>
+        <ul className="playbook-grid">
+          {playbook.map((item) => (
+            <li key={item.id} className="playbook-card">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+    </>
+  );
+}
+
+function OverviewView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
+  const alerts = localizeAlerts(summary?.alerts ?? [], t);
   const healthCounts = useMemo(() => {
     const services = summary?.health ?? [];
     return {
@@ -315,14 +666,35 @@ function OverviewView({ summary }: { summary: SummaryResponse | null }) {
   return (
     <>
       <FirstRunPanel summary={summary} />
-      <AlertsBanner alerts={summary?.alerts ?? []} />
+      <AlertsBanner
+        alerts={alerts}
+        labels={{
+          clearTitle: t("alerts.clearTitle"),
+          clearBody: t("alerts.clearBody"),
+          activeTitle: t("alerts.activeTitle"),
+          note: t("alerts.note"),
+          severity: {
+            info: t("severity.info"),
+            warning: t("severity.warning"),
+            critical: t("severity.critical")
+          }
+        }}
+      />
       <KpiStrip summary={summary} />
+      <BudgetPanel summary={summary} compact />
       <TokenComposition summary={summary} />
       <HistoryPanel points={summary?.history.points ?? []} message={summary?.history.message} />
-      <Panel title="Top workspaces" aside={<span className="muted">Ranked by AI credits</span>}>
+      <Panel title={t("overview.topWorkspaces")} aside={<span className="muted">{t("overview.rankedByCredits")}</span>}>
         <WorkspaceTable summary={summary} limit={5} />
       </Panel>
-      <Panel title="Stack health" aside={<span className="health-summary">{healthCounts.ok} ok, {healthCounts.degraded} degraded, {healthCounts.unavailable} unavailable</span>}>
+      <Panel
+        title={t("health.stack")}
+        aside={
+          <span className="health-summary">
+            {t("health.summary", { ok: healthCounts.ok, degraded: healthCounts.degraded, unavailable: healthCounts.unavailable })}
+          </span>
+        }
+      >
         <div className="health-grid">
           {(summary?.health ?? []).map((service) => (
             <article className="health-card" key={service.id}>
@@ -330,7 +702,7 @@ function OverviewView({ summary }: { summary: SummaryResponse | null }) {
                 <h3>{service.name}</h3>
                 <p>{service.detail}</p>
               </div>
-              <span className={statusClass(service.status)}>{statusLabel(service.status)}</span>
+              <span className={statusClass(service.status)}>{statusText(service.status, t)}</span>
             </article>
           ))}
         </div>
@@ -342,7 +714,8 @@ function OverviewView({ summary }: { summary: SummaryResponse | null }) {
 const aspireBase = "http://localhost:18888";
 const grafanaSessions = "http://localhost:3000/d/copilot-sessions-models-local/github-copilot-sessions-and-model-labels-local";
 
-function SessionsView({ sessions }: { sessions: SessionsResponse | null }) {
+function SessionsView({ sessions }: Readonly<{ sessions: SessionsResponse | null }>) {
+  const t = useT();
   const [copied, setCopied] = useState<string | null>(null);
   const items = sessions?.items ?? [];
 
@@ -358,12 +731,12 @@ function SessionsView({ sessions }: { sessions: SessionsResponse | null }) {
 
   return (
     <Panel
-      title="Sessions"
+      title={t("sessions.title")}
       status={sessions?.status}
       aside={
         <div className="link-row">
-          <a href={`${aspireBase}/traces`} target="_blank" rel="noopener noreferrer">Aspire traces</a>
-          <a href={grafanaSessions} target="_blank" rel="noopener noreferrer">Grafana sessions</a>
+          <a href={`${aspireBase}/traces`} target="_blank" rel="noopener noreferrer">{t("sessions.aspire")}</a>
+          <a href={grafanaSessions} target="_blank" rel="noopener noreferrer">{t("sessions.grafana")}</a>
         </div>
       }
     >
@@ -372,18 +745,18 @@ function SessionsView({ sessions }: { sessions: SessionsResponse | null }) {
           <table className="sessions-table">
             <thead>
               <tr>
-                <th>Workspace</th>
-                <th>Model</th>
-                <th>Mode</th>
-                <th className="numeric">AI credits</th>
-                <th className="numeric">Input</th>
-                <th className="numeric">Output</th>
-                <th className="numeric">Cached</th>
-                <th className="numeric">Cold</th>
-                <th className="numeric">Cache eff.</th>
-                <th className="numeric">Tools</th>
-                <th className="numeric">Context</th>
-                <th>Trace</th>
+                <th>{t("ws.col.workspace")}</th>
+                <th>{t("sessions.col.model")}</th>
+                <th>{t("sessions.col.mode")}</th>
+                <th className="numeric">{t("ws.col.aiCredits")}</th>
+                <th className="numeric">{t("ws.col.input")}</th>
+                <th className="numeric">{t("sessions.col.output")}</th>
+                <th className="numeric">{t("ws.col.cached")}</th>
+                <th className="numeric">{t("ws.col.cold")}</th>
+                <th className="numeric">{t("ws.col.cacheEff")}</th>
+                <th className="numeric">{t("sessions.col.tools")}</th>
+                <th className="numeric">{t("sessions.col.context")}</th>
+                <th>{t("sessions.col.trace")}</th>
               </tr>
             </thead>
             <tbody>
@@ -404,10 +777,10 @@ function SessionsView({ sessions }: { sessions: SessionsResponse | null }) {
                     <span className={`pill ${cacheTone(session.cacheEfficiency)}`}>{formatPercent(session.cacheEfficiency)}</span>
                   </td>
                   <td className="numeric">{formatNumber(session.toolCalls, 0)}</td>
-                  <td className="numeric">{session.contextPct != null ? `${formatNumber(session.contextPct, 0)}%` : "—"}</td>
+                  <td className="numeric">{formatPctText(session.contextPct)}</td>
                   <td>
                     <button type="button" className="trace-copy" onClick={() => void copyTrace(session.traceId)} title={session.traceId}>
-                      {copied === session.traceId ? "copied" : `${session.traceId.slice(0, 8)}…`}
+                      {copied === session.traceId ? t("sessions.copied") : `${session.traceId.slice(0, 8)}…`}
                     </button>
                   </td>
                 </tr>
@@ -416,37 +789,22 @@ function SessionsView({ sessions }: { sessions: SessionsResponse | null }) {
           </table>
         </div>
       ) : (
-        <p className="muted">{sessions?.message ?? "No sessions are available for the selected range."}</p>
+        <p className="muted">{sessions?.message ?? t("sessions.empty")}</p>
       )}
-      <p className="muted">
-        Sessions are grouped by trace. Click a trace id to copy it, then search it in Aspire traces or Grafana Tempo to inspect spans, prompts, and tool calls. Raw content stays local.
-      </p>
+      <p className="muted">{t("sessions.note")}</p>
     </Panel>
   );
 }
 
-function WorkspacesView({ summary }: { summary: SummaryResponse | null }) {
+function WorkspacesView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
   return (
-    <Panel
-      title="Workspaces compared"
-      status={summary?.workspaces.status}
-      aside={undefined}
-    >
+    <Panel title={t("workspaces.title")} status={summary?.workspaces.status} aside={undefined}>
       <WorkspaceTable summary={summary} />
-      <p className="muted">All observed workspaces are shown regardless of the selected workspace filter, so you can compare projects over time.</p>
+      <p className="muted">{t("workspaces.note")}</p>
     </Panel>
   );
 }
-
-const tokenPlaybook: { id: string; title: string; body: string }[] = [
-  { id: "warm", title: "Reuse warm context", body: "Stay in the same conversation while the context is still relevant. Cache reads are far cheaper than cold input." },
-  { id: "cold", title: "Reduce cold input", body: "Avoid reattaching or reopening large files you already shared. Cold tokens are the most expensive class." },
-  { id: "focus", title: "Keep context focused", body: "Split large tasks into smaller prompts so the context window stays lean and answers stay sharp." },
-  { id: "errors", title: "Avoid tool-error loops", body: "Fix the root cause of a failing tool call before retrying. Repeated failures burn credits with no result." },
-  { id: "model", title: "Use the right model", body: "Reserve frontier models for complex work. Lighter tasks can use a smaller model to save credits." },
-  { id: "validate", title: "Validate early", body: "Run tests or checks to catch issues before they turn into long, expensive agent loops." },
-  { id: "workspace", title: "Open a Git workspace", body: "Work inside a Git repository so usage is attributed to the right project and stays measurable." }
-];
 
 function efficiencyTone(score: number | null): string {
   if (score === null) {
@@ -461,15 +819,25 @@ function efficiencyTone(score: number | null): string {
   return "bad";
 }
 
-function CoachView({ coach, summary }: { coach: CoachResponse | null; summary: SummaryResponse | null }) {
+function CoachView({ coach, summary }: Readonly<{ coach: CoachResponse | null; summary: SummaryResponse | null }>) {
+  const t = useT();
   const cards = coach?.cards ?? [];
   const topSessions = coach?.topSessions ?? [];
   const economy = summary?.economy;
   const score = economy?.efficiencyScore ?? null;
   const opportunities = economy?.savingsOpportunities ?? [];
+  const playbook: { id: string; title: string; body: string }[] = [
+    { id: "warm", title: t("playbook.warm.title"), body: t("playbook.warm.body") },
+    { id: "cold", title: t("playbook.cold.title"), body: t("playbook.cold.body") },
+    { id: "focus", title: t("playbook.focus.title"), body: t("playbook.focus.body") },
+    { id: "errors", title: t("playbook.errors.title"), body: t("playbook.errors.body") },
+    { id: "model", title: t("playbook.model.title"), body: t("playbook.model.body") },
+    { id: "validate", title: t("playbook.validate.title"), body: t("playbook.validate.body") },
+    { id: "workspace", title: t("playbook.workspace.title"), body: t("playbook.workspace.body") }
+  ];
   return (
     <>
-      <Panel title="Token efficiency" aside={<span className="muted">Local AIU estimate, not official billing</span>}>
+      <Panel title={t("coach.efficiency")} aside={<span className="muted">{t("coach.localEstimate")}</span>}>
         <div className="efficiency-row">
           <div className={`score-dial score-${efficiencyTone(score)}`}>
             <span className="score-value">{score ?? "—"}</span>
@@ -477,35 +845,33 @@ function CoachView({ coach, summary }: { coach: CoachResponse | null; summary: S
           </div>
           <div className="efficiency-facts">
             <div>
-              <span className="stat-label">AI credits in range</span>
+              <span className="stat-label">{t("coach.creditsInRange")}</span>
               <span className="stat-value">{formatNumber(economy?.aiCredits ?? null, 2)}</span>
             </div>
             <div>
-              <span className="stat-label">Cache efficiency</span>
+              <span className="stat-label">{t("coach.cacheEff")}</span>
               <span className="stat-value">{formatPercent(economy?.cacheEfficiency ?? null)}</span>
             </div>
             <div>
-              <span className="stat-label">Cold cost share</span>
+              <span className="stat-label">{t("coach.coldShare")}</span>
               <span className="stat-value">{formatPercent(economy?.coldCostShare ?? null)}</span>
             </div>
             <div>
-              <span className="stat-label">Potential savings</span>
+              <span className="stat-label">{t("coach.potentialSavings")}</span>
               <span className="stat-value">{formatNumber(economy?.potentialSavingsCredits ?? null, 2)}</span>
             </div>
           </div>
         </div>
-        <p className="muted">
-          The efficiency score rewards cache reuse and penalizes cold context, context pressure, and tool errors. Savings are local AIU estimates to guide behavior, not GitHub billing.
-        </p>
+        <p className="muted">{t("coach.scoreNote")}</p>
       </Panel>
       {opportunities.length > 0 ? (
-        <Panel title="Savings opportunities" aside={<span className="muted">Quantified local estimates</span>}>
+        <Panel title={t("coach.savings")} aside={<span className="muted">{t("coach.savingsAside")}</span>}>
           <ul className="savings-list">
             {opportunities.map((item) => (
               <li key={item.id} className="savings-card">
                 <div className="savings-head">
                   <h3>{item.label}</h3>
-                  <span className="savings-credits">~{formatNumber(item.estimateCredits, 2)} credits</span>
+                  <span className="savings-credits">{t("coach.creditsUnit", { value: formatNumber(item.estimateCredits, 2) })}</span>
                 </div>
                 <p>{item.detail}</p>
               </li>
@@ -513,27 +879,27 @@ function CoachView({ coach, summary }: { coach: CoachResponse | null; summary: S
           </ul>
         </Panel>
       ) : null}
-      <Panel title="Coaching recommendations" aside={<span className="muted">{coach ? `Generated ${new Date(coach.generatedAt).toLocaleTimeString()}` : ""}</span>}>
+      <Panel title={t("coach.recommendations")} aside={<span className="muted">{coach ? t("coach.generated", { time: new Date(coach.generatedAt).toLocaleTimeString() }) : ""}</span>}>
         {cards.length > 0 ? (
           <ul className="coach-list">
             {cards.map((card) => (
               <li key={card.id} className={`coach-card coach-${card.severity}`}>
                 <div className="coach-head">
-                  <span className="coach-tag">{card.severity}</span>
+                  <span className="coach-tag">{t(`severity.${card.severity}`)}</span>
                   <h3>{card.title}</h3>
                 </div>
                 <p className="coach-insight">{card.insight}</p>
-                <p className="coach-action"><strong>Try this:</strong> {card.action}</p>
+                <p className="coach-action"><strong>{t("coach.tryThis")}</strong> {card.action}</p>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="muted">No recommendations are available yet.</p>
+          <p className="muted">{t("coach.noRecs")}</p>
         )}
       </Panel>
-      <Panel title="Token efficiency playbook" aside={<span className="muted">Best practices</span>}>
+      <Panel title={t("coach.playbook")} aside={<span className="muted">{t("coach.bestPractices")}</span>}>
         <ul className="playbook-grid">
-          {tokenPlaybook.map((item) => (
+          {playbook.map((item) => (
             <li key={item.id} className="playbook-card">
               <h3>{item.title}</h3>
               <p>{item.body}</p>
@@ -542,16 +908,16 @@ function CoachView({ coach, summary }: { coach: CoachResponse | null; summary: S
         </ul>
       </Panel>
       {topSessions.length > 0 ? (
-        <Panel title="Most expensive sessions" aside={<span className="muted">By AI credits</span>}>
+        <Panel title={t("coach.expensive")} aside={<span className="muted">{t("coach.byCredits")}</span>}>
           <div className="table-wrap">
             <table className="sessions-table">
               <thead>
                 <tr>
-                  <th>Workspace</th>
-                  <th>Model</th>
-                  <th className="numeric">AI credits</th>
-                  <th className="numeric">Input</th>
-                  <th className="numeric">Cache eff.</th>
+                  <th>{t("ws.col.workspace")}</th>
+                  <th>{t("sessions.col.model")}</th>
+                  <th className="numeric">{t("ws.col.aiCredits")}</th>
+                  <th className="numeric">{t("ws.col.input")}</th>
+                  <th className="numeric">{t("ws.col.cacheEff")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -575,23 +941,24 @@ function CoachView({ coach, summary }: { coach: CoachResponse | null; summary: S
   );
 }
 
-function HistoryView({ summary }: { summary: SummaryResponse | null }) {
+function HistoryView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
   const points = summary?.history.points ?? [];
   return (
     <>
       <HistoryPanel points={points} message={summary?.history.message} />
-      <Panel title="History detail" aside={<span className="muted">{points.length} buckets</span>}>
+      <Panel title={t("history.detail")} aside={<span className="muted">{t("history.buckets", { count: points.length })}</span>}>
         {points.length > 0 ? (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Time</th>
-                  <th className="numeric">AI credits</th>
-                  <th className="numeric">Input</th>
-                  <th className="numeric">Output</th>
-                  <th className="numeric">Cached</th>
-                  <th className="numeric">Cold</th>
+                  <th>{t("history.col.time")}</th>
+                  <th className="numeric">{t("ws.col.aiCredits")}</th>
+                  <th className="numeric">{t("ws.col.input")}</th>
+                  <th className="numeric">{t("sessions.col.output")}</th>
+                  <th className="numeric">{t("ws.col.cached")}</th>
+                  <th className="numeric">{t("ws.col.cold")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -609,18 +976,19 @@ function HistoryView({ summary }: { summary: SummaryResponse | null }) {
             </table>
           </div>
         ) : (
-          <p className="muted">{summary?.history.message ?? "No history rows are available yet."}</p>
+          <p className="muted">{summary?.history.message ?? t("history.emptyRows")}</p>
         )}
       </Panel>
     </>
   );
 }
 
-function HealthView({ summary }: { summary: SummaryResponse | null }) {
+function HealthView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
   const usdTotal = sumSeries(summary?.metrics.usdWhatIf);
   return (
     <>
-      <Panel title="Stack health" status={undefined}>
+      <Panel title={t("health.stack")} status={undefined}>
         <div className="health-grid">
           {(summary?.health ?? []).map((service) => (
             <article className="health-card" key={service.id}>
@@ -628,130 +996,166 @@ function HealthView({ summary }: { summary: SummaryResponse | null }) {
                 <h3>{service.name}</h3>
                 <p>{service.detail}</p>
               </div>
-              <span className={statusClass(service.status)}>{statusLabel(service.status)}</span>
+              <span className={statusClass(service.status)}>{statusText(service.status, t)}</span>
             </article>
           ))}
         </div>
       </Panel>
       <section className="panel two-column">
         <div>
-          <div className="panel-header"><h2>Data quality</h2></div>
+          <div className="panel-header"><h2>{t("health.dataQuality")}</h2></div>
           <dl className="quality-grid">
             <div>
-              <dt>workspace_real sessions</dt>
-              <dd>{formatNumber(summary?.metrics.dataQuality.workspaceReal.value ?? null, 0)}</dd>
+              <dt>{t("health.workspaceReal")}</dt>
+              <dd>{formatNumberText(summary?.metrics.dataQuality.workspaceReal.value, 0, t)}</dd>
             </div>
             <div>
-              <dt>non_workspace_real sessions</dt>
-              <dd>{formatNumber(summary?.metrics.dataQuality.nonWorkspaceReal.value ?? null, 0)}</dd>
+              <dt>{t("health.nonWorkspaceReal")}</dt>
+              <dd>{formatNumberText(summary?.metrics.dataQuality.nonWorkspaceReal.value, 0, t)}</dd>
             </div>
             <div>
-              <dt>Observed coverage signals</dt>
-              <dd>{formatNumber(summary?.metrics.dataQuality.observedCoverage.value ?? null, 0)}</dd>
+              <dt>{t("health.observedCoverage")}</dt>
+              <dd>{formatNumberText(summary?.metrics.dataQuality.observedCoverage.value, 0, t)}</dd>
             </div>
             <div>
-              <dt>not_observed_yet signals</dt>
-              <dd>{formatNumber(summary?.metrics.dataQuality.notObservedYet.value ?? null, 0)}</dd>
+              <dt>{t("health.notObservedYet")}</dt>
+              <dd>{formatNumberText(summary?.metrics.dataQuality.notObservedYet.value, 0, t)}</dd>
             </div>
           </dl>
-          <p className="muted">Missing values are shown as unavailable. The dashboard never fabricates telemetry.</p>
+          <p className="muted">{t("health.dqNote")}</p>
         </div>
         <div>
           <div className="panel-header">
-            <h2>Official billing</h2>
+            <h2>{t("health.officialBilling")}</h2>
             <span className="status status-unavailable">{summary?.officialBilling.status ?? "unavailable"}</span>
           </div>
           <p>{summary?.officialBilling.reason}</p>
-          <p className="muted">USD what-if total in range: {formatCurrency(usdTotal)} (local planning assumption).</p>
+          <p className="muted">{t("health.usdWhatIf", { value: formatCurrencyText(usdTotal, t) })}</p>
         </div>
       </section>
       <section className="panel two-column">
         <div>
-          <h2>Data boundary</h2>
-          <p>The browser only uses the dashboard API proxy. It never queries PostgreSQL, DuckDB files, Aspire API keys, or raw Loki content directly.</p>
-          <h3>Local only by default</h3>
+          <h2>{t("health.boundary")}</h2>
+          <p>{t("health.boundaryBody")}</p>
+          <h3>{t("health.localOnly")}</h3>
           <ul>{(summary?.dataBoundary.localOnly ?? []).map((item) => <li key={item}>{item}</li>)}</ul>
-          <h3>Eligible for governed forwarding</h3>
+          <h3>{t("health.governed")}</h3>
           <ul>{(summary?.dataBoundary.safeForwarding ?? []).map((item) => <li key={item}>{item}</li>)}</ul>
         </div>
         <div>
-          <h2>Drill-down links</h2>
+          <h2>{t("health.drilldown")}</h2>
           <div className="link-grid">
             {(summary?.links ?? []).map((link) => (
               <a href={link.url} key={link.label} target="_blank" rel="noopener noreferrer">{link.label}</a>
             ))}
           </div>
-          <p className="muted">Trace drill-down opens Aspire Dashboard or Grafana Explore instead of embedding raw trace content.</p>
+          <p className="muted">{t("health.drilldownNote")}</p>
         </div>
       </section>
     </>
   );
 }
 
-const thresholdCopy: Record<string, { label: string; env: string; help: string }> = {
-  aiCreditsWarn: { label: "AI credits warning", env: "THRESHOLD_AI_CREDITS_WARN", help: "Warn when local AI credits in range exceed this value." },
-  aiCreditsCrit: { label: "AI credits critical", env: "THRESHOLD_AI_CREDITS_CRIT", help: "Critical alert when local AI credits exceed this value." },
-  inputTokensWarn: { label: "Input tokens warning", env: "THRESHOLD_INPUT_TOKENS_WARN", help: "Warn when input tokens in range exceed this value." },
-  inputTokensCrit: { label: "Input tokens critical", env: "THRESHOLD_INPUT_TOKENS_CRIT", help: "Critical alert when input tokens exceed this value." },
-  contextWarnPct: { label: "Context warning %", env: "THRESHOLD_CONTEXT_WARN_PCT", help: "Warn when peak context utilization exceeds this percent." },
-  contextCritPct: { label: "Context critical %", env: "THRESHOLD_CONTEXT_CRIT_PCT", help: "Critical alert when peak context utilization exceeds this percent." },
-  cacheEfficiencyWarn: { label: "Cache efficiency floor", env: "THRESHOLD_CACHE_EFFICIENCY_WARN", help: "Warn when cache reuse drops below this ratio (0 to 1)." },
-  coldRatioWarn: { label: "Cold ratio ceiling", env: "THRESHOLD_COLD_RATIO_WARN", help: "Warn when cold input ratio rises above this ratio (0 to 1)." }
+const thresholdKeys = [
+  "aiCreditsWarn",
+  "aiCreditsCrit",
+  "inputTokensWarn",
+  "inputTokensCrit",
+  "contextWarnPct",
+  "contextCritPct",
+  "cacheEfficiencyWarn",
+  "coldRatioWarn"
+];
+
+const thresholdEnv: Record<string, string> = {
+  aiCreditsWarn: "THRESHOLD_AI_CREDITS_WARN",
+  aiCreditsCrit: "THRESHOLD_AI_CREDITS_CRIT",
+  inputTokensWarn: "THRESHOLD_INPUT_TOKENS_WARN",
+  inputTokensCrit: "THRESHOLD_INPUT_TOKENS_CRIT",
+  contextWarnPct: "THRESHOLD_CONTEXT_WARN_PCT",
+  contextCritPct: "THRESHOLD_CONTEXT_CRIT_PCT",
+  cacheEfficiencyWarn: "THRESHOLD_CACHE_EFFICIENCY_WARN",
+  coldRatioWarn: "THRESHOLD_COLD_RATIO_WARN"
 };
 
-function SettingsView({ summary }: { summary: SummaryResponse | null }) {
+function SettingsView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
   const thresholds = summary?.thresholds ?? {};
   return (
     <>
-      <Panel title="Alert thresholds" aside={<span className="muted">Local guardrails</span>}>
+      <Panel title={t("settings.thresholds")} aside={<span className="muted">{t("settings.guardrails")}</span>}>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Guardrail</th>
-                <th className="numeric">Value</th>
-                <th>Environment variable</th>
-                <th>What it does</th>
+                <th>{t("settings.col.guardrail")}</th>
+                <th className="numeric">{t("settings.col.value")}</th>
+                <th>{t("settings.col.env")}</th>
+                <th>{t("settings.col.does")}</th>
               </tr>
             </thead>
             <tbody>
-              {Object.entries(thresholdCopy).map(([key, copy]) => (
+              {thresholdKeys.map((key) => (
                 <tr key={key}>
-                  <td>{copy.label}</td>
-                  <td className="numeric strong">{formatNumber(thresholds[key] ?? null, 2)}</td>
-                  <td><code>{copy.env}</code></td>
-                  <td className="muted">{copy.help}</td>
+                  <td>{t(`th.${key}.label`)}</td>
+                  <td className="numeric strong">{formatNumberText(thresholds[key], 2, t)}</td>
+                  <td><code>{thresholdEnv[key]}</code></td>
+                  <td className="muted">{t(`th.${key}.help`)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="muted">
-          Thresholds are read from the API container environment. To change them, set the matching variable on the
-          <code> frontier-dashboard-api</code> service and restart it. They are local planning guardrails, not official GitHub limits or AI Credit allowances.
-        </p>
+        <p className="muted">{t("settings.note")}</p>
       </Panel>
-      <Panel title="About this cockpit" aside={undefined}>
-        <p>
-          This is the Frontier Developer Cockpit mini app. It reads local OpenTelemetry telemetry materialized into Prometheus and renders AI credits, token classes, cache behavior, per-session cost, workspace comparison, history, and coaching. It is local-first and never forwards data to Azure on its own.
-        </p>
+      <Panel title={t("settings.about")} aside={undefined}>
+        <p>{t("settings.aboutBody")}</p>
         <ul>
-          <li>AI credits are local AIU telemetry, not official GitHub billing.</li>
-          <li>Premium-request multipliers are legacy planning aids and are not the primary cost concept here.</li>
-          <li>Official billing and AI Credit totals require GitHub billing exports or the Copilot usage metrics API.</li>
+          <li>{t("settings.about1")}</li>
+          <li>{t("settings.about2")}</li>
+          <li>{t("settings.about3")}</li>
         </ul>
       </Panel>
     </>
   );
 }
 
-export default function App() {
+const langStorageKey = "frontier.lang";
+
+interface ViewProps {
+  summary: SummaryResponse | null;
+  sessions: SessionsResponse | null;
+  coach: CoachResponse | null;
+}
+
+const viewRenderers: Record<ViewId, (props: ViewProps) => ReactNode> = {
+  overview: ({ summary }) => <OverviewView summary={summary} />,
+  credits: ({ summary }) => <CreditsView summary={summary} />,
+  sessions: ({ sessions }) => <SessionsView sessions={sessions} />,
+  workspaces: ({ summary }) => <WorkspacesView summary={summary} />,
+  coach: ({ coach, summary }) => <CoachView coach={coach} summary={summary} />,
+  history: ({ summary }) => <HistoryView summary={summary} />,
+  health: ({ summary }) => <HealthView summary={summary} />,
+  settings: ({ summary }) => <SettingsView summary={summary} />
+};
+
+function readInitialLang(): Lang {
+  if (typeof localStorage === "undefined") {
+    return defaultLang;
+  }
+  const stored = localStorage.getItem(langStorageKey);
+  return languages.some((entry) => entry.id === stored) ? (stored as Lang) : defaultLang;
+}
+
+function AppShell({ lang, setLang }: Readonly<{ lang: Lang; setLang: (lang: Lang) => void }>) {
+  const t = useT();
   const [range, setRange] = useState<RangeOption>("24h");
   const [repo, setRepo] = useState("all");
   const [activeView, setActiveView] = useState<ViewId>("overview");
   const { data, error, isLoading, reload } = useDashboardData(range, repo);
   const { summary, sessions, coach } = data;
 
+  const views = buildViews(t);
   const alertCount = summary?.alerts.length ?? 0;
   const activeDef = views.find((view) => view.id === activeView) ?? views[0];
 
@@ -764,6 +1168,8 @@ export default function App() {
   useEffect(() => {
     document.title = dashboardTitle;
   }, [dashboardTitle]);
+
+  const scopeLabel = repo === "all" ? t("footer.allScope") : repo.replace(/^https?:\/\//, "");
 
   return (
     <div className="app-shell">
@@ -788,7 +1194,7 @@ export default function App() {
               className={`nav-item${activeView === view.id ? " active" : ""}`}
               onClick={() => setActiveView(view.id)}
             >
-              <span className="nav-icon" aria-hidden>{view.icon}</span>
+              <span className="nav-icon" aria-hidden><NavIcon id={view.id} /></span>
               <span className="nav-text">
                 <span className="nav-label">{view.label}</span>
                 <span className="nav-blurb">{view.blurb}</span>
@@ -797,6 +1203,22 @@ export default function App() {
             </button>
           ))}
         </nav>
+        <div className="sidebar-lang">
+          <span className="sidebar-lang-label">{t("controls.language")}</span>
+          <div className="segmented small lang-switch">
+            {languages.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                className={lang === entry.id ? "active" : ""}
+                onClick={() => setLang(entry.id)}
+                title={entry.label}
+              >
+                {entry.short}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="sidebar-foot">
           <a href="http://localhost:18888" target="_blank" rel="noopener noreferrer">Aspire</a>
           <a href="http://localhost:3000" target="_blank" rel="noopener noreferrer">Grafana</a>
@@ -808,11 +1230,11 @@ export default function App() {
           <div>
             <p className="eyebrow">{customerName ? `${participantLine} · ${customerName}` : participantLine}</p>
             <h1>{activeDef.label}</h1>
-            <p className="topbar-blurb">{activeDef.blurb}. AI credits are local AIU telemetry, not official GitHub billing.</p>
+            <p className="topbar-blurb">{activeDef.blurb}. {t("topbar.blurbSuffix")}</p>
           </div>
           <div className="topbar-controls">
             <div className="control-group">
-              <label>Range</label>
+              <label>{t("controls.range")}</label>
               <div className="segmented">
                 {rangeOptions.map((option) => (
                   <button key={option} type="button" className={range === option ? "active" : ""} onClick={() => setRange(option)}>
@@ -822,9 +1244,9 @@ export default function App() {
               </div>
             </div>
             <div className="control-group">
-              <label htmlFor="repo">Workspace</label>
+              <label htmlFor="repo">{t("controls.workspace")}</label>
               <select id="repo" value={repo} onChange={(event) => setRepo(event.target.value)}>
-                <option value="all">All workspaces</option>
+                <option value="all">{t("controls.allWorkspaces")}</option>
                 {(summary?.repositories ?? []).map((option) => (
                   <option key={option} value={option}>
                     {option.replace(/^https?:\/\//, "").replace(/\.git$/, "")}
@@ -833,29 +1255,45 @@ export default function App() {
               </select>
             </div>
             <button type="button" className="refresh" onClick={() => void reload()} disabled={isLoading}>
-              {isLoading ? "Refreshing…" : "Refresh"}
+              {isLoading ? t("controls.refreshing") : t("controls.refresh")}
             </button>
           </div>
         </header>
 
         {error ? <div className="error">{error}</div> : null}
-        {!summary && !error ? <div className="loading">Loading local telemetry…</div> : null}
+        {!summary && !error ? <div className="loading">{t("state.loading")}</div> : null}
 
         <div className="view">
-          {activeView === "overview" ? <OverviewView summary={summary} /> : null}
-          {activeView === "sessions" ? <SessionsView sessions={sessions} /> : null}
-          {activeView === "workspaces" ? <WorkspacesView summary={summary} /> : null}
-          {activeView === "coach" ? <CoachView coach={coach} summary={summary} /> : null}
-          {activeView === "history" ? <HistoryView summary={summary} /> : null}
-          {activeView === "health" ? <HealthView summary={summary} /> : null}
-          {activeView === "settings" ? <SettingsView summary={summary} /> : null}
+          {viewRenderers[activeView]({ summary, sessions, coach })}
         </div>
 
         <footer className="content-foot">
-          <span>{summary ? `Updated ${new Date(summary.refreshedAt).toLocaleTimeString()}` : "Waiting for data"}</span>
-          <span>Range {range} · {repo === "all" ? "all workspaces" : repo.replace(/^https?:\/\//, "")}</span>
+          <span>{summary ? t("footer.updated", { time: new Date(summary.refreshedAt).toLocaleTimeString() }) : t("footer.waiting")}</span>
+          <span>{t("footer.scope", { range, scope: scopeLabel })}</span>
         </footer>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  const [lang, setLang] = useState<Lang>(() => readInitialLang());
+
+  const selectLang = useCallback((next: Lang) => {
+    setLang(next);
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(langStorageKey, next);
+    }
+  }, []);
+
+  useEffect(() => {
+    const entry = languages.find((item) => item.id === lang);
+    document.documentElement.lang = entry?.htmlLang ?? "en";
+  }, [lang]);
+
+  return (
+    <LangProvider lang={lang}>
+      <AppShell lang={lang} setLang={selectLang} />
+    </LangProvider>
   );
 }

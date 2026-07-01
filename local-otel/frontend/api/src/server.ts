@@ -83,8 +83,44 @@ const thresholds = {
   contextWarnPct: numberFromEnv("THRESHOLD_CONTEXT_WARN_PCT", 70),
   contextCritPct: numberFromEnv("THRESHOLD_CONTEXT_CRIT_PCT", 90),
   cacheEfficiencyWarn: numberFromEnv("THRESHOLD_CACHE_EFFICIENCY_WARN", 0.35),
-  coldRatioWarn: numberFromEnv("THRESHOLD_COLD_RATIO_WARN", 0.45)
+  coldRatioWarn: numberFromEnv("THRESHOLD_COLD_RATIO_WARN", 0.45),
+  budgetWarnPct: numberFromEnv("THRESHOLD_AI_CREDITS_BUDGET_WARN_PCT", 75),
+  budgetCritPct: numberFromEnv("THRESHOLD_AI_CREDITS_BUDGET_CRIT_PCT", 90)
 };
+
+function lowerFromEnv(name: string, fallback: string): string {
+  return stringFromEnv(name, fallback).toLowerCase();
+}
+
+// GitHub Copilot usage-based billing is measured in GitHub AI Credits. These
+// defaults follow the current GitHub documentation and remain configurable
+// because plan allowances and promotional periods can change.
+// Sources: GitHub Copilot usage-based billing for individuals and for
+// organizations and enterprises.
+const standardAiCreditsByPlan: Record<string, number> = {
+  pro: 1500,
+  "pro+": 7000,
+  max: 20000,
+  business: 1900,
+  enterprise: 3900
+};
+
+const promotionalAiCreditsByPlan: Record<string, number> = {
+  business: 3000,
+  enterprise: 7000
+};
+
+const copilotPlan = lowerFromEnv("FRONTIER_COPILOT_PLAN", "business");
+const copilotSeats = numberFromEnv("FRONTIER_COPILOT_SEATS", 1);
+const usePromotionalAllowance = lowerFromEnv("FRONTIER_AI_CREDITS_USE_PROMO", "true") === "true";
+const defaultAiCreditsPerSeat =
+  (usePromotionalAllowance ? promotionalAiCreditsByPlan[copilotPlan] : undefined) ??
+  standardAiCreditsByPlan[copilotPlan] ??
+  standardAiCreditsByPlan.business;
+const aiCreditsMonthlyAllowance = numberFromEnv(
+  "FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE",
+  defaultAiCreditsPerSeat * copilotSeats
+);
 
 // Participant identity makes the local cockpit a reusable workshop template.
 // Each participant sets these via environment variables (see workshop.env).
@@ -168,7 +204,12 @@ function repoFromUrl(url: URL): string | null {
 }
 
 function escapePrometheusLabel(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\n/g, "\\n");
+  const backslash = String.fromCodePoint(92);
+  const quote = String.fromCodePoint(34);
+  return value
+    .replaceAll(backslash, `${backslash}${backslash}`)
+    .replaceAll(quote, `${backslash}${quote}`)
+    .replaceAll("\n", `${backslash}n`);
 }
 
 function repoMatcher(repo: string | null): string {
@@ -318,34 +359,30 @@ async function tcpHealth(id: string, name: string, host: string, checkPort: numb
 async function registryHealth(): Promise<ServiceHealth> {
   const checkedAt = new Date().toISOString();
   try {
-    const [multipliers, prices] = await Promise.all([
-      queryPrometheus("count(copilot_model_premium_request_multiplier_ratio)"),
-      queryPrometheus("count(copilot_model_price_usd_per_million_ratio)")
-    ]);
-    const multiplierCount = multipliers.length > 0 ? numericValue(multipliers[0]) ?? 0 : 0;
+    const prices = await queryPrometheus("count(copilot_model_price_usd_per_million_ratio)");
     const priceCount = prices.length > 0 ? numericValue(prices[0]) ?? 0 : 0;
-    if (multiplierCount > 0 && priceCount > 0) {
+    if (priceCount > 0) {
       return {
         id: "copilot-otel-registry",
-        name: "Model and price registry sidecar",
+        name: "Model price registry sidecar",
         status: "ok",
-        detail: `${multiplierCount} multiplier series and ${priceCount} price series are live.`,
+        detail: `${priceCount} model price series are live for local AI Credits estimates.`,
         checkedAt
       };
     }
     return {
       id: "copilot-otel-registry",
-      name: "Model and price registry sidecar",
+      name: "Model price registry sidecar",
       status: "degraded",
-      detail: "Registry metrics are not live yet in Prometheus.",
+      detail: "Model price metrics are not live yet in Prometheus.",
       checkedAt
     };
   } catch (error) {
     return {
       id: "copilot-otel-registry",
-      name: "Model and price registry sidecar",
+      name: "Model price registry sidecar",
       status: "unavailable",
-      detail: error instanceof Error ? error.message : "Registry metrics could not be checked.",
+      detail: error instanceof Error ? error.message : "Model price registry metrics could not be checked.",
       checkedAt
     };
   }
@@ -809,8 +846,16 @@ function computeEconomy(input: {
 }
 
 function appLinks() {
-  const tempoExploreQuery = encodeURIComponent('{"datasource":"tempo-local","queries":[{"query":"{service.name=\\"copilot-chat\\"}"}],"range":{"from":"now-1h","to":"now"}}');
-  const lokiExploreQuery = encodeURIComponent('{"datasource":"loki-local","queries":[{"expr":"{service_name=\\"copilot-chat\\"}"}],"range":{"from":"now-1h","to":"now"}}');
+  const tempoExploreQuery = encodeURIComponent(JSON.stringify({
+    datasource: "tempo-local",
+    queries: [{ query: '{service.name="copilot-chat"}' }],
+    range: { from: "now-1h", to: "now" }
+  }));
+  const lokiExploreQuery = encodeURIComponent(JSON.stringify({
+    datasource: "loki-local",
+    queries: [{ expr: '{service_name="copilot-chat"}' }],
+    range: { from: "now-1h", to: "now" }
+  }));
   return [
     { label: "Grafana dashboards", url: publicGrafanaUrl },
     { label: "Aspire Dashboard live traces", url: publicAspireUrl },
@@ -820,6 +865,262 @@ function appLinks() {
     { label: "Grafana Tempo Explore", url: `${publicGrafanaUrl}/explore?left=${tempoExploreQuery}` },
     { label: "Grafana Loki Explore", url: `${publicGrafanaUrl}/explore?left=${lokiExploreQuery}` }
   ];
+}
+
+interface AiCreditsBudgetInsight {
+  plan: string;
+  seats: number;
+  monthlyAllowanceCredits: number;
+  observedCredits: number | null;
+  utilizationPct: number | null;
+  remainingCredits: number | null;
+  daysElapsed: number;
+  daysInCycle: number;
+  daysLeft: number;
+  projectedMonthEndCredits: number | null;
+  projectedUtilizationPct: number | null;
+  dailyRateCredits: number | null;
+  status: MetricStatus;
+  alertLevel: "ok" | "warning" | "critical" | "over";
+  message?: string;
+}
+
+interface ModelMixEntry {
+  model: string;
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  totalTokens: number;
+  estimatedAiCredits: number | null;
+  share: number | null;
+}
+
+interface ModelMix {
+  status: MetricStatus;
+  entries: ModelMixEntry[];
+  totalCalls: number;
+  totalEstimatedAiCredits: number | null;
+  message?: string;
+}
+
+interface ExperienceMetrics {
+  avgTimeToFirstTokenSeconds: ScalarMetric;
+  avgResponseSeconds: ScalarMetric;
+  userTurns: ScalarMetric;
+}
+
+interface OutcomeMetrics {
+  editAcceptances: ScalarMetric;
+  linesAccepted: ScalarMetric;
+  editSurvivalNoRevert: ScalarMetric;
+  contextCompactions: ScalarMetric;
+}
+
+// AI Credits budgets are tracked per billing cycle. The local cockpit uses a
+// month-to-date approximation and clearly separates it from official GitHub
+// billing exports and Copilot usage APIs.
+function billingCycle(now = new Date()): { daysInCycle: number; daysElapsed: number; daysLeft: number } {
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  const daysInCycle = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const daysElapsed = now.getUTCDate();
+  const daysLeft = Math.max(0, daysInCycle - daysElapsed);
+  return { daysInCycle, daysElapsed, daysLeft };
+}
+
+function budgetAlertLevel(utilizationPct: number | null): AiCreditsBudgetInsight["alertLevel"] {
+  if (utilizationPct === null) {
+    return "ok";
+  }
+  if (utilizationPct >= 100) {
+    return "over";
+  }
+  if (utilizationPct >= thresholds.budgetCritPct) {
+    return "critical";
+  }
+  if (utilizationPct >= thresholds.budgetWarnPct) {
+    return "warning";
+  }
+  return "ok";
+}
+
+async function aiCreditsBudgetInsight(): Promise<AiCreditsBudgetInsight> {
+  const cycle = billingCycle();
+  const monthWindow = `${Math.max(1, cycle.daysElapsed)}d`;
+  const observed = await scalarMetric(`${realSessionSum("nano_aiu", monthWindow, "")} / 1e9`);
+  const observedCredits = observed.value;
+  const status: MetricStatus = observedCredits === null ? "unavailable" : "ok";
+  const utilizationPct =
+    observedCredits !== null && aiCreditsMonthlyAllowance > 0
+      ? (observedCredits / aiCreditsMonthlyAllowance) * 100
+      : null;
+  const remainingCredits =
+    observedCredits === null ? null : Math.max(0, aiCreditsMonthlyAllowance - observedCredits);
+  const dailyRate =
+    observedCredits !== null && cycle.daysElapsed > 0 ? observedCredits / cycle.daysElapsed : null;
+  // Only project month-end consumption once a few days of the cycle have
+  // elapsed, so the projection is not dominated by noise at the start of a cycle.
+  const canProject = cycle.daysElapsed >= 3;
+  const projectedMonthEnd = canProject && dailyRate !== null ? dailyRate * cycle.daysInCycle : null;
+  const projectedUtilizationPct =
+    projectedMonthEnd !== null && aiCreditsMonthlyAllowance > 0
+      ? (projectedMonthEnd / aiCreditsMonthlyAllowance) * 100
+      : null;
+  return {
+    plan: copilotPlan,
+    seats: copilotSeats,
+    monthlyAllowanceCredits: aiCreditsMonthlyAllowance,
+    observedCredits,
+    utilizationPct,
+    remainingCredits,
+    daysElapsed: cycle.daysElapsed,
+    daysInCycle: cycle.daysInCycle,
+    daysLeft: cycle.daysLeft,
+    projectedMonthEndCredits: projectedMonthEnd,
+    projectedUtilizationPct,
+    dailyRateCredits: dailyRate,
+    status,
+    alertLevel: budgetAlertLevel(utilizationPct),
+    message: observed.message
+  };
+}
+
+function budgetToAlert(budget: AiCreditsBudgetInsight): Alert | null {
+  if (budget.utilizationPct === null || budget.alertLevel === "ok") {
+    return null;
+  }
+  const severity: AlertSeverity = budget.alertLevel === "warning" ? "warning" : "critical";
+  return {
+    id: "ai-credits-budget",
+    severity,
+    title:
+      budget.alertLevel === "over"
+        ? "AI Credits budget is exhausted"
+        : "AI Credits budget is filling up",
+    detail:
+      `Local AI Credits observed this cycle reached ${(budget.observedCredits ?? 0).toFixed(0)} ` +
+      `of the configured ${budget.monthlyAllowanceCredits.toLocaleString()} AI Credits pool ` +
+      `(${(budget.utilizationPct ?? 0).toFixed(0)}%). This is a local estimate, not official billing.`,
+    value: budget.utilizationPct,
+    threshold: budget.alertLevel === "warning" ? thresholds.budgetWarnPct : thresholds.budgetCritPct
+  };
+}
+
+function createModelMixEntry(model: string): ModelMixEntry {
+  return { model, calls: 0, inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0, estimatedAiCredits: null, share: null };
+}
+
+function applyModelToken(entry: ModelMixEntry, tokenType: string, value: number): void {
+  entry.totalTokens += value;
+  const normalized = tokenType.toLowerCase();
+  if (normalized.includes("output")) {
+    entry.outputTokens += value;
+    return;
+  }
+  if (normalized.includes("cache")) {
+    entry.cachedTokens += value;
+    return;
+  }
+  entry.inputTokens += value;
+}
+
+async function modelMix(range: string): Promise<ModelMix> {
+  const callsQuery =
+    `sum by (gen_ai_request_model) (increase(gen_ai_client_operation_duration_count{service_name="copilot-chat"}[${range}]))`;
+  const tokenQuery = `sum by (gen_ai_request_model, gen_ai_token_type) (increase(gen_ai_client_token_usage_sum{service_name="copilot-chat"}[${range}]))`;
+  const aiCreditsQuery = `sum by (gen_ai_request_model) (((increase(gen_ai_client_token_usage_sum{service_name="copilot-chat"}[${range}]) / 1e6) * on (gen_ai_request_model, gen_ai_token_type) group_left() max by (gen_ai_request_model, gen_ai_token_type) (copilot_model_price_usd_per_million_ratio)) / 0.01)`;
+  const [calls, tokens, costs] = await Promise.all([
+    seriesMetric(callsQuery),
+    seriesMetric(tokenQuery),
+    seriesMetric(aiCreditsQuery)
+  ]);
+  const byModel = new Map<string, ModelMixEntry>();
+  const ensure = (model: string): ModelMixEntry => {
+    let entry = byModel.get(model);
+    if (!entry) {
+      entry = createModelMixEntry(model);
+      byModel.set(model, entry);
+    }
+    return entry;
+  };
+  for (const point of calls.points) {
+    const model = point.labels.gen_ai_request_model;
+    if (model) {
+      ensure(model).calls = point.value;
+    }
+  }
+  for (const point of tokens.points) {
+    const model = point.labels.gen_ai_request_model;
+    if (!model) {
+      continue;
+    }
+    const entry = ensure(model);
+    applyModelToken(entry, point.labels.gen_ai_token_type ?? "", point.value);
+  }
+  for (const point of costs.points) {
+    const model = point.labels.gen_ai_request_model;
+    if (model) {
+      ensure(model).estimatedAiCredits = point.value;
+    }
+  }
+  const totalCalls = [...byModel.values()].reduce((sum, entry) => sum + entry.calls, 0);
+  const totalEstimatedAiCredits = [...byModel.values()].reduce((sum, entry) => sum + (entry.estimatedAiCredits ?? 0), 0);
+  const entries = [...byModel.values()]
+    .map((entry) => ({
+      ...entry,
+      share: totalEstimatedAiCredits > 0 && entry.estimatedAiCredits !== null ? entry.estimatedAiCredits / totalEstimatedAiCredits : null
+    }))
+    .filter((entry) => entry.calls > 0 || entry.totalTokens > 0 || (entry.estimatedAiCredits ?? 0) > 0)
+    .sort((left, right) => (right.estimatedAiCredits ?? 0) - (left.estimatedAiCredits ?? 0) || right.calls - left.calls);
+  return {
+    status: entries.length > 0 ? "ok" : "unavailable",
+    entries,
+    totalCalls,
+    totalEstimatedAiCredits: entries.some((entry) => entry.estimatedAiCredits !== null) ? totalEstimatedAiCredits : null,
+    message: entries.length > 0 ? undefined : "No model-call telemetry is available for the selected range."
+  };
+}
+
+// Developer-experience latency signals. GenAI latency metrics are recorded in
+// seconds per the OpenTelemetry GenAI semantic conventions.
+async function experienceMetrics(range: string): Promise<ExperienceMetrics> {
+  const filter = `service_name="copilot-chat"`;
+  const [ttft, response, turns] = await Promise.all([
+    scalarMetric(
+      `sum(increase(copilot_chat_time_to_first_token_sum{${filter}}[${range}])) / ` +
+      `clamp_min(sum(increase(copilot_chat_time_to_first_token_count{${filter}}[${range}])), 1)`
+    ),
+    scalarMetric(
+      `sum(increase(gen_ai_client_operation_duration_sum{${filter}}[${range}])) / ` +
+      `clamp_min(sum(increase(gen_ai_client_operation_duration_count{${filter}}[${range}])), 1)`
+    ),
+    scalarMetric(`sum(increase(copilot_chat_agent_turn_count_count{${filter}}[${range}]))`)
+  ]);
+  return {
+    avgTimeToFirstTokenSeconds: ttft,
+    avgResponseSeconds: response,
+    userTurns: turns
+  };
+}
+
+// Outcome and value signals. These counters are emitted at the editor level and
+// are not attributable to a specific Git workspace, so they describe local
+// GitHub Copilot value broadly rather than per repository.
+async function outcomeMetrics(range: string): Promise<OutcomeMetrics> {
+  const filter = `service_name="copilot-chat"`;
+  const [acceptances, lines, survival, compactions] = await Promise.all([
+    scalarMetric(`sum(increase(copilot_chat_edit_acceptance_count_total{${filter}}[${range}]))`),
+    scalarMetric(`sum(increase(copilot_chat_lines_of_code_count_total{${filter}}[${range}]))`),
+    scalarMetric(`sum(increase(copilot_chat_edit_survival_no_revert_count{${filter}}[${range}]))`),
+    scalarMetric(`sum(increase(copilot_chat_agent_summarization_count_total{${filter}}[${range}]))`)
+  ]);
+  return {
+    editAcceptances: acceptances,
+    linesAccepted: lines,
+    editSurvivalNoRevert: survival,
+    contextCompactions: compactions
+  };
 }
 
 async function summary(url: URL) {
@@ -858,7 +1159,11 @@ async function summary(url: URL) {
     observedCoverage,
     notObservedYet,
     workspaces,
-    history
+    history,
+    budget,
+    mix,
+    experience,
+    outcomes
   ] = await Promise.all([
     stackHealth(),
     repositories(range),
@@ -880,7 +1185,11 @@ async function summary(url: URL) {
     scalarMetric(observedCoverageQuery),
     scalarMetric(notObservedCoverageQuery),
     workspaceBreakdown(range),
-    usageHistory(range, repoLabelMatcher)
+    usageHistory(range, repoLabelMatcher),
+    aiCreditsBudgetInsight(),
+    modelMix(range),
+    experienceMetrics(range),
+    outcomeMetrics(range)
   ]);
 
   const cacheRead = cacheReadTokens.value ?? 0;
@@ -900,6 +1209,11 @@ async function summary(url: URL) {
     nonWorkspaceReal: nonWorkspaceReal.value,
     errors: errors.value
   });
+
+  const budgetAlert = budgetToAlert(budget);
+  if (budgetAlert) {
+    alerts.unshift(budgetAlert);
+  }
 
   const economy = computeEconomy({
     aiCredits: aiCredits.value ?? 0,
@@ -922,6 +1236,10 @@ async function summary(url: URL) {
     thresholds,
     alerts,
     economy,
+    budget,
+    modelMix: mix,
+    experience,
+    outcomes,
     metrics: {
       aiCredits,
       sessions: workspaceReal,
@@ -1137,85 +1455,147 @@ interface CoachCard {
 
 type SummaryResult = Awaited<ReturnType<typeof summary>>;
 
-function buildCoachCards(data: SummaryResult, sessions: SessionRecord[]): CoachCard[] {
-  const cards: CoachCard[] = [];
-  const tokens = data.metrics.tokens;
-  const aiCredits = data.metrics.aiCredits.value;
-  const contextPeak = data.metrics.context.peak.value;
-  const errors = data.metrics.activity.errors.value ?? 0;
-  const nonWorkspace = data.metrics.dataQuality.nonWorkspaceReal.value ?? 0;
+interface CoachContext {
+  tokens: SummaryResult["metrics"]["tokens"];
+  aiCredits: number | null;
+  contextPeak: number | null;
+  errors: number;
+  nonWorkspace: number;
+  budget: AiCreditsBudgetInsight;
+  mix: ModelMix;
+  sessions: SessionRecord[];
+}
 
-  if (tokens.cacheEfficiency !== null && tokens.cacheEfficiency < thresholds.cacheEfficiencyWarn) {
-    cards.push({
-      id: "cache-reuse",
-      severity: "warning",
-      title: "Improve cache reuse",
-      insight: `Only ${(tokens.cacheEfficiency * 100).toFixed(0)}% of your prompt tokens came from cache reads. Low reuse spends more AI credits on the same context.`,
-      action: "Keep the conversation focused, avoid reopening or re-pasting large files, and let the agent build on prior turns instead of restating context."
-    });
-  }
+type CoachRule = (ctx: CoachContext) => CoachCard | null;
 
-  if (tokens.coldRatio !== null && tokens.coldRatio > thresholds.coldRatioWarn) {
-    cards.push({
-      id: "cold-context",
-      severity: "warning",
-      title: "Reduce cold context",
-      insight: `${(tokens.coldRatio * 100).toFixed(0)}% of prompt tokens were uncached cold input. Cold context is the most expensive token class.`,
-      action: "Work in shorter, related steps within one session so context stays warm, and attach only the files the task needs."
-    });
-  }
-
-  if (contextPeak !== null && contextPeak >= thresholds.contextWarnPct) {
-    cards.push({
-      id: "context-pressure",
-      severity: contextPeak >= thresholds.contextCritPct ? "critical" : "warning",
-      title: "Manage context window pressure",
-      insight: `Peak context utilization reached ${contextPeak.toFixed(0)}%. Near-full context raises cost and can degrade answer quality.`,
-      action: "Split large tasks into smaller prompts, start a fresh session for unrelated work, and remove stale attachments."
-    });
-  }
-
-  if (errors > 0) {
-    cards.push({
-      id: "errors",
-      severity: "warning",
-      title: "Investigate failing operations",
-      insight: `${Math.round(errors)} error signals were recorded in this range. Failed tool calls waste credits and slow you down.`,
-      action: "Open the failing traces in Aspire or Tempo, fix the root cause, then retry the task."
-    });
-  }
-
-  if (nonWorkspace > 0) {
-    cards.push({
-      id: "attribution",
+// Each coaching rule is a small, independent function that returns a card when
+// its condition applies. Keeping rules declarative keeps the builder simple and
+// makes it easy to add, remove, or reorder guidance.
+const coachRules: CoachRule[] = [
+  ({ tokens }) =>
+    tokens.cacheEfficiency !== null && tokens.cacheEfficiency < thresholds.cacheEfficiencyWarn
+      ? {
+        id: "cache-reuse",
+        severity: "warning",
+        title: "Improve cache reuse",
+        insight: `Only ${(tokens.cacheEfficiency * 100).toFixed(0)}% of your prompt tokens came from cache reads. Low reuse spends more AI credits on the same context.`,
+        action: "Keep the conversation focused, avoid reopening or re-pasting large files, and let the agent build on prior turns instead of restating context."
+      }
+      : null,
+  ({ tokens }) =>
+    tokens.coldRatio !== null && tokens.coldRatio > thresholds.coldRatioWarn
+      ? {
+        id: "cold-context",
+        severity: "warning",
+        title: "Reduce cold context",
+        insight: `${(tokens.coldRatio * 100).toFixed(0)}% of prompt tokens were uncached cold input. Cold context is the most expensive token class.`,
+        action: "Work in shorter, related steps within one session so context stays warm, and attach only the files the task needs."
+      }
+      : null,
+  ({ contextPeak }) =>
+    contextPeak !== null && contextPeak >= thresholds.contextWarnPct
+      ? {
+        id: "context-pressure",
+        severity: contextPeak >= thresholds.contextCritPct ? "critical" : "warning",
+        title: "Manage context window pressure",
+        insight: `Peak context utilization reached ${contextPeak.toFixed(0)}%. Near-full context raises cost and can degrade answer quality.`,
+        action: "Split large tasks into smaller prompts, start a fresh session for unrelated work, and remove stale attachments."
+      }
+      : null,
+  ({ errors }) =>
+    errors > 0
+      ? {
+        id: "errors",
+        severity: "warning",
+        title: "Investigate failing operations",
+        insight: `${Math.round(errors)} error signals were recorded in this range. Failed tool calls waste credits and slow you down.`,
+        action: "Open the failing traces in Aspire or Tempo, fix the root cause, then retry the task."
+      }
+      : null,
+  ({ nonWorkspace }) =>
+    nonWorkspace > 0
+      ? {
+        id: "attribution",
+        severity: "info",
+        title: "Attribute sessions to a workspace",
+        insight: `${Math.round(nonWorkspace)} real sessions had no Git workspace attribution, so they are missing from per-project analysis.`,
+        action: "Open your project as a Git repository in VS Code so usage is grouped by repo and branch."
+      }
+      : null,
+  ({ budget }) =>
+    budget.projectedUtilizationPct !== null && budget.projectedUtilizationPct >= thresholds.budgetWarnPct
+      ? {
+        id: "budget-pacing",
+        severity: budget.projectedUtilizationPct >= 100 ? "critical" : "warning",
+        title: "Pace your AI Credits pool",
+        insight: `At the current daily rate, local AI Credits would reach about ${budget.projectedMonthEndCredits === null ? "?" : budget.projectedMonthEndCredits.toFixed(0)} by the end of the cycle, roughly ${budget.projectedUtilizationPct.toFixed(0)}% of the configured ${budget.monthlyAllowanceCredits} credit pool for the ${budget.plan} plan. This is a local estimate, not official billing.`,
+        action: "Reduce cold context, choose the lowest-cost model that can do the job, and avoid retrying large prompts before fixing the root cause."
+      }
+      : null,
+  ({ mix }) =>
+    mix.entries.length > 0 && (mix.entries[0].share ?? 0) > 0.6
+      ? {
+        id: "model-cost-concentration",
+        severity: "info",
+        title: "Watch model cost concentration",
+        insight: `${mix.entries[0].model} accounts for ${((mix.entries[0].share ?? 0) * 100).toFixed(0)}% of estimated model AI Credits in this range. All billed model interactions consume AI Credits based on model and tokens.`,
+        action: "Use a less expensive capable model for routine work and reserve higher-cost models for tasks that genuinely need stronger reasoning."
+      }
+      : null,
+  ({ tokens }) => {
+    const input = tokens.input.value;
+    const output = tokens.output.value;
+    if (input === null || output === null || output <= 0 || input / output <= 20) {
+      return null;
+    }
+    return {
+      id: "prompt-io",
       severity: "info",
-      title: "Attribute sessions to a workspace",
-      insight: `${Math.round(nonWorkspace)} real sessions had no Git workspace attribution, so they are missing from per-project analysis.`,
-      action: "Open your project as a Git repository in VS Code so usage is grouped by repo and branch."
-    });
-  }
-
-  const expensive = sessions.filter((session) => session.aiCredits > 0).slice(0, 3);
-  if (expensive.length > 0) {
-    const lead = expensive[0];
-    cards.push({
+      title: "Trim oversized prompts",
+      insight: `You sent about ${(input / output).toFixed(0)}x more input tokens than output tokens. A very high input-to-output ratio usually means too much context is attached for the size of the answer.`,
+      action: "Attach only the files and instructions the task needs, ask focused questions, and remove stale attachments so input stays lean relative to the output."
+    };
+  },
+  ({ aiCredits }) =>
+    aiCredits !== null && aiCredits >= thresholds.aiCreditsCrit
+      ? {
+        id: "credit-budget",
+        severity: "critical",
+        title: "AI credit consumption is high",
+        insight: `Local AI credits reached ${aiCredits.toFixed(1)} in this range, above the critical guardrail of ${thresholds.aiCreditsCrit}.`,
+        action: "Batch related questions, reuse context, and reserve frontier models for complex work to control credit burn."
+      }
+      : null,
+  ({ sessions }) => {
+    const lead = sessions.find((session) => session.aiCredits > 0);
+    if (!lead) {
+      return null;
+    }
+    return {
       id: "top-sessions",
       severity: "info",
       title: "Watch your most expensive sessions",
       insight: `Your highest-cost session used ${lead.aiCredits.toFixed(2)} AI credits with model ${lead.model} in ${lead.repoShort}.`,
       action: "Review whether these sessions needed a frontier model. Lighter tasks can use a smaller model to save credits."
-    });
+    };
   }
+];
 
-  if (aiCredits !== null && aiCredits >= thresholds.aiCreditsCrit) {
-    cards.push({
-      id: "credit-budget",
-      severity: "critical",
-      title: "AI credit consumption is high",
-      insight: `Local AI credits reached ${aiCredits.toFixed(1)} in this range, above the critical guardrail of ${thresholds.aiCreditsCrit}.`,
-      action: "Batch related questions, reuse context, and reserve frontier models for complex work to control credit burn."
-    });
-  }
+function buildCoachCards(data: SummaryResult, sessions: SessionRecord[]): CoachCard[] {
+  const context: CoachContext = {
+    tokens: data.metrics.tokens,
+    aiCredits: data.metrics.aiCredits.value,
+    contextPeak: data.metrics.context.peak.value,
+    errors: data.metrics.activity.errors.value ?? 0,
+    nonWorkspace: data.metrics.dataQuality.nonWorkspaceReal.value ?? 0,
+    budget: data.budget,
+    mix: data.modelMix,
+    sessions
+  };
+
+  const cards = coachRules
+    .map((rule) => rule(context))
+    .filter((card): card is CoachCard => card !== null);
 
   if (cards.length === 0) {
     cards.push({
