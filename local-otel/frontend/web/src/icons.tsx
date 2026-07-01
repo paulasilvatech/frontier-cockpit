@@ -120,6 +120,24 @@ export function SettingsIcon(props: Readonly<IconProps>): ReactElement {
     );
 }
 
+// Check: an affirmative mark, for capabilities a plan includes.
+export function CheckIcon(props: Readonly<IconProps>): ReactElement {
+    return (
+        <IconBase {...props}>
+            <path d="M5 12.5 9.5 17 19 6.5" />
+        </IconBase>
+    );
+}
+
+// Dash: a neutral mark, for capabilities a plan does not include.
+export function DashIcon(props: Readonly<IconProps>): ReactElement {
+    return (
+        <IconBase {...props}>
+            <path d="M6 12h12" />
+        </IconBase>
+    );
+}
+
 export const navIcons: Record<string, (props: Readonly<IconProps>) => ReactElement> = {
     overview: OverviewIcon,
     credits: CreditsIcon,

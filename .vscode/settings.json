@@ -7,7 +7,7 @@
     "windsurf": true,
     "cursor-global": true,
     "cursor-workspace": true
-  },
+},
   "chat.agent.enabled": true,
   "github.copilot.chat.codeGeneration.useInstructionFiles": true,
   "chat.mcp.access": "all"

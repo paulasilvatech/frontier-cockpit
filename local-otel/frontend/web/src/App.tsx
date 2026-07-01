@@ -26,7 +26,7 @@ import {
   type HistoryField
 } from "./ui";
 import { LangProvider, defaultLang, languages, useT, type Lang, type TranslateFn } from "./i18n";
-import { NavIcon } from "./icons";
+import { CheckIcon, DashIcon, NavIcon } from "./icons";
 
 const rangeOptions: RangeOption[] = ["1h", "6h", "24h", "7d"];
 
@@ -651,6 +651,137 @@ function CreditsView({ summary }: Readonly<{ summary: SummaryResponse | null }>)
   );
 }
 
+interface PlanFacts {
+  readonly id: "business" | "enterprise";
+  readonly priceUsd: number;
+  readonly standardCredits: number;
+  readonly promoCredits: number;
+}
+
+const planFacts: readonly PlanFacts[] = [
+  { id: "business", priceUsd: 19, standardCredits: 1900, promoCredits: 3000 },
+  { id: "enterprise", priceUsd: 39, standardCredits: 3900, promoCredits: 7000 }
+];
+
+interface PlanRow {
+  readonly id: string;
+  readonly label: string;
+  readonly biz: string;
+  readonly ent: string;
+  readonly kind: "text" | "icon";
+}
+
+function planFeatureRows(t: TranslateFn): readonly PlanRow[] {
+  return [
+    { id: "price", label: t("plans.row.price"), biz: "US$19", ent: "US$39", kind: "text" },
+    { id: "standard", label: t("plans.row.standard"), biz: formatNumber(1900, 0), ent: formatNumber(3900, 0), kind: "text" },
+    { id: "promo", label: t("plans.row.promo"), biz: formatNumber(3000, 0), ent: formatNumber(7000, 0), kind: "text" },
+    { id: "value", label: t("plans.row.value"), biz: t("plans.val.creditValue"), ent: t("plans.val.creditValue"), kind: "text" },
+    { id: "pooling", label: t("plans.row.pooling"), biz: t("plans.val.pooledOrg"), ent: t("plans.val.pooledEnt"), kind: "text" },
+    { id: "completions", label: t("plans.row.completions"), biz: t("plans.val.notBilled"), ent: t("plans.val.notBilled"), kind: "text" },
+    { id: "controls", label: t("plans.row.controls"), biz: t("plans.val.controlsBiz"), ent: t("plans.val.controlsEnt"), kind: "text" },
+    { id: "githubcom", label: t("plans.row.githubcom"), biz: "dash", ent: "check", kind: "icon" },
+    { id: "knowledge", label: t("plans.row.knowledge"), biz: "dash", ent: "check", kind: "icon" },
+    { id: "governance", label: t("plans.row.governance"), biz: t("plans.val.orgScope"), ent: t("plans.val.entScope"), kind: "text" }
+  ];
+}
+
+function PlanCell({ kind, value, t }: Readonly<{ kind: "text" | "icon"; value: string; t: TranslateFn }>) {
+  if (kind !== "icon") {
+    return <>{value}</>;
+  }
+  if (value === "check") {
+    return (
+      <span className="plan-yes">
+        <CheckIcon /> {t("plans.val.included")}
+      </span>
+    );
+  }
+  return (
+    <span className="plan-no">
+      <DashIcon /> {t("plans.val.notIncluded")}
+    </span>
+  );
+}
+
+const PLAN_MAX_CREDITS = 7000;
+
+function PlanCard({ plan, current, t }: Readonly<{ plan: PlanFacts; current: boolean; t: TranslateFn }>) {
+  const stdPct = (plan.standardCredits / PLAN_MAX_CREDITS) * 100;
+  const promoPct = (plan.promoCredits / PLAN_MAX_CREDITS) * 100;
+  return (
+    <article className={current ? "plan-card plan-card-current" : "plan-card"}>
+      <div className="plan-card-head">
+        <h3>{t(`plans.${plan.id}`)}</h3>
+        {current ? <span className="plan-current-badge">{t("plans.current")}</span> : null}
+      </div>
+      <div className="plan-price">
+        <span className="plan-price-value">US${plan.priceUsd}</span>
+        <span className="plan-price-unit muted">{t("plans.perUserMonth")}</span>
+      </div>
+      <div className="plan-allowance-row">
+        <span className="plan-allowance-label">{t("plans.standard")}</span>
+        <span className="plan-allowance-value">{formatNumber(plan.standardCredits, 0)}</span>
+      </div>
+      <svg className="plan-bar" viewBox="0 0 100 6" preserveAspectRatio="none" role="img" aria-label={t("plans.standard")}>
+        <rect className="plan-bar-track" x="0" y="0" width="100" height="6" rx="3" />
+        <rect className="plan-bar-fill plan-bar-standard" x="0" y="0" width={stdPct} height="6" rx="3" />
+      </svg>
+      <div className="plan-allowance-row">
+        <span className="plan-allowance-label">
+          {t("plans.promo")} <span className="muted">({t("plans.promoWindow")})</span>
+        </span>
+        <span className="plan-allowance-value">{formatNumber(plan.promoCredits, 0)}</span>
+      </div>
+      <svg className="plan-bar" viewBox="0 0 100 6" preserveAspectRatio="none" role="img" aria-label={t("plans.promo")}>
+        <rect className="plan-bar-track" x="0" y="0" width="100" height="6" rx="3" />
+        <rect className="plan-bar-fill plan-bar-promo" x="0" y="0" width={promoPct} height="6" rx="3" />
+      </svg>
+      <span className="plan-allowance-unit muted">{t("plans.creditsUnit")}</span>
+    </article>
+  );
+}
+
+function PlanComparisonPanel({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
+  const currentPlan = summary?.budget?.plan ?? null;
+  const rows = planFeatureRows(t);
+  return (
+    <Panel title={t("plans.title")} aside={<span className="muted">{t("plans.aside")}</span>}>
+      <div className="plans-grid">
+        {planFacts.map((plan) => (
+          <PlanCard key={plan.id} plan={plan} current={currentPlan === plan.id} t={t} />
+        ))}
+      </div>
+      <div className="table-wrap">
+        <table className="plan-table">
+          <thead>
+            <tr>
+              <th>{t("plans.feature")}</th>
+              <th>{t("plans.business")}</th>
+              <th>{t("plans.enterprise")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <td>{row.label}</td>
+                <td>
+                  <PlanCell kind={row.kind} value={row.biz} t={t} />
+                </td>
+                <td>
+                  <PlanCell kind={row.kind} value={row.ent} t={t} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="plan-note muted">{t("plans.note")}</p>
+    </Panel>
+  );
+}
+
 function OverviewView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
   const t = useT();
   const alerts = localizeAlerts(summary?.alerts ?? [], t);
@@ -682,11 +813,13 @@ function OverviewView({ summary }: Readonly<{ summary: SummaryResponse | null }>
       />
       <KpiStrip summary={summary} />
       <BudgetPanel summary={summary} compact />
+      <ModelMixPanel summary={summary} />
       <TokenComposition summary={summary} />
-      <HistoryPanel points={summary?.history.points ?? []} message={summary?.history.message} />
       <Panel title={t("overview.topWorkspaces")} aside={<span className="muted">{t("overview.rankedByCredits")}</span>}>
         <WorkspaceTable summary={summary} limit={5} />
       </Panel>
+      <PlanComparisonPanel summary={summary} />
+      <HistoryPanel points={summary?.history.points ?? []} message={summary?.history.message} />
       <Panel
         title={t("health.stack")}
         aside={
