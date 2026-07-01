@@ -1446,6 +1446,152 @@ ul {
   line-height: 1.5;
 }
 
+.budget-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.budget-figure {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 160px;
+  padding: 14px 18px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.budget-figure-value {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.budget-figure-unit {
+  color: var(--ink-3);
+  font-size: 0.82rem;
+  margin-top: 4px;
+}
+
+.budget-good .budget-figure-value {
+  color: var(--c-green-700);
+}
+
+.budget-warn .budget-figure-value {
+  color: #9a7400;
+}
+
+.budget-bad .budget-figure-value {
+  color: var(--c-red-500);
+}
+
+.budget-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px 24px;
+  flex: 1;
+  min-inline-size: 280px;
+}
+
+.budget-bar {
+  display: block;
+  inline-size: 100%;
+  block-size: 14px;
+  margin: 8px 0 12px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--rule);
+}
+
+.budget-bar-track {
+  fill: var(--bg);
+}
+
+.budget-bar-fill.budget-good {
+  fill: var(--c-green-500);
+}
+
+.budget-bar-fill.budget-warn {
+  fill: var(--c-yellow-500);
+}
+
+.budget-bar-fill.budget-bad {
+  fill: var(--c-red-500);
+}
+
+.budget-bar-projected {
+  fill: var(--c-blue-500);
+  opacity: 0.28;
+}
+
+.budget-bar-warn {
+  stroke: #9a7400;
+  stroke-width: 0.6;
+  stroke-dasharray: 2 1.5;
+}
+
+.budget-bar-crit {
+  stroke: var(--c-red-500);
+  stroke-width: 0.6;
+  stroke-dasharray: 2 1.5;
+}
+
+.mix-split {
+  margin-bottom: 16px;
+}
+
+.mix-split-bar {
+  display: block;
+  inline-size: 100%;
+  block-size: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--rule);
+}
+
+.seg-mix-included {
+  fill: var(--c-blue-500);
+}
+
+.seg-mix-premium {
+  fill: var(--c-yellow-500);
+}
+
+.mix-split-legend {
+  display: flex;
+  gap: 24px;
+  margin-top: 10px;
+  font-size: 0.86rem;
+  color: var(--ink-2);
+}
+
+.mix-split-legend i {
+  display: inline-block;
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: baseline;
+}
+
+.dot-mix-included {
+  background: var(--c-blue-500);
+}
+
+.dot-mix-premium {
+  background: var(--c-yellow-500);
+}
+
+@media (max-width: 720px) {
+  .budget-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1120px) {
   .playbook-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

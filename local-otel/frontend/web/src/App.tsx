@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
   Alert,
   AlertSeverity,
@@ -29,7 +29,7 @@ import { LangProvider, defaultLang, languages, useT, type Lang, type TranslateFn
 
 const rangeOptions: RangeOption[] = ["1h", "6h", "24h", "7d"];
 
-type ViewId = "overview" | "sessions" | "workspaces" | "coach" | "history" | "health" | "settings";
+type ViewId = "overview" | "credits" | "sessions" | "workspaces" | "coach" | "history" | "health" | "settings";
 
 interface ViewDef {
   id: ViewId;
@@ -40,6 +40,7 @@ interface ViewDef {
 
 const viewMeta: { id: ViewId; icon: string }[] = [
   { id: "overview", icon: "◎" },
+  { id: "credits", icon: "◈" },
   { id: "sessions", icon: "≣" },
   { id: "workspaces", icon: "▤" },
   { id: "coach", icon: "✦" },
@@ -117,6 +118,34 @@ function formatPctText(value: number | null | undefined): string {
   return `${formatNumber(value, 0)}%`;
 }
 
+function secondsText(value: number | null | undefined, t: TranslateFn): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "—";
+  }
+  return t("experience.seconds", { value: formatNumber(value, 1) });
+}
+
+function formatNumberText(value: number | null | undefined, digits: number, t: TranslateFn): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return t("common.unavailable");
+  }
+  return formatNumber(value, digits);
+}
+
+function formatCurrencyText(value: number | null | undefined, t: TranslateFn): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return t("common.unavailable");
+  }
+  return formatCurrency(value);
+}
+
+function totalSub(value: number | null | undefined, t: TranslateFn): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return t("common.unavailable");
+  }
+  return t("kpi.totalSuffix", { value: formatNumber(value, 0) });
+}
+
 function statusText(status: ServiceStatus, t: TranslateFn): string {
   return t(`status.${status}`);
 }
@@ -189,6 +218,12 @@ function localizeAlerts(alerts: Alert[], t: TranslateFn): Alert[] {
           title: t("alert.errors.title"),
           detail: t("alert.errors.detail", { value: formatNumber(alert.value, 0) })
         };
+      case "premium-budget":
+        return {
+          ...alert,
+          title: t(`alert.premium-budget.${alert.severity}.title`),
+          detail: t("alert.premium-budget.detail", { value: formatNumber(alert.value, 0) })
+        };
       default:
         return alert;
     }
@@ -206,14 +241,14 @@ function KpiStrip({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
         label={t("kpi.aiCredits")}
         tone="credits"
         available={summary?.metrics.aiCredits.value != null}
-        value={formatNumber(summary?.metrics.aiCredits.value ?? null, 2)}
+        value={formatNumberText(summary?.metrics.aiCredits.value, 2, t)}
         sub={t("kpi.aiCreditsSub")}
       />
       <Kpi
         label={t("kpi.sessions")}
         tone="neutral"
         available={summary?.metrics.sessions.value != null}
-        value={formatNumber(summary?.metrics.sessions.value ?? null, 0)}
+        value={formatNumberText(summary?.metrics.sessions.value, 0, t)}
         sub={t("kpi.sessionsSub")}
       />
       <Kpi
@@ -221,14 +256,14 @@ function KpiStrip({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
         tone="input"
         available={tokens?.input.value != null}
         value={formatCompact(tokens?.input.value ?? null)}
-        sub={t("kpi.totalSuffix", { value: formatNumber(tokens?.input.value ?? null, 0) })}
+        sub={totalSub(tokens?.input.value, t)}
       />
       <Kpi
         label={t("kpi.output")}
         tone="output"
         available={tokens?.output.value != null}
         value={formatCompact(tokens?.output.value ?? null)}
-        sub={t("kpi.totalSuffix", { value: formatNumber(tokens?.output.value ?? null, 0) })}
+        sub={totalSub(tokens?.output.value, t)}
       />
       <Kpi
         label={t("kpi.cached")}
@@ -299,7 +334,7 @@ function TokenComposition({ summary }: Readonly<{ summary: SummaryResponse | nul
         </div>
         <div>
           <span className="stat-label">{t("composition.toolCalls")}</span>
-          <span className="stat-value">{formatNumber(summary?.metrics.activity.toolCalls.value ?? null, 0)}</span>
+          <span className="stat-value">{formatNumberText(summary?.metrics.activity.toolCalls.value, 0, t)}</span>
         </div>
       </div>
     </Panel>
@@ -409,6 +444,214 @@ function FirstRunPanel({ summary }: Readonly<{ summary: SummaryResponse | null }
   );
 }
 
+function budgetTone(level: string): string {
+  if (level === "warning") {
+    return "warn";
+  }
+  if (level === "critical" || level === "over") {
+    return "bad";
+  }
+  return "good";
+}
+
+function BudgetPanel({ summary, compact }: Readonly<{ summary: SummaryResponse | null; compact?: boolean }>) {
+  const t = useT();
+  const budget = summary?.budget;
+  const utilization = budget?.utilizationPct ?? null;
+  const projected = budget?.projectedUtilizationPct ?? null;
+  const tone = budgetTone(budget?.alertLevel ?? "ok");
+  const barWidth = utilization === null ? 0 : Math.min(100, utilization);
+  const projectedWidth = projected === null ? 0 : Math.min(100, projected);
+  const planLabel = budget?.plan ? budget.plan.charAt(0).toUpperCase() + budget.plan.slice(1) : "—";
+
+  return (
+    <Panel
+      title={t("budget.title")}
+      status={budget?.status}
+      aside={<span className="muted">{t("budget.aside", { plan: planLabel })}</span>}
+    >
+      <div className="budget-head">
+        <div className={`budget-figure budget-${tone}`}>
+          <span className="budget-figure-value">
+            {formatNumber(budget?.premiumRequestsEstimate ?? null, 0)}
+          </span>
+          <span className="budget-figure-unit">
+            {t("budget.ofAllowance", { allowance: formatNumber(budget?.premiumRequestAllowance ?? null, 0) })}
+          </span>
+        </div>
+        <div className="budget-facts">
+          <div>
+            <span className="stat-label">{t("budget.utilization")}</span>
+            <span className="stat-value">{utilization === null ? "—" : `${formatNumber(utilization, 0)}%`}</span>
+          </div>
+          <div>
+            <span className="stat-label">{t("budget.remaining")}</span>
+            <span className="stat-value">{formatNumber(budget?.remaining ?? null, 0)}</span>
+          </div>
+          <div>
+            <span className="stat-label">{t("budget.daysLeft")}</span>
+            <span className="stat-value">{budget ? formatNumber(budget.daysLeft, 0) : "—"}</span>
+          </div>
+          <div>
+            <span className="stat-label">{t("budget.projected")}</span>
+            <span className="stat-value">{projected === null ? "—" : `${formatNumber(projected, 0)}%`}</span>
+          </div>
+        </div>
+      </div>
+      <svg className="budget-bar" viewBox="0 0 100 8" preserveAspectRatio="none" role="img" aria-label={t("budget.title")}>
+        <rect className="budget-bar-track" x="0" y="0" width="100" height="8" />
+        <rect className={`budget-bar-fill budget-${tone}`} x="0" y="0" width={barWidth} height="8" />
+        {projectedWidth > barWidth ? (
+          <rect className="budget-bar-projected" x={barWidth} y="0" width={projectedWidth - barWidth} height="8" />
+        ) : null}
+        <line className="budget-bar-warn" x1={summary?.thresholds.budgetWarnPct ?? 75} y1="0" x2={summary?.thresholds.budgetWarnPct ?? 75} y2="8" />
+        <line className="budget-bar-crit" x1={summary?.thresholds.budgetCritPct ?? 90} y1="0" x2={summary?.thresholds.budgetCritPct ?? 90} y2="8" />
+      </svg>
+      <p className="muted">{t("budget.note")}</p>
+      {compact ? null : <p className="muted">{t("budget.methodology")}</p>}
+    </Panel>
+  );
+}
+
+function ModelMixPanel({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
+  const mix = summary?.modelMix;
+  const entries = mix?.entries ?? [];
+  const totalPremiumWeight = entries.reduce((sum, entry) => sum + (entry.premiumRequestsEstimate ?? 0), 0);
+  return (
+    <Panel
+      title={t("mix.title")}
+      status={mix?.status}
+      aside={<span className="muted">{t("mix.aside")}</span>}
+    >
+      {mix && (mix.includedShare !== null || mix.premiumShare !== null) ? (
+        <div className="mix-split">
+          <svg className="mix-split-bar" viewBox="0 0 100 8" preserveAspectRatio="none" role="img" aria-label={t("mix.title")}>
+            <rect className="seg-mix-included" x="0" y="0" width={(mix.includedShare ?? 0) * 100} height="8" />
+            <rect className="seg-mix-premium" x={(mix.includedShare ?? 0) * 100} y="0" width={(mix.premiumShare ?? 0) * 100} height="8" />
+          </svg>
+          <div className="mix-split-legend">
+            <span><i className="dot-mix-included" /> {t("mix.included", { value: formatPercent(mix.includedShare) })}</span>
+            <span><i className="dot-mix-premium" /> {t("mix.premium", { value: formatPercent(mix.premiumShare) })}</span>
+          </div>
+        </div>
+      ) : null}
+      {entries.length > 0 ? (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{t("sessions.col.model")}</th>
+                <th>{t("mix.col.class")}</th>
+                <th className="numeric">{t("mix.col.multiplier")}</th>
+                <th className="numeric">{t("mix.col.calls")}</th>
+                <th className="numeric">{t("mix.col.estimate")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <tr key={entry.model}>
+                  <td><span className="model-tag">{entry.model}</span></td>
+                  <td>
+                    <span className={`pill ${entry.included ? "pill-good" : "pill-warn"}`}>
+                      {entry.included ? t("mix.classIncluded") : t("mix.classPremium")}
+                    </span>
+                  </td>
+                  <td className="numeric">{entry.multiplier === null ? "—" : `${formatNumber(entry.multiplier, 2)}x`}</td>
+                  <td className="numeric">{formatNumber(entry.calls, 0)}</td>
+                  <td className="numeric strong">{entry.premiumRequestsEstimate === null || totalPremiumWeight <= 0 ? "—" : formatPercent(entry.premiumRequestsEstimate / totalPremiumWeight)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="muted">{mix?.message ?? t("mix.empty")}</p>
+      )}
+      <p className="muted">{t("mix.note")}</p>
+    </Panel>
+  );
+}
+
+function ExperiencePanel({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
+  const experience = summary?.experience;
+  const outcomes = summary?.outcomes;
+  return (
+    <section className="panel two-column">
+      <div>
+        <div className="panel-header"><h2>{t("experience.title")}</h2></div>
+        <dl className="quality-grid">
+          <div>
+            <dt>{t("experience.ttft")}</dt>
+            <dd>{secondsText(experience?.avgTimeToFirstTokenSeconds.value, t)}</dd>
+          </div>
+          <div>
+            <dt>{t("experience.response")}</dt>
+            <dd>{secondsText(experience?.avgResponseSeconds.value, t)}</dd>
+          </div>
+          <div>
+            <dt>{t("experience.turns")}</dt>
+            <dd>{formatNumber(experience?.userTurns.value ?? null, 0)}</dd>
+          </div>
+        </dl>
+        <p className="muted">{t("experience.note")}</p>
+      </div>
+      <div>
+        <div className="panel-header"><h2>{t("outcomes.title")}</h2></div>
+        <dl className="quality-grid">
+          <div>
+            <dt>{t("outcomes.acceptances")}</dt>
+            <dd>{formatNumber(outcomes?.editAcceptances.value ?? null, 0)}</dd>
+          </div>
+          <div>
+            <dt>{t("outcomes.lines")}</dt>
+            <dd>{formatNumber(outcomes?.linesAccepted.value ?? null, 0)}</dd>
+          </div>
+          <div>
+            <dt>{t("outcomes.survival")}</dt>
+            <dd>{formatNumber(outcomes?.editSurvivalNoRevert.value ?? null, 0)}</dd>
+          </div>
+          <div>
+            <dt>{t("outcomes.compactions")}</dt>
+            <dd>{formatNumber(outcomes?.contextCompactions.value ?? null, 0)}</dd>
+          </div>
+        </dl>
+        <p className="muted">{t("outcomes.note")}</p>
+      </div>
+    </section>
+  );
+}
+
+function CreditsView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+  const t = useT();
+  const playbook = [
+    { id: "included", title: t("credits.play.included.title"), body: t("credits.play.included.body") },
+    { id: "budget", title: t("credits.play.budget.title"), body: t("credits.play.budget.body") },
+    { id: "batch", title: t("credits.play.batch.title"), body: t("credits.play.batch.body") },
+    { id: "cache", title: t("credits.play.cache.title"), body: t("credits.play.cache.body") },
+    { id: "retry", title: t("credits.play.retry.title"), body: t("credits.play.retry.body") },
+    { id: "monitor", title: t("credits.play.monitor.title"), body: t("credits.play.monitor.body") }
+  ];
+  return (
+    <>
+      <BudgetPanel summary={summary} />
+      <ModelMixPanel summary={summary} />
+      <ExperiencePanel summary={summary} />
+      <Panel title={t("credits.play.title")} aside={<span className="muted">{t("credits.play.aside")}</span>}>
+        <ul className="playbook-grid">
+          {playbook.map((item) => (
+            <li key={item.id} className="playbook-card">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+    </>
+  );
+}
+
 function OverviewView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
   const t = useT();
   const alerts = localizeAlerts(summary?.alerts ?? [], t);
@@ -439,6 +682,7 @@ function OverviewView({ summary }: Readonly<{ summary: SummaryResponse | null }>
         }}
       />
       <KpiStrip summary={summary} />
+      <BudgetPanel summary={summary} compact />
       <TokenComposition summary={summary} />
       <HistoryPanel points={summary?.history.points ?? []} message={summary?.history.message} />
       <Panel title={t("overview.topWorkspaces")} aside={<span className="muted">{t("overview.rankedByCredits")}</span>}>
@@ -764,19 +1008,19 @@ function HealthView({ summary }: Readonly<{ summary: SummaryResponse | null }>) 
           <dl className="quality-grid">
             <div>
               <dt>{t("health.workspaceReal")}</dt>
-              <dd>{formatNumber(summary?.metrics.dataQuality.workspaceReal.value ?? null, 0)}</dd>
+              <dd>{formatNumberText(summary?.metrics.dataQuality.workspaceReal.value, 0, t)}</dd>
             </div>
             <div>
               <dt>{t("health.nonWorkspaceReal")}</dt>
-              <dd>{formatNumber(summary?.metrics.dataQuality.nonWorkspaceReal.value ?? null, 0)}</dd>
+              <dd>{formatNumberText(summary?.metrics.dataQuality.nonWorkspaceReal.value, 0, t)}</dd>
             </div>
             <div>
               <dt>{t("health.observedCoverage")}</dt>
-              <dd>{formatNumber(summary?.metrics.dataQuality.observedCoverage.value ?? null, 0)}</dd>
+              <dd>{formatNumberText(summary?.metrics.dataQuality.observedCoverage.value, 0, t)}</dd>
             </div>
             <div>
               <dt>{t("health.notObservedYet")}</dt>
-              <dd>{formatNumber(summary?.metrics.dataQuality.notObservedYet.value ?? null, 0)}</dd>
+              <dd>{formatNumberText(summary?.metrics.dataQuality.notObservedYet.value, 0, t)}</dd>
             </div>
           </dl>
           <p className="muted">{t("health.dqNote")}</p>
@@ -787,7 +1031,7 @@ function HealthView({ summary }: Readonly<{ summary: SummaryResponse | null }>) 
             <span className="status status-unavailable">{summary?.officialBilling.status ?? "unavailable"}</span>
           </div>
           <p>{summary?.officialBilling.reason}</p>
-          <p className="muted">{t("health.usdWhatIf", { value: formatCurrency(usdTotal) })}</p>
+          <p className="muted">{t("health.usdWhatIf", { value: formatCurrencyText(usdTotal, t) })}</p>
         </div>
       </section>
       <section className="panel two-column">
@@ -855,7 +1099,7 @@ function SettingsView({ summary }: Readonly<{ summary: SummaryResponse | null }>
               {thresholdKeys.map((key) => (
                 <tr key={key}>
                   <td>{t(`th.${key}.label`)}</td>
-                  <td className="numeric strong">{formatNumber(thresholds[key] ?? null, 2)}</td>
+                  <td className="numeric strong">{formatNumberText(thresholds[key], 2, t)}</td>
                   <td><code>{thresholdEnv[key]}</code></td>
                   <td className="muted">{t(`th.${key}.help`)}</td>
                 </tr>
@@ -878,6 +1122,23 @@ function SettingsView({ summary }: Readonly<{ summary: SummaryResponse | null }>
 }
 
 const langStorageKey = "frontier.lang";
+
+interface ViewProps {
+  summary: SummaryResponse | null;
+  sessions: SessionsResponse | null;
+  coach: CoachResponse | null;
+}
+
+const viewRenderers: Record<ViewId, (props: ViewProps) => ReactNode> = {
+  overview: ({ summary }) => <OverviewView summary={summary} />,
+  credits: ({ summary }) => <CreditsView summary={summary} />,
+  sessions: ({ sessions }) => <SessionsView sessions={sessions} />,
+  workspaces: ({ summary }) => <WorkspacesView summary={summary} />,
+  coach: ({ coach, summary }) => <CoachView coach={coach} summary={summary} />,
+  history: ({ summary }) => <HistoryView summary={summary} />,
+  health: ({ summary }) => <HealthView summary={summary} />,
+  settings: ({ summary }) => <SettingsView summary={summary} />
+};
 
 function readInitialLang(): Lang {
   if (typeof localStorage === "undefined") {
@@ -1004,13 +1265,7 @@ function AppShell({ lang, setLang }: Readonly<{ lang: Lang; setLang: (lang: Lang
         {!summary && !error ? <div className="loading">{t("state.loading")}</div> : null}
 
         <div className="view">
-          {activeView === "overview" ? <OverviewView summary={summary} /> : null}
-          {activeView === "sessions" ? <SessionsView sessions={sessions} /> : null}
-          {activeView === "workspaces" ? <WorkspacesView summary={summary} /> : null}
-          {activeView === "coach" ? <CoachView coach={coach} summary={summary} /> : null}
-          {activeView === "history" ? <HistoryView summary={summary} /> : null}
-          {activeView === "health" ? <HealthView summary={summary} /> : null}
-          {activeView === "settings" ? <SettingsView summary={summary} /> : null}
+          {viewRenderers[activeView]({ summary, sessions, coach })}
         </div>
 
         <footer className="content-foot">
