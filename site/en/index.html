@@ -896,24 +896,26 @@
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         border: 1px solid var(--rule);
+        background: var(--paper);
       }
 
       .about-connect__item {
-        min-height: 70px;
+        min-height: 80px;
+        min-width: 0;
       }
 
       .about-connect__item+.about-connect__item {
         border-left: 1px solid var(--rule);
       }
 
-      .about-connect__item > a,
-      .about-connect__item > span {
-        display: flex;
+      .about-connect__link {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr);
         align-items: center;
-        gap: 14px;
+        column-gap: 16px;
         width: 100%;
         height: 100%;
-        padding: 16px 18px;
+        padding: 18px 20px;
         color: var(--ink);
         text-decoration: none;
       }
@@ -921,8 +923,14 @@
       .about-connect__icon {
         font-family: var(--font-mono);
         font-size: 15px;
+        font-weight: 600;
         color: var(--ink-3);
-        min-width: 22px;
+        width: 24px;
+        text-align: center;
+      }
+
+      .about-connect__copy {
+        min-width: 0;
       }
 
       .about-connect__title {
@@ -930,6 +938,9 @@
         font-size: 14px;
         font-weight: 600;
         line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .about-connect__meta {
@@ -939,6 +950,9 @@
         font-size: 11px;
         color: var(--ink-3);
         letter-spacing: 0.04em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .about-connect__item a:hover {
@@ -1150,7 +1164,7 @@
           grid-template-columns: 1fr;
         }
 
-        .about-connect__item + .about-connect__item {
+        .about-connect__item+.about-connect__item {
           border-left: 0;
           border-top: 1px solid var(--rule);
         }
@@ -1557,31 +1571,31 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
                 <div class="about-connect__label">Connect</div>
                 <ul class="about-connect__grid">
                   <li class="about-connect__item">
-                    <a href="https://www.linkedin.com/in/paulanunes/">
+                    <a class="about-connect__link" href="https://www.linkedin.com/in/paulanunes/">
                       <span class="about-connect__icon" aria-hidden="true">in</span>
-                      <span>
+                      <span class="about-connect__copy">
                         <span class="about-connect__title">LinkedIn</span>
                         <span class="about-connect__meta">/paulanunes</span>
                       </span>
                     </a>
                   </li>
                   <li class="about-connect__item">
-                    <a href="https://github.com/paulasilvatech/frontier-cockpit">
+                    <a class="about-connect__link" href="https://github.com/paulasilvatech">
                       <span class="about-connect__icon" aria-hidden="true">gh</span>
-                      <span>
-                        <span class="about-connect__title">Product repository</span>
-                        <span class="about-connect__meta">frontier-cockpit</span>
+                      <span class="about-connect__copy">
+                        <span class="about-connect__title">GitHub Projects</span>
+                        <span class="about-connect__meta">@paulasilvatech</span>
                       </span>
                     </a>
                   </li>
                   <li class="about-connect__item">
-                    <span>
-                      <span class="about-connect__icon" aria-hidden="true">fc</span>
-                      <span>
-                        <span class="about-connect__title">Editions</span>
-                        <span class="about-connect__meta">Local + Hybrid</span>
+                    <a class="about-connect__link" href="https://github.com/paulanunes85">
+                      <span class="about-connect__icon" aria-hidden="true">gh</span>
+                      <span class="about-connect__copy">
+                        <span class="about-connect__title">GitHub Personal</span>
+                        <span class="about-connect__meta">@paulanunes85</span>
                       </span>
-                    </span>
+                    </a>
                   </li>
                 </ul>
               </div>
