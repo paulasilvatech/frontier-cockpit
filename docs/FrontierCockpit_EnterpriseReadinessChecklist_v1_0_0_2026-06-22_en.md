@@ -41,7 +41,7 @@ This checklist defines what must be true before presenting Frontier Cockpit as a
 | Developer path | Developers can find how to start the local runtime, inspect Aspire, use Grafana, and improve prompts. | Required |
 | Platform path | Platform and FinOps teams can find Azure deployment, data consolidation, operations, and governance guidance. | Required |
 | Official sources | Local OpenTelemetry is described as operational telemetry. Official billing, AI Credits, and adoption require GitHub-provided sources. | Required |
-| Deliverables | Documentation, diagrams, decks, and workshop labs are discoverable from the root README. | Required |
+| Deliverables | Documentation, diagrams, runtime scripts, and workshop labs are discoverable from the root README. | Required |
 
 ## 2. Local Runtime
 

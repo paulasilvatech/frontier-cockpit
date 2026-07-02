@@ -276,7 +276,9 @@ dd {
 }
 
 .content {
+  width: min(100%, 1760px);
   min-width: 0;
+  margin-inline: auto;
   padding: 24px clamp(18px, 3vw, 40px) 48px;
 }
 

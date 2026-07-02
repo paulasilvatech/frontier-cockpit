@@ -19,13 +19,6 @@ print "Refresh interval: ${refresh_seconds}s"
 while true; do
   cycle_status=0
 
-  if ./seed-model-multipliers.sh --quiet; then
-    print "$(date -u +%Y-%m-%dT%H:%M:%SZ) seeded GitHub Copilot premium-request multipliers."
-  else
-    print -u2 "$(date -u +%Y-%m-%dT%H:%M:%SZ) failed to seed GitHub Copilot premium-request multipliers."
-    cycle_status=1
-  fi
-
   if ./seed-model-prices.sh --quiet; then
     print "$(date -u +%Y-%m-%dT%H:%M:%SZ) seeded local planning prices."
   else
@@ -35,9 +28,11 @@ while true; do
 
   if (( cycle_status == 0 )); then
     date +%s > /tmp/frontier-registry.last-ok
+    sleep_seconds="$refresh_seconds"
   else
-    print -u2 "Registry cycle failed. The sidecar will retry after ${refresh_seconds}s."
+    sleep_seconds=30
+    print -u2 "Registry cycle failed. The sidecar will retry after ${sleep_seconds}s."
   fi
 
-  sleep "$refresh_seconds"
+  sleep "$sleep_seconds"
 done

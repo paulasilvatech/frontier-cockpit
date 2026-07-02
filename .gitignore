@@ -20,6 +20,7 @@ local-otel/**/*.log
 local-otel/**/*-log.txt
 local-otel/*.out
 local-otel/*.err
+local-otel/**/*.err
 local-otel/materialized-traces.json
 local-otel/frontier-insights.duckdb
 local-otel/frontier-otel-export.duckdb

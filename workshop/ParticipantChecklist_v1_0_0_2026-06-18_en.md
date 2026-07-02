@@ -46,14 +46,17 @@ Use this checklist to confirm each participant leaves the workshop with a workin
 - [ ] `local-otel/client.env` contains participant name, customer name, role, plan, seat count, and AI Credits configuration.
 - [ ] Client bootstrap completed with `bash local-otel/client-bootstrap.sh` on macOS or Linux, or `pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1` on Windows.
 - [ ] VS Code or VS Code Insiders was restarted after the bootstrap.
-- [ ] `local-otel/workshop.env.example` was copied to `local-otel/workshop.env`.
-- [ ] `local-otel/workshop.env` contains participant name, role, plan, seat count, and AI Credits pool.
-- [ ] Local stack starts with `local-otel/workshop-ready.sh` from the repository root.
 - [ ] `local-otel/check-workshop-local.sh` reports ready.
-- [ ] Hourly LaunchAgents are installed with `~/.copilot-otel/install-launchagents.sh` when scheduled dashboard refresh is expected.
 - [ ] Frontier Developer Cockpit mini app opens at `http://localhost:3300`.
 - [ ] Aspire opens at `http://localhost:18888`.
 - [ ] Grafana opens at `http://localhost:3000`.
+
+Optional workshop path, only when following the hands-on labs:
+
+- [ ] `local-otel/workshop.env.example` was copied to `local-otel/workshop.env`.
+- [ ] `local-otel/workshop.env` contains participant name, role, plan, seat count, and AI Credits pool.
+- [ ] Local stack starts with `local-otel/workshop-ready.sh` from the repository root.
+- [ ] Hourly LaunchAgents are installed with `local-otel/install-launchagents.sh` when scheduled dashboard refresh is expected on macOS.
 
 ## 2. Real Telemetry
 

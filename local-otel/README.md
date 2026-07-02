@@ -29,7 +29,7 @@ The cross-platform client bootstrap supports macOS, Linux, and Windows. It appli
 
 The kit has three run modes:
 
-- Aspire-only: lightweight live view for quick demos.
+- Aspire-only: lightweight live view for quick inspection.
 - Full local stack: OpenTelemetry Collector + Aspire + Tempo + Prometheus + Loki + Grafana + PostgreSQL, with local history.
 - Hybrid Azure: full local stack plus forwarding to an Azure Container Apps Collector, Application Insights, Log Analytics, Azure Monitor workspace, and Azure Managed Grafana.
 
@@ -181,13 +181,13 @@ Use these attributes to filter traces by project in Aspire Dashboard, Applicatio
 
 ## Security note
 
-Content capture is enabled for teaching and local validation. It can include prompts, source code, file paths, tool inputs, and tool results. Keep this local for demos, and disable content capture before using this with sensitive customer repositories unless the customer explicitly approves it.
+Content capture is enabled for teaching and local validation. It can include prompts, source code, file paths, tool inputs, and tool results. Keep this local for trusted sessions, and disable content capture before using this with sensitive customer repositories unless the customer explicitly approves it.
 
 Frontier Developer Cockpit telemetry is operational telemetry. It is useful for coaching, debugging, context analysis, and cost-awareness education. Official billing, AI Credits, and adoption reporting require GitHub billing exports, usage metrics, or another approved source.
 
 Aspire Dashboard runs with anonymous browser access for local convenience and is bound to localhost only. Do not expose port `18888` publicly. OTLP and Dashboard API ingestion still use the local API key configured in `local-otel/stack/aspire-api-key.env` when the full stack is running.
 
-## Start local backends
+## Client Runtime Setup
 
 Docker Desktop must be running.
 
@@ -211,7 +211,7 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1
 
 The bootstrap starts the local Docker Compose stack, updates VS Code and VS Code Insiders user settings, persists `OTEL_*` and `COPILOT_OTEL_*` environment variables for terminal-launched GitHub Copilot CLI and Copilot SDK workloads, registers the current Git workspace when available, sends validation telemetry, and checks the local endpoints. Restart VS Code after the bootstrap so GitHub Copilot Chat and agent hosts pick up the new settings.
 
-Workshop-ready local setup, run from the participant Git repository:
+Optional workshop setup, run from the participant Git repository only when following the hands-on labs:
 
 ```bash
 $HOME/frontier-cockpit/local-otel/workshop-ready.sh
@@ -225,9 +225,9 @@ Open the local mini app after setup:
 open http://localhost:3300
 ```
 
-If the mini app has no workspace-attributed sessions yet, open the repository in VS Code Insiders, run one GitHub Copilot Chat or agent request, then rerun `workshop-ready.sh` or click Refresh after the local materializer runs.
+If the mini app has no workspace-attributed sessions yet, open the repository in VS Code or VS Code Insiders, run one GitHub Copilot Chat or agent request, then rerun the client bootstrap or click Refresh after the local materializer runs.
 
-Aspire-only, fastest live demo:
+Aspire-only, lightweight live inspection:
 
 ```bash
 $HOME/frontier-cockpit/local-otel/enable-user-env.sh
@@ -248,7 +248,7 @@ $HOME/frontier-cockpit/local-otel/azure/deploy.sh
 $HOME/frontier-cockpit/local-otel/start-full-stack.sh --hybrid
 ```
 
-The Azure deploy script creates `rg-agentobs-dev-eus-001` in East US with Bicep and writes `$HOME/frontier-cockpit/local-otel/azure/.env` for local forwarding.
+The Azure deploy script creates or updates the configured resource group with Bicep and writes `$HOME/frontier-cockpit/local-otel/azure/.env` for local forwarding.
 
 Open the dashboard:
 
@@ -312,7 +312,7 @@ Expected result:
 - Integrated terminal OTel variables are present.
 - macOS launchd user environment OTel variables are present.
 
-Send a synthetic validation span before a demo:
+Send a synthetic validation span when checking the pipeline:
 
 ```bash
 $HOME/frontier-cockpit/local-otel/send-test-span.sh
@@ -445,16 +445,16 @@ Export the local VS Code span database:
 2. Run **Chat: Export Agent Traces DB**.
 3. Save the `.db` file in a customer-approved location.
 
-## Customer demo flow
+## Client Validation Walkthrough
 
-1. Explain that OTel is off by default and user-controlled.
-2. Start Aspire Dashboard locally for the live trace tree.
-3. Show VS Code user settings for `github.copilot.chat.otel`.
-4. Run one GitHub Copilot Chat agent request.
+1. Confirm Docker Desktop is running.
+2. Run the client bootstrap and restart VS Code or VS Code Insiders.
+3. Confirm VS Code settings for `github.copilot.chat.otel` point to `http://localhost:4318`.
+4. Run one GitHub Copilot Chat or agent request in a Git repository.
 5. Open Aspire traces and inspect the span tree.
-6. Highlight token usage, tool spans, errors, model attributes, repository attributes, and resource attributes.
-7. Switch to Grafana local to show historical traces in Tempo and persisted dashboards through PostgreSQL.
-8. Explain hybrid mode: the same local Collector can forward to the Azure Collector in Container Apps, which exports to Application Insights and Azure Managed Grafana.
+6. Open the local mini app and confirm sessions, tokens, AI Credits estimates, cache, and workspace attribution appear.
+7. Open Grafana local to review historical traces in Tempo and persisted dashboards through PostgreSQL.
+8. If Azure hybrid mode is approved, confirm that sanitized telemetry also reaches the client-owned Azure Collector and Azure Managed Grafana.
 
 ## What is persisted
 

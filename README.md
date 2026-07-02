@@ -157,7 +157,7 @@ Azure hybrid mode keeps the local cockpit running and adds sanitized forwarding 
    export AZURE_ENVIRONMENT_NAME=dev
    export AZURE_REGION_ABBR=eus
    export AZURE_INSTANCE=001
-   export AZURE_RESOURCE_GROUP=rg-agentobs-dev-eus-001
+   export AZURE_RESOURCE_GROUP=<resource-group-name>
    ```
 
 3. Validate and deploy the Azure side.

@@ -3,8 +3,8 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.azure.yaml up -d
 #
-# Set AZURE_OTLP_ENDPOINT and AZURE_OTLP_TOKEN in the shell first (start-full-stack.sh
-# --hybrid loads them from $HOME/frontier-cockpit/local-otel/azure/.env when present).
+# Set AZURE_OTLP_ENDPOINT and AZURE_OTLP_TOKEN in the shell first. start-full-stack.sh
+# --hybrid loads them from local-otel/azure/.env when present.
 
 services:
   otel-collector:

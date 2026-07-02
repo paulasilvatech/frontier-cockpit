@@ -1,0 +1,31 @@
+# Local-only configuration and secrets
+**/.env
+**/*.env
+!**/*.env.example
+client.env
+workshop.env
+stack/aspire-api-key.env
+azure/.env
+azure/github-enterprise-audit-log-streaming.env
+
+# Runtime state and local data
+**/*.log
+**/*.pid
+**/*.duckdb
+**/*.db
+**/.DS_Store
+**/.playwright-mcp
+**/__pycache__
+**/*.pyc
+.venv
+
+# Node build artifacts and dependencies
+frontend/**/node_modules
+frontend/**/dist
+frontend/**/*.tsbuildinfo
+
+# Local generated exports
+frontier-insights.duckdb
+frontier-otel-export.duckdb
+state
+logs
