@@ -1,9 +1,0 @@
-# Python dependency for the PDF conversion path.
-#
-# Install before converting the generated *_print.html to PDF:
-#   pip install -r assets/requirements.txt
-#
-# The starter itself uses only the Python standard library plus the local
-# template_css.py, components.py, and diagrams.py modules.
-
-weasyprint>=61,<64
