@@ -1,29 +1,26 @@
 name: Validate
 
-# Automated checks for the Frontier Cockpit workspace. This is the supported
-# equivalent of a hook: it runs on every push and pull request to guard the
-# GitHub Copilot primitives, deliverable gates, and context index.
+# Automated checks for the Frontier Cockpit workspace. Guards the GitHub
+# Copilot primitives, deliverable gates, the context index, the local Docker
+# stack definition, the dashboard application build, and script quality on
+# every push and pull request to develop and main.
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: read
 
 jobs:
-  validate:
+  repo-gates:
+    name: Primitives and deliverables
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -42,5 +39,106 @@ jobs:
       - name: Check llms.txt is current
         run: bash .github/scripts/generate-llms-txt.sh --check
 
-      - name: Validate deliverable gates (decks, identity HTML, architecture, research)
+      - name: Validate deliverable gates (architecture, diagrams)
         run: bash .github/scripts/validate-deliverables.sh
+
+      - name: Validate Grafana dashboards
+        run: bash .github/scripts/validate-dashboards.sh
+
+  scripts:
+    name: Shell script quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck and zsh
+        run: sudo apt-get update -q && sudo apt-get install -y -q shellcheck zsh
+
+      - name: Shellcheck bash scripts
+        run: |
+          set -eu
+          fail=0
+          while IFS= read -r file; do
+            if head -1 "$file" | grep -q 'bash'; then
+              shellcheck -S warning "$file" || fail=1
+            fi
+          done < <(git ls-files '*.sh')
+          exit "$fail"
+
+      - name: Syntax check zsh scripts
+        run: |
+          set -eu
+          fail=0
+          while IFS= read -r file; do
+            if head -1 "$file" | grep -q 'zsh'; then
+              zsh -n "$file" || { echo "FAIL $file"; fail=1; }
+            fi
+          done < <(git ls-files '*.sh' '*.zsh')
+          exit "$fail"
+
+  dashboard-app:
+    name: Dashboard API and web build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build dashboard API (TypeScript)
+        working-directory: local-otel/frontend/api
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build dashboard web (Vite)
+        working-directory: local-otel/frontend/web
+        run: |
+          npm ci
+          npm run build
+
+  compose:
+    name: Docker stack definition
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Create placeholder runtime env files
+        working-directory: local-otel/stack
+        run: |
+          printf 'ASPIRE_DASHBOARD_API_KEY=ci-placeholder\n' > aspire-api-key.env
+          printf 'GF_SECURITY_ADMIN_PASSWORD=ci-placeholder\n' > grafana-admin.env
+
+      - name: Validate base compose file
+        working-directory: local-otel/stack
+        run: docker compose -f docker-compose.yml config -q
+
+      - name: Validate hybrid compose overlay
+        working-directory: local-otel/stack
+        env:
+          AZURE_OTLP_ENDPOINT: https://ci-placeholder.invalid
+          AZURE_OTLP_TOKEN: ci-placeholder
+        run: docker compose -f docker-compose.yml -f docker-compose.azure.yaml config -q
+
+      - name: Build jobs and registry sidecar images
+        working-directory: local-otel/stack
+        run: docker compose -f docker-compose.yml build jobs registry
+
+  secrets:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

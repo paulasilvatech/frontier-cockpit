@@ -5,7 +5,6 @@ set -euo pipefail
 # Supports macOS and Linux. Use client-bootstrap.ps1 on Windows.
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "$script_dir/.." && pwd)"
 stack_dir="$script_dir/stack"
 config_file="$script_dir/client.env"
 skip_vscode_settings="false"
@@ -148,7 +147,9 @@ export OTEL_EXPORTER_OTLP_LOGS_PROTOCOL="http/protobuf"
 export OTEL_TRACES_EXPORTER="otlp"
 export OTEL_METRICS_EXPORTER="otlp"
 export OTEL_LOGS_EXPORTER="otlp"
-export OTEL_RESOURCE_ATTRIBUTES="service.namespace=frontier-cockpit,environment=local,collection.scope=user,frontier.customer=$(sanitize_attr "$FRONTIER_CUSTOMER_NAME"),frontier.team=$(sanitize_attr "$FRONTIER_PARTICIPANT_TEAM")"
+frontier_customer_attr="$(sanitize_attr "$FRONTIER_CUSTOMER_NAME")"
+frontier_team_attr="$(sanitize_attr "$FRONTIER_PARTICIPANT_TEAM")"
+export OTEL_RESOURCE_ATTRIBUTES="service.namespace=frontier-cockpit,environment=local,collection.scope=user,frontier.customer=$frontier_customer_attr,frontier.team=$frontier_team_attr"
 
 otel_vars=(
   COPILOT_OTEL_ENABLED
@@ -231,7 +232,8 @@ ${block_end}"
 
 apply_vscode_settings() {
   local settings_paths=()
-  local os_name="$(uname -s)"
+  local os_name
+  os_name="$(uname -s)"
   IFS=',' read -r -a channels <<< "$FRONTIER_VSCODE_CHANNELS"
   for channel in "${channels[@]}"; do
     channel="$(printf '%s' "$channel" | tr '[:upper:]' '[:lower:]' | xargs)"
