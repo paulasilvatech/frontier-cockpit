@@ -48,6 +48,9 @@ _archive/
 # Personal marketing decks (not part of client product)
 decks/
 
+# Local image scratch assets
+images/
+
 # Real secret env files (templates .example are tracked)
 local-otel/azure/github-enterprise-audit-log-streaming.env
 local-otel/stack/.env
