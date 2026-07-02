@@ -71,6 +71,44 @@ Frontier Cockpit
 
 Frontier Developer Cockpit always includes **Prometheus and Grafana** for the complete local developer experience. Aspire is the live GenAI trace and resource viewer. DuckDB or SQLite may be used by Python services for lightweight local insight storage, but they do not replace Prometheus or Grafana.
 
+## Platform Support
+
+The local cockpit runs on Docker Desktop, so the runtime works the same on macOS, Linux, and Windows.
+
+| Platform | Support | Entry point |
+| --- | --- | --- |
+| macOS | Full. Docker stack plus optional scheduled automation. | `local-otel/client-bootstrap.sh` |
+| Linux | Full. Docker stack. | `local-otel/client-bootstrap.sh` |
+| Windows | Full through Docker Desktop with the WSL2 backend. | `local-otel/client-bootstrap.ps1` |
+
+Requirements on every platform: Docker Desktop, Git, and VS Code or VS Code Insiders with GitHub Copilot. The cross-platform bootstrap starts the Docker Compose stack, applies GitHub Copilot OpenTelemetry settings, registers the current Git workspace, and validates the endpoints.
+
+The scheduled automation under `local-otel/launchagents/` uses macOS `launchd` and is optional. On Linux or Windows, run the refresh scripts on demand or schedule them with `cron` or Task Scheduler. The Docker stack does not depend on the scheduled automation.
+
+## Client Quick Start
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-org/frontier-cockpit.git
+cd frontier-cockpit
+
+# 2. Create your local configuration from the template
+cp local-otel/client.env.example local-otel/client.env
+# Edit local-otel/client.env with the participant, plan, and seat values.
+
+# 3. Start the local cockpit (macOS or Linux)
+bash local-otel/client-bootstrap.sh
+```
+
+On Windows PowerShell, replace step 3 with:
+
+```powershell
+Copy-Item local-otel/client.env.example local-otel/client.env
+pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1
+```
+
+Then open the local mini app at `http://localhost:3300` and local Grafana at `http://localhost:3000`. Restart VS Code after the bootstrap so GitHub Copilot picks up the new settings. See [local-otel/README.md](local-otel/README.md) for full runtime detail and [workshop/README.md](workshop/README.md) for the hands-on labs.
+
 ## How To Use This Package
 
 ### Developer Path
