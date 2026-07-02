@@ -86,7 +86,7 @@ Optional Azure hybrid prerequisites:
 1. Clone the repository.
 
    ```bash
-   git clone https://github.com/your-org/frontier-cockpit.git
+   git clone https://github.com/paulasilvatech/frontier-cockpit.git
    cd frontier-cockpit
    ```
 
