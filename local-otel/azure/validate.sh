@@ -2,6 +2,16 @@
 set -euo pipefail
 
 script_dir="${0:A:h}"
+
+# Select the environment parameter file: dev (default), test, or prod.
+deploy_env="${AZURE_DEPLOY_ENV:-dev}"
+case "$deploy_env" in
+  dev) param_file="$script_dir/main.bicepparam" ;;
+  test) param_file="$script_dir/main.test.bicepparam" ;;
+  prod) param_file="$script_dir/main.prod.bicepparam" ;;
+  *) print -u2 "Unknown AZURE_DEPLOY_ENV: $deploy_env (use dev, test, or prod)"; exit 2 ;;
+esac
+
 location="${AZURE_LOCATION:-eastus}"
 workload="${AZURE_WORKLOAD:-agentobs}"
 environment_name="${AZURE_ENVIRONMENT_NAME:-dev}"
@@ -30,7 +40,7 @@ az deployment sub validate \
   --name "$deployment_name" \
   --location "$location" \
   --template-file "$script_dir/main.bicep" \
-  --parameters "$script_dir/main.bicepparam" \
+  --parameters "$param_file" \
   --parameters \
     location="$location" \
     workload="$workload" \
@@ -45,7 +55,7 @@ az deployment sub what-if \
   --name "$deployment_name-whatif" \
   --location "$location" \
   --template-file "$script_dir/main.bicep" \
-  --parameters "$script_dir/main.bicepparam" \
+  --parameters "$param_file" \
   --parameters \
     location="$location" \
     workload="$workload" \

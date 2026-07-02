@@ -5,15 +5,21 @@ set -euo pipefail
 # This complements Tempo, Prometheus, Loki, and Grafana. It does not replace them.
 # Raw content remains local. Do not forward this DuckDB file to Azure or commit it.
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 prometheus_url="${PROMETHEUS_URL:-http://localhost:9090}"
 loki_url="${LOKI_URL:-http://localhost:3100}"
 tempo_url="${TEMPO_URL:-http://localhost:3200}"
 export_range="${FRONTIER_OTEL_EXPORT_RANGE:-1h}"
-db_path="${FRONTIER_OTEL_EXPORT_DB:-$HOME/frontier-cockpit/local-otel/frontier-otel-export.duckdb}"
-agent_host_sqlite_db="${FRONTIER_AGENT_HOST_SQLITE_DB:-$HOME/Library/Application Support/Code - Insiders/User/globalStorage/github.copilot-chat/agent-traces.db}"
-python_bin="${FRONTIER_PYTHON:-$HOME/frontier-cockpit/local-otel/.venv/bin/python}"
+script_dir="${0:A:h}"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  vscode_config_root="$HOME/Library/Application Support"
+else
+  vscode_config_root="${XDG_CONFIG_HOME:-$HOME/.config}"
+fi
+db_path="${FRONTIER_OTEL_EXPORT_DB:-$script_dir/frontier-otel-export.duckdb}"
+agent_host_sqlite_db="${FRONTIER_AGENT_HOST_SQLITE_DB:-$vscode_config_root/Code - Insiders/User/globalStorage/github.copilot-chat/agent-traces.db}"
+python_bin="${FRONTIER_PYTHON:-$script_dir/.venv/bin/python}"
 
 if [[ ! -x "$python_bin" ]]; then
   python_bin="$(command -v python3)"

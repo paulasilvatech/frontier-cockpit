@@ -2,7 +2,7 @@
 set -euo pipefail
 
 export COPILOT_OTEL_DISABLE_DYNAMIC_WORKSPACE_TAGS="true"
-source "$HOME/frontier-cockpit/local-otel/env.zsh"
+source "${0:A:h}/env.zsh"
 unset COPILOT_OTEL_DISABLE_DYNAMIC_WORKSPACE_TAGS
 
 # LaunchAgents start from `/`, so dynamic workspace tags would otherwise make

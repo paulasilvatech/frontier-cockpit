@@ -5,7 +5,7 @@ set -euo pipefail
 # preserved, so trace, metric, and log history and Grafana configuration survive a restart.
 # Pass --reset to also delete the data volumes (destructive, removes all local history).
 
-stack_dir="$HOME/frontier-cockpit/local-otel/stack"
+stack_dir="${0:A:h}/stack"
 reset=0
 
 for arg in "$@"; do
@@ -34,5 +34,5 @@ if [[ "$reset" -eq 1 ]]; then
 else
   print "Stopping the stack and preserving all data volumes."
   docker compose -f docker-compose.yml -f docker-compose.azure.yaml down
-  print "Stack stopped. History is preserved. Start again with $HOME/frontier-cockpit/local-otel/start-full-stack.sh"
+  print "Stack stopped. History is preserved. Start again with ${0:A:h}/start-full-stack.sh"
 fi

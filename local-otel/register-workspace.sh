@@ -5,7 +5,7 @@ set -euo pipefail
 # This emits a small OTLP metric with labels that Grafana can use to map
 # workspace_path_hash back to a human-readable workspace/repository name.
 
-source "$HOME/frontier-cockpit/local-otel/env.zsh"
+source "${0:A:h}/env.zsh"
 
 endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v1/metrics}"
 current_dir="$PWD"

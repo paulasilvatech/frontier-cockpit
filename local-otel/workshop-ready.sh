@@ -6,7 +6,7 @@ set -euo pipefail
 # Azure forwarding or hybrid mode.
 
 script_dir="${0:A:h}"
-export PATH="/Applications/Docker.app/Contents/Resources/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export PATH="/Applications/Docker.app/Contents/Resources/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 print_step() { print "\n==> $1"; }
 

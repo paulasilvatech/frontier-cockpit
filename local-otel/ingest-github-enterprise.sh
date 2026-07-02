@@ -6,13 +6,13 @@ set -euo pipefail
 # If Copilot metrics are not available, emits an availability/status metric and log.
 # Data flows local -> Collector -> local stores and, in hybrid mode, Azure.
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 enterprise="${GITHUB_ENTERPRISE_SLUG:-your-enterprise-slug}"
-gh_bin="${GH_BIN:-/opt/homebrew/bin/gh}"
+gh_bin="${GH_BIN:-gh}"
 logs_endpoint="${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://localhost:4318/v1/logs}"
 metrics_endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v1/metrics}"
-out_dir="$HOME/frontier-cockpit/local-otel/github-enterprise"
+out_dir="${0:A:h}/github-enterprise"
 mkdir -p "$out_dir"
 
 audit_file="$out_dir/${enterprise}-audit-log.json"

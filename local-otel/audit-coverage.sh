@@ -9,7 +9,12 @@ metrics_endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v
 prometheus_url="${PROMETHEUS_URL:-http://localhost:9090}"
 tempo_url="${TEMPO_URL:-http://localhost:3200}"
 loki_url="${LOKI_URL:-http://localhost:3100}"
-settings_file="$HOME/Library/Application Support/Code - Insiders/User/settings.json"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  vscode_config_root="$HOME/Library/Application Support"
+else
+  vscode_config_root="${XDG_CONFIG_HOME:-$HOME/.config}"
+fi
+settings_file="${FRONTIER_VSCODE_SETTINGS_FILE:-$vscode_config_root/Code - Insiders/User/settings.json}"
 
 python3 - "$metrics_endpoint" "$prometheus_url" "$tempo_url" "$loki_url" "$settings_file" <<'PY'
 import json

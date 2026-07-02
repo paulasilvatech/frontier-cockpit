@@ -26,7 +26,7 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
-# The standalone Aspire container (start-aspire-dashboard.sh) publishes host ports 4317/4318.
+# A leftover standalone Aspire container from older setups can publish host ports 4317/4318.
 # In full-stack mode the OTel Collector owns those ports, so stop the standalone one first.
 if docker ps --format '{{.Names}}' | grep -qx 'aspire-dashboard'; then
   standalone_owns_otlp="$(docker port aspire-dashboard 18890/tcp 2>/dev/null || true)"
