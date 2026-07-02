@@ -3,7 +3,7 @@ title: "Frontier Cockpit Auditoria da Main e Propostas de Melhoria"
 description: "Auditoria completa da branch main como produto entregavel para cliente: achados, novas metricas, naming, opcoes de integracao Azure e roadmap."
 author: "Frontier Cockpit Team"
 date: "2026-07-02"
-version: "1.1.0"
+version: "1.2.0"
 status: "draft"
 tags: ["frontier-cockpit", "auditoria", "roadmap", "metricas", "azure"]
 ---
@@ -215,6 +215,29 @@ Um unico container literal para a stack completa e possivel (supervisord ou s6-o
 
 A alternativa correta para "1 comando, 1 container" e uma edicao **Frontier Cockpit Local Lite**: um unico container com collector embutido, DuckDB como armazenamento e o mini app, sem Grafana, Prometheus, Tempo e Loki. Exige refatorar a API para ler do DuckDB em vez do Prometheus (esforco medio, o export DuckDB ja existe). O Lite vira o onboarding de um comando para o desenvolvedor, e a stack completa passa a ser o perfil avancado para workshops e power users.
 
+### 5.3 Suporte multiplataforma (macOS, Linux, Windows)
+
+Regra de ouro da portabilidade nesta stack: **tudo que roda dentro do Docker funciona igual nos tres sistemas; tudo que roda no host e por sistema operacional**. O estado atual:
+
+| Camada | macOS | Linux | Windows |
+| --- | --- | --- | --- |
+| Stack Docker (collector, Prometheus, Tempo, Loki, Grafana, mini app) | Sim | Sim (Docker Engine ou Desktop) | Sim (Docker Desktop com WSL2) |
+| Bootstrap e dashboards no navegador | Sim (`client-bootstrap.sh`) | Sim (`client-bootstrap.sh`) | Sim (`client-bootstrap.ps1`) |
+| Materializador de sessoes, rollup diario, export DuckDB | Sim, agendado via LaunchAgents | Parcial: execucao manual ou cron, com ajustes de PATH e caminhos do VS Code | Nao nativo: exige WSL2 ou Git Bash, sem equivalente PowerShell |
+| Agendamento automatico | LaunchAgents (fornecido) | cron ou systemd (documentado, nao fornecido) | Task Scheduler (documentado, nao fornecido) |
+| Ingestao GitHub Enterprise e scripts Azure | Sim (zsh) | Quebra em `date -v`, `pbcopy` e PATH Homebrew | Nao |
+
+Consequencia pratica importante: as metricas `copilot_real_session_*` que alimentam o mini app dependem do materializador rodando periodicamente. Em Linux e Windows, sem agendamento fornecido, o cockpit mostra menos dados do que no macOS. O "suporte a tres plataformas" do README vale para a stack e o bootstrap, mas nao para a camada de automacao.
+
+Correcoes para o suporte valer de ponta a ponta:
+
+1. **Containerizar os jobs** (materializador, rollup, registry, export): um sidecar `frontier-jobs` com scheduler dentro do compose elimina LaunchAgents, cron e Task Scheduler de uma vez. E a correcao estrutural.
+2. Portar os scripts zsh para bash portavel (POSIX date, sem `pbcopy`, sem PATH Homebrew hardcoded).
+3. Resolver os caminhos do VS Code por sistema no CLI `frontier` (macOS `~/Library/Application Support`, Linux `~/.config`, Windows `%APPDATA%`), que ja e necessario para o bootstrap unico.
+4. Matrix de CI com runners `ubuntu-latest`, `macos-latest` e `windows-latest` executando bootstrap e smoke test do compose.
+
+As propostas das secoes 5.1 e 5.2 ja empurram nessa direcao: o CLI unifica o comportamento por sistema e a consolidacao em 2 containers (ou o Lite de 1 container) move quase tudo para dentro do Docker, onde a portabilidade e automatica. Todas as imagens usadas (incluindo `grafana/otel-lgtm`) sao multi-arch amd64 e arm64, entao Apple Silicon e maquinas ARM tambem sao atendidas.
+
 ## 6. Integracao com Azure em tres niveis
 
 Empacotar a oferta Azure como trilha de maturidade, cada nivel com Bicep proprio:
@@ -261,5 +284,6 @@ Essa trilha vira naturalmente proposta comercial: Local (gratuito/POC), Hybrid N
 
 | Version | Date | Description |
 | --- | --- | --- |
+| 1.2.0 | 2026-07-02 | Nova secao 5.3 com matriz de suporte multiplataforma macOS, Linux e Windows e correcoes necessarias. |
 | 1.1.0 | 2026-07-02 | Naming oficial decidido (Frontier Cockpit Local e Hybrid), Control Tower removido do repositorio, monthly-insights excluido do produto, novas secoes sobre CLI enterprise e consolidacao de containers. |
 | 1.0.0 | 2026-07-02 | Versao inicial da auditoria da main. |
