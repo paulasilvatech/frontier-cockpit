@@ -961,32 +961,46 @@
       .footer__hub-link {
         display: inline-flex;
         align-items: center;
-        gap: 18px;
+        justify-content: space-between;
+        gap: 22px;
         margin-top: 34px;
-        padding: 20px 28px;
-        min-width: 280px;
-        background: #F7F7F5;
-        color: #1A1A1A;
-        border: 1px solid transparent;
+        padding: 18px 22px;
+        min-width: min(100%, 360px);
+        background: #242420;
+        color: #FFFFFF;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-left: 4px solid var(--c-blue-500);
         text-decoration: none;
-        transition: transform 0.16s, border-color 0.16s;
+        box-shadow: 0 18px 48px rgba(0, 164, 239, 0.10);
+        transition: transform 0.16s, border-color 0.16s, background 0.16s;
       }
 
       .footer__hub-link:hover {
         transform: translateY(-2px);
-        border-color: var(--c-blue-500);
+        background: #1D2E36;
+        border-color: rgba(0, 164, 239, 0.62);
       }
 
       .footer__hub-icon {
-        font-size: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        background: rgba(0, 164, 239, 0.16);
+        color: var(--c-blue-500);
+        font-size: 22px;
         line-height: 1;
+        order: 2;
       }
 
       .footer__hub-title {
         display: block;
         margin-top: 4px;
-        font-size: 16px;
+        font-size: 17px;
         font-weight: 500;
+        color: #FFFFFF;
       }
 
       .footer__grid {
@@ -1506,14 +1520,17 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
       <div class="container">
         <section class="footer__hub" aria-label="Agentic DevOps Hub">
           <div class="footer__kicker">Paula Silva | AI-native software engineer</div>
-          <h2 class="footer__headline">Building the future of software with <span class="footer__headline-accent">AI.</span></h2>
-          <p class="footer__summary">Everything here comes from what I live in the field: decks, playbooks, tools, and research I create and use with large enterprises across Latin America. Seventeen topics, three languages, and every claim grounded in verifiable sources.</p>
+          <h2 class="footer__headline">Building the future of software with <span
+              class="footer__headline-accent">AI.</span></h2>
+          <p class="footer__summary">Everything here comes from what I live in the field: decks, playbooks, tools, and
+            research I create and use with large enterprises across Latin America. Seventeen topics, three languages,
+            and every claim grounded in verifiable sources.</p>
           <div class="footer__label">Agentic DevOps Hub</div>
           <a class="footer__hub-link" href="https://agenticdevopsplatform.ai/">
-            <span class="footer__hub-icon" aria-hidden="true">&#8593;</span>
+            <span class="footer__hub-icon" aria-hidden="true">&#8599;</span>
             <span>
-              <span class="footer__hub-kicker">Back to hub</span>
-              <span class="footer__hub-title">Agentic DevOps Hub</span>
+              <span class="footer__hub-kicker">Visit the complete site</span>
+              <span class="footer__hub-title">Agentic DevOps Platform</span>
             </span>
           </a>
         </section>
@@ -1658,7 +1675,8 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
               'Building the future of software with': 'Construindo o futuro do software com',
               'AI.': 'IA.',
               'Everything here comes from what I live in the field: decks, playbooks, tools, and research I create and use with large enterprises across Latin America. Seventeen topics, three languages, and every claim grounded in verifiable sources.': 'Tudo aqui vem do que eu vivo em campo: decks, playbooks, ferramentas e pesquisas que crio e uso com grandes empresas na América Latina. Dezessete tópicos, três idiomas e cada afirmação baseada em fontes verificáveis.',
-              'Back to hub': 'Voltar ao hub',
+              'Visit the complete site': 'Visitar o site completo',
+              'Agentic DevOps Platform': 'Agentic DevOps Platform',
               'GitHub Copilot observability, from the developer to FinOps. Local by default, Azure by choice. A client-run package that turns OpenTelemetry signals into coaching, cost control, and governance.': 'Observabilidade do GitHub Copilot, do desenvolvedor ao FinOps. Local por padrao, Azure por escolha. Um pacote executado pelo cliente que transforma sinais OpenTelemetry em coaching, controle de custos e governanca.'
             }
           },
@@ -1771,7 +1789,8 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
               'Building the future of software with': 'Construyendo el futuro del software con',
               'AI.': 'IA.',
               'Everything here comes from what I live in the field: decks, playbooks, tools, and research I create and use with large enterprises across Latin America. Seventeen topics, three languages, and every claim grounded in verifiable sources.': 'Todo aquí nace de lo que vivo en el campo: decks, playbooks, herramientas e investigación que creo y uso con grandes empresas en América Latina. Diecisiete temas, tres idiomas y cada afirmación basada en fuentes verificables.',
-              'Back to hub': 'Volver al hub',
+              'Visit the complete site': 'Visitar el sitio completo',
+              'Agentic DevOps Platform': 'Agentic DevOps Platform',
               'GitHub Copilot observability, from the developer to FinOps. Local by default, Azure by choice. A client-run package that turns OpenTelemetry signals into coaching, cost control, and governance.': 'Observabilidad de GitHub Copilot, del desarrollador a FinOps. Local por defecto, Azure por eleccion. Un paquete ejecutado por el cliente que convierte senales OpenTelemetry en coaching, control de costos y gobierno.'
             }
           }
