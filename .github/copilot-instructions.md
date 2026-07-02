@@ -78,7 +78,6 @@ GitHub Enterprise and organization signals are ingested through `local-otel/inge
 - Agents live under `.github/agents/`.
 - Prompts live under `.github/prompts/`.
 - Skills live under `.github/skills/`.
-- Specky SDD assets and MCP configuration are present. Use Specky flows when the user asks for spec-driven requirements, design, tasks, verification, or release planning.
 - External GitHub Copilot primitives must keep provenance metadata and pass external-content validation.
 
 ## Validation

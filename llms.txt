@@ -10,10 +10,10 @@ This repository contains Frontier Cockpit, a local-to-enterprise observability p
 
 | Primitive | Count | Location |
 | --- | ---: | --- |
-| Agents | 24 | `.github/agents/` |
-| Skills | 37 | `.github/skills/` |
-| Prompts | 37 | `.github/prompts/` |
-| Instructions | 8 | `.github/instructions/` |
+| Agents | 8 | `.github/agents/` |
+| Skills | 20 | `.github/skills/` |
+| Prompts | 7 | `.github/prompts/` |
+| Instructions | 6 | `.github/instructions/` |
 
 ## Key Entry Points
 
@@ -78,27 +78,11 @@ External agents, skills, prompts, and instructions must keep source metadata, pa
 
 - `.github/agents/adr-generator.agent.md`
 - `.github/agents/ai-native-engineer.agent.md`
-- `.github/agents/arch.agent.md`
-- `.github/agents/architecture-critic.agent.md`
 - `.github/agents/azure-principal-architect.agent.md`
-- `.github/agents/business-rules-extractor.agent.md`
 - `.github/agents/data-auditor.agent.md`
-- `.github/agents/design-architect.agent.md`
-- `.github/agents/implementer.agent.md`
-- `.github/agents/legacy-analyst.agent.md`
-- `.github/agents/quality-reviewer.agent.md`
 - `.github/agents/release-engineer.agent.md`
 - `.github/agents/requirements-engineer.agent.md`
 - `.github/agents/research-analyst.agent.md`
-- `.github/agents/sdd-clarify.agent.md`
-- `.github/agents/sdd-init.agent.md`
-- `.github/agents/security-auditor.agent.md`
-- `.github/agents/spec-engineer.agent.md`
-- `.github/agents/specky-onboarding.agent.md`
-- `.github/agents/specky-orchestrator.agent.md`
-- `.github/agents/task-planner.agent.md`
-- `.github/agents/test-engineer-modernization.agent.md`
-- `.github/agents/test-verifier.agent.md`
 - `.github/agents/ubb-engineer.agent.md`
 
 ### Skills
@@ -109,37 +93,20 @@ External agents, skills, prompts, and instructions must keep source metadata, pa
 - `.github/skills/azure-api-center/SKILL.md`
 - `.github/skills/azure-architecture-diagrams/SKILL.md`
 - `.github/skills/azure-managed-redis-cache/SKILL.md`
-- `.github/skills/backstage-plugin-builder/SKILL.md`
-- `.github/skills/canvas-design/SKILL.md`
-- `.github/skills/code-modernization/SKILL.md`
-- `.github/skills/create-plugin/SKILL.md`
 - `.github/skills/foundry-agent-blueprint/SKILL.md`
-- `.github/skills/implementer/SKILL.md`
 - `.github/skills/markdown-writer/SKILL.md`
 - `.github/skills/mcp-builder/SKILL.md`
-- `.github/skills/overlay/SKILL.md`
 - `.github/skills/playbook-pdf-builder/SKILL.md`
 - `.github/skills/prompt-architect/SKILL.md`
 - `.github/skills/release-engineer/SKILL.md`
 - `.github/skills/requirements-engineer/SKILL.md`
 - `.github/skills/research-analyst/SKILL.md`
-- `.github/skills/rhdh-jira/SKILL.md`
-- `.github/skills/rhdh-local/SKILL.md`
-- `.github/skills/rhdh/SKILL.md`
-- `.github/skills/sdd-markdown-standard/SKILL.md`
-- `.github/skills/sdd-pipeline/SKILL.md`
-- `.github/skills/sdd-spec-engineer/SKILL.md`
 - `.github/skills/skill-creator/SKILL.md`
 - `.github/skills/skill-maker/SKILL.md`
-- `.github/skills/specky-onboarding/SKILL.md`
-- `.github/skills/specky-orchestrator/SKILL.md`
 - `.github/skills/suggest-awesome-github-copilot-agents/SKILL.md`
 - `.github/skills/suggest-awesome-github-copilot-instructions/SKILL.md`
 - `.github/skills/suggest-awesome-github-copilot-prompts/SKILL.md`
 - `.github/skills/suggest-awesome-github-copilot-skills/SKILL.md`
-- `.github/skills/svg-professional/SKILL.md`
-- `.github/skills/test-verifier/SKILL.md`
-- `.github/skills/web-artifacts-builder/SKILL.md`
 
 ### Prompts
 
@@ -147,45 +114,13 @@ External agents, skills, prompts, and instructions must keep source metadata, pa
 - `.github/prompts/compare-with-awesome.prompt.md`
 - `.github/prompts/design-agentic-system.prompt.md`
 - `.github/prompts/diagram-architecture.prompt.md`
-- `.github/prompts/modernize-assess.prompt.md`
-- `.github/prompts/modernize-brief.prompt.md`
-- `.github/prompts/modernize-extract-rules.prompt.md`
-- `.github/prompts/modernize-harden.prompt.md`
-- `.github/prompts/modernize-map.prompt.md`
-- `.github/prompts/modernize-reimagine.prompt.md`
-- `.github/prompts/modernize-transform.prompt.md`
 - `.github/prompts/new-skill.prompt.md`
 - `.github/prompts/review-agentic-architecture.prompt.md`
-- `.github/prompts/spec-feature.prompt.md`
-- `.github/prompts/specky-api.prompt.md`
-- `.github/prompts/specky-brownfield.prompt.md`
-- `.github/prompts/specky-check-drift.prompt.md`
-- `.github/prompts/specky-clarify.prompt.md`
-- `.github/prompts/specky-debug-hook.prompt.md`
-- `.github/prompts/specky-deploy.prompt.md`
-- `.github/prompts/specky-design.prompt.md`
-- `.github/prompts/specky-from-figma.prompt.md`
-- `.github/prompts/specky-from-meeting.prompt.md`
-- `.github/prompts/specky-greenfield.prompt.md`
-- `.github/prompts/specky-implement.prompt.md`
-- `.github/prompts/specky-migration.prompt.md`
-- `.github/prompts/specky-onboarding.prompt.md`
-- `.github/prompts/specky-orchestrate.prompt.md`
-- `.github/prompts/specky-pipeline-status.prompt.md`
-- `.github/prompts/specky-release.prompt.md`
-- `.github/prompts/specky-research.prompt.md`
-- `.github/prompts/specky-reset-phase.prompt.md`
-- `.github/prompts/specky-resolve-conflict.prompt.md`
-- `.github/prompts/specky-specify.prompt.md`
-- `.github/prompts/specky-tasks.prompt.md`
-- `.github/prompts/specky-verify.prompt.md`
 - `.github/prompts/verify-app.prompt.md`
 
 ### Instructions
 
 - `.github/instructions/agentic-architecture.instructions.md`
-- `.github/instructions/code-modernization.instructions.md`
-- `.github/instructions/copilot-instructions.instructions.md`
 - `.github/instructions/document-organization.instructions.md`
 - `.github/instructions/documentation.instructions.md`
 - `.github/instructions/external-copilot-content.instructions.md`
