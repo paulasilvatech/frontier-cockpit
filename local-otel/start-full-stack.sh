@@ -3,10 +3,10 @@ set -euo pipefail
 
 # Start the full local observability stack: OTel Collector + Aspire + Tempo + Prometheus +
 # Loki + Grafana + Postgres. Pass --hybrid to also forward telemetry to the Azure cloud
-# Collector (requires $HOME/frontier-cockpit/local-otel/azure/.env with AZURE_OTLP_ENDPOINT and
-# AZURE_OTLP_TOKEN).
+# Collector (requires local-otel/azure/.env with AZURE_OTLP_ENDPOINT and AZURE_OTLP_TOKEN).
 
-stack_dir="$HOME/frontier-cockpit/local-otel/stack"
+script_dir="${0:A:h}"
+stack_dir="$script_dir/stack"
 hybrid=0
 
 for arg in "$@"; do
@@ -52,7 +52,7 @@ source "$aspire_key_file"
 set +a
 
 if [[ "$hybrid" -eq 1 ]]; then
-  env_file="$HOME/frontier-cockpit/local-otel/azure/.env"
+  env_file="$script_dir/azure/.env"
   if [[ -f "$env_file" ]]; then
     set -a
     source "$env_file"
@@ -60,7 +60,7 @@ if [[ "$hybrid" -eq 1 ]]; then
   fi
   if [[ -z "${AZURE_OTLP_ENDPOINT:-}" || -z "${AZURE_OTLP_TOKEN:-}" ]]; then
     print -u2 "Hybrid mode needs AZURE_OTLP_ENDPOINT and AZURE_OTLP_TOKEN."
-    print -u2 "Provision the Azure side first ($HOME/frontier-cockpit/local-otel/azure/deploy.sh) and write $HOME/frontier-cockpit/local-otel/azure/.env."
+    print -u2 "Provision the Azure side first ($script_dir/azure/deploy.sh) and write $script_dir/azure/.env."
     exit 1
   fi
   print "Starting full stack in hybrid mode (local backends + Azure forwarding)."
@@ -79,4 +79,4 @@ print "  Prometheus:               http://localhost:9090"
 print "  Tempo:                    http://localhost:3200"
 print "  Loki:                     http://localhost:3100"
 print ""
-print "Reload VS Code Insiders, run a GitHub Copilot Chat agent request, then check Aspire and Grafana."
+print "Reload VS Code or VS Code Insiders, run a GitHub Copilot Chat agent request, then check Aspire and Grafana."

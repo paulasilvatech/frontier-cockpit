@@ -97,7 +97,7 @@ This checklist defines what must be true before presenting Frontier Cockpit as a
 | Raw content boundary | Raw prompts, responses, tool arguments, and tool results stay local unless explicitly approved. | Required |
 | Azure redaction | Azure forwarding removes sensitive and oversized content attributes. | Required |
 | Secrets hygiene | `.env`, SAS values, tokens, runtime logs, local state, DuckDB files, and GitHub API exports are not committed. | Required |
-| Local warning | Content capture risks are explained before workshops or customer demos. | Required |
+| Local warning | Content capture risks are explained before workshops or customer sessions. | Required |
 | Billing boundary | Dashboards and documents do not infer official spend or AI Credits from local token counts. | Required |
 
 ## 7. Validation Gates
@@ -110,16 +110,16 @@ This checklist defines what must be true before presenting Frontier Cockpit as a
 | Deliverable gate | `bash .github/scripts/validate-deliverables.sh` | Passes |
 | Dashboard gate | `bash .github/scripts/validate-dashboards.sh` | Passes |
 | llms index | `bash .github/scripts/generate-llms-txt.sh --check` | Passes |
-| Local runtime | `local-otel/check-otel-local.sh` | Passes when the runtime is expected to be active |
-| Demo readiness | `local-otel/demo-ready.sh` | Passes before demos |
+| Local runtime | `local-otel/check-workshop-local.sh` | Passes when the runtime is expected to be active |
+| Real telemetry | `local-otel/check-workshop-local.sh --strict-data` | Passes after the participant generates one real GitHub Copilot Chat or agent session |
 
 ## 8. Workshop Delivery
 
 | Check | Required State | Status |
 | --- | --- | --- |
 | Participant path | Workshop README and participant checklist link to the local dashboards. | Required |
-| Facilitator path | Workshop guide explains demo framing, data boundaries, and discussion prompts. | Required |
-| Safety briefing | Content capture, Azure redaction, and billing source boundaries are stated before demos. | Required |
+| Facilitator path | Workshop guide explains local setup framing, data boundaries, and discussion prompts. | Required |
+| Safety briefing | Content capture, Azure redaction, and billing source boundaries are stated before customer sessions. | Required |
 | Completion evidence | Participants can show Aspire traces, Grafana dashboards, materialized session metrics, and one prompt improvement. | Required |
 
 ## 9. Advanced Enterprise Hardening

@@ -12,7 +12,7 @@ tags: ["frontier-developer-cockpit", "github-copilot", "opentelemetry", "docker"
 
 # Frontier Developer Cockpit
 
-Frontier Developer Cockpit is a local, client-run observability cockpit for GitHub Copilot Chat and agent activity. It configures VS Code or VS Code Insiders to send GitHub Copilot OpenTelemetry signals to a local Docker stack, then shows local traces, metrics, model labels, token behavior, AIU, AI Credits estimates, cache behavior, workspace attribution, and developer coaching.
+Frontier Developer Cockpit is a client-run observability cockpit for GitHub Copilot Chat and agent activity. The default mode is fully local: it configures VS Code or VS Code Insiders to send GitHub Copilot OpenTelemetry signals to a local Docker stack, then shows local traces, metrics, model labels, token behavior, AIU, AI Credits estimates, cache behavior, workspace attribution, and developer coaching. An optional Azure hybrid mode can forward sanitized telemetry to client-owned Azure resources when enterprise history or Azure Managed Grafana is required.
 
 This repository is prepared for client installation. The committed defaults are generic, no customer or personal data is required, and local secret/configuration files are ignored by git.
 
@@ -27,6 +27,15 @@ This repository is prepared for client installation. The committed defaults are 
 | Loki | Local logs and content-capture metadata backend. |
 | Grafana OSS | Historical dashboards and local exploration. |
 | Frontier dashboard | Local mini app at `http://localhost:3300` for the client-facing cockpit. |
+
+## Run Modes
+
+| Mode | Use When | Data Boundary |
+| --- | --- | --- |
+| Local-only | A developer or workshop participant needs a private cockpit on their machine. | All raw telemetry and dashboard state stay local. |
+| Optional Azure hybrid | Platform, FinOps, or leadership teams need governed history and shared enterprise dashboards. | Local Collector forwards sanitized telemetry to client-owned Azure resources. Raw prompts and oversized sensitive attributes must stay local unless the client explicitly approves otherwise. |
+
+Start with local-only mode for every client. Enable Azure hybrid only after the client has approved Azure subscription, identity, networking, retention, and data-boundary decisions.
 
 Default endpoints:
 
@@ -58,6 +67,14 @@ Scheduled automation under `local-otel/launchagents/` is macOS-only and optional
 - VS Code or VS Code Insiders with GitHub Copilot enabled.
 - Python 3, used by the bootstrap and local validation scripts.
 - PowerShell 7 on Windows.
+
+Optional Azure hybrid prerequisites:
+
+- Azure CLI authenticated to the client subscription.
+- Permission to deploy Bicep at subscription scope and create a resource group.
+- Client-approved Azure location, naming values, and resource group.
+- Managed identity and least-privilege access for Azure-hosted components.
+- Secret handling for `AZURE_OTLP_TOKEN`; never commit the generated `.env` file.
 
 ## Quick Start
 
@@ -119,6 +136,58 @@ Scheduled automation under `local-otel/launchagents/` is macOS-only and optional
    ```text
    http://localhost:3300
    ```
+
+At this point the local-only cockpit is ready. The Azure hybrid section below is optional and should be skipped for local-only workshops.
+
+## Optional Azure Hybrid Integration
+
+Azure hybrid mode keeps the local cockpit running and adds sanitized forwarding to Azure. Use it only when the client wants shared enterprise history, Azure Monitor, Log Analytics, or Azure Managed Grafana.
+
+1. Select the client Azure subscription.
+
+   ```bash
+   az account set --subscription "your-subscription-name-or-id"
+   ```
+
+2. Set deployment naming values for the client environment.
+
+   ```bash
+   export AZURE_LOCATION=eastus
+   export AZURE_WORKLOAD=agentobs
+   export AZURE_ENVIRONMENT_NAME=dev
+   export AZURE_REGION_ABBR=eus
+   export AZURE_INSTANCE=001
+   export AZURE_RESOURCE_GROUP=rg-agentobs-dev-eus-001
+   ```
+
+3. Validate and deploy the Azure side.
+
+   ```bash
+   bash local-otel/azure/validate.sh
+   bash local-otel/azure/deploy.sh
+   ```
+
+   The deploy script writes `local-otel/azure/.env` with `AZURE_OTLP_ENDPOINT` and `AZURE_OTLP_TOKEN`. This file is local-only and ignored by git.
+
+4. Start local Docker Compose with Azure forwarding enabled.
+
+   ```bash
+   local-otel/start-full-stack.sh --hybrid
+   ```
+
+5. Validate the local stack and confirm Azure ingestion in the client Azure environment.
+
+   ```bash
+   local-otel/check-workshop-local.sh
+   local-otel/azure/check-azure-runtime.sh
+   ```
+
+Security notes for Azure hybrid mode:
+
+- Use client-owned Azure resources and managed identity where possible.
+- Treat `AZURE_OTLP_TOKEN` as a secret and rotate it according to the client's policy.
+- Keep local content capture disabled or approved before forwarding any telemetry.
+- Do not use local OpenTelemetry as official billing. Official GitHub Copilot billing and adoption reporting require GitHub-provided sources.
 
 ## What The Bootstrap Configures
 
