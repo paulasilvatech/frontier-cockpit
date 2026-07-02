@@ -6,7 +6,7 @@
     <string>com.frontier.copilot-otel-model-registry</string>
     <key>ProgramArguments</key>
     <array>
-      <string>$HOME/frontier-cockpit/local-otel/seed-model-multipliers.sh</string>
+      <string>__LOCAL_OTEL_DIR__/seed-model-multipliers.sh</string>
       <string>--quiet</string>
     </array>
     <key>StartInterval</key>
@@ -14,8 +14,8 @@
     <key>RunAtLoad</key>
     <true />
     <key>StandardOutPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-model-registry.log</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-model-registry.log</string>
     <key>StandardErrorPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-model-registry.err</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-model-registry.err</string>
   </dict>
 </plist>

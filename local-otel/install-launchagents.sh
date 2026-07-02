@@ -39,7 +39,8 @@ for template_file in "$template_dir"/*.plist(N); do
     esac
   fi
 
-  cp "$template_file" "$target_file"
+  # Templates use the __LOCAL_OTEL_DIR__ placeholder so the repo can live at any path.
+  sed "s|__LOCAL_OTEL_DIR__|$script_dir|g" "$template_file" > "$target_file"
   chmod 644 "$target_file"
 
   launchctl bootout "$gui_domain" "$target_file" >/dev/null 2>&1 || true

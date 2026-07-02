@@ -83,13 +83,13 @@ az monitor log-analytics query -w "$ws" \
 ## Step 6, Open Azure Grafana
 
 ```text
-https://your-grafana-workspace.eus.grafana.azure.com/d/agentobs-azure-copilot-overview/github-copilot-agent-observability-azure
+https://your-grafana-workspace.grafana.azure.com/d/agentobs-azure-copilot-overview/github-copilot-agent-observability-azure
 ```
 
 Also open:
 
 ```text
-https://your-grafana-workspace.eus.grafana.azure.com/d/agentobs-github-api-ingestion/github-api-ingestion-enterprise-and-orgs
+https://your-grafana-workspace.grafana.azure.com/d/agentobs-github-api-ingestion/github-api-ingestion-enterprise-and-orgs
 ```
 
 ## Step 7, Explain Sanitization

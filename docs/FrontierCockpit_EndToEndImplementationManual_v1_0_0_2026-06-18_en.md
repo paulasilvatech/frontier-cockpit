@@ -225,7 +225,7 @@ az account set --subscription "your-subscription-name"
 Endpoint:
 
 ```text
-https://your-grafana-workspace.eus.grafana.azure.com
+https://your-grafana-workspace.grafana.azure.com
 ```
 
 Dashboards imported:

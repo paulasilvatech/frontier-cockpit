@@ -6,15 +6,15 @@
   <string>com.frontier.copilot-otel-coverage</string>
   <key>ProgramArguments</key>
   <array>
-    <string>$HOME/frontier-cockpit/local-otel/audit-coverage.sh</string>
+    <string>__LOCAL_OTEL_DIR__/audit-coverage.sh</string>
   </array>
   <key>StartInterval</key>
   <integer>3600</integer>
   <key>RunAtLoad</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>$HOME/frontier-cockpit/local-otel/launchagent-coverage.log</string>
+  <string>__LOCAL_OTEL_DIR__/launchagent-coverage.log</string>
   <key>StandardErrorPath</key>
-  <string>$HOME/frontier-cockpit/local-otel/launchagent-coverage.err</string>
+  <string>__LOCAL_OTEL_DIR__/launchagent-coverage.err</string>
 </dict>
 </plist>

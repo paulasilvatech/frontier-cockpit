@@ -200,7 +200,7 @@ The Azure layer consolidates daily and continuous telemetry for history, governa
 Azure Managed Grafana endpoint:
 
 ```text
-https://your-grafana-workspace.eus.grafana.azure.com
+https://your-grafana-workspace.grafana.azure.com
 ```
 
 Imported dashboard:

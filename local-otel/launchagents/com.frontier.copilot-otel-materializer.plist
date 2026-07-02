@@ -6,7 +6,7 @@
     <string>com.frontier.copilot-otel-materializer</string>
     <key>ProgramArguments</key>
     <array>
-      <string>$HOME/frontier-cockpit/local-otel/materialize-copilot-sessions.sh</string>
+      <string>__LOCAL_OTEL_DIR__/materialize-copilot-sessions.sh</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
@@ -22,8 +22,8 @@
     <key>RunAtLoad</key>
     <true />
     <key>StandardOutPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-materializer.log</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-materializer.log</string>
     <key>StandardErrorPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-materializer.err</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-materializer.err</string>
   </dict>
 </plist>

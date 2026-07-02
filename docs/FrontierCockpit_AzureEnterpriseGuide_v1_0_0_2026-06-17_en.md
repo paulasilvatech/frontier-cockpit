@@ -173,7 +173,7 @@ Workspace-based Application Insights writes to Log Analytics tables.
 Azure Managed Grafana endpoint:
 
 ```text
-https://your-grafana-workspace.eus.grafana.azure.com
+https://your-grafana-workspace.grafana.azure.com
 ```
 
 Dashboard:

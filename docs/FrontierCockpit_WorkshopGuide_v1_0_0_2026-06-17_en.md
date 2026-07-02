@@ -152,7 +152,7 @@ Compare:
 Open Azure Managed Grafana:
 
 ```text
-https://your-grafana-workspace.eus.grafana.azure.com/d/agentobs-azure-copilot-overview/github-copilot-agent-observability-azure
+https://your-grafana-workspace.grafana.azure.com/d/agentobs-azure-copilot-overview/github-copilot-agent-observability-azure
 ```
 
 Explain:

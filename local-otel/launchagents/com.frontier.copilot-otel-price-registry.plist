@@ -6,7 +6,7 @@
     <string>com.frontier.copilot-otel-price-registry</string>
     <key>ProgramArguments</key>
     <array>
-      <string>$HOME/frontier-cockpit/local-otel/seed-model-prices.sh</string>
+      <string>__LOCAL_OTEL_DIR__/seed-model-prices.sh</string>
       <string>--quiet</string>
     </array>
     <key>StartInterval</key>
@@ -14,8 +14,8 @@
     <key>RunAtLoad</key>
     <true />
     <key>StandardOutPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-price-registry.log</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-price-registry.log</string>
     <key>StandardErrorPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-price-registry.err</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-price-registry.err</string>
   </dict>
 </plist>

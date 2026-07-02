@@ -2,8 +2,8 @@
 title: "Frontier Developer Cockpit Local OpenTelemetry Kit"
 description: "User-level local OpenTelemetry runtime for Frontier Developer Cockpit, including Aspire, Grafana, Prometheus, Tempo, Loki, local materialization, and Azure hybrid forwarding."
 author: "Frontier Cockpit Team"
-date: "2026-06-30"
-version: "1.0.4"
+date: "2026-07-02"
+version: "1.0.5"
 status: "approved"
 tags: ["frontier-developer-cockpit", "github-copilot", "opentelemetry", "aspire", "grafana", "local-runtime"]
 ---
@@ -12,19 +12,20 @@ tags: ["frontier-developer-cockpit", "github-copilot", "opentelemetry", "aspire"
 
 # Frontier Developer Cockpit Local OpenTelemetry Kit
 
-This user-level kit configures the local runtime for Frontier Developer Cockpit. It captures GitHub Copilot Chat and agent telemetry in VS Code Insiders, routes it through a local OpenTelemetry Collector, and fans out to Aspire Dashboard, Tempo, Prometheus, Loki, Grafana, and optional Azure hybrid forwarding.
+This user-level kit configures the local runtime for Frontier Developer Cockpit. It captures GitHub Copilot Chat and agent telemetry in VS Code or VS Code Insiders, routes it through a local OpenTelemetry Collector, and fans out to Aspire Dashboard, Tempo, Prometheus, Loki, Grafana, and optional Azure hybrid forwarding.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.0.5 | 2026-07-02 | Frontier Cockpit Team | Added cross-platform client bootstrap scripts for macOS, Linux, and Windows. |
 | 1.0.4 | 2026-06-30 | Frontier Cockpit Team | Added the local workshop-ready flow, the workshop validation gate, and the Frontier Developer Cockpit mini app entry point. |
 | 1.0.3 | 2026-06-23 | Frontier Cockpit Team | Enabled full local content materialization by default and increased trace replay coverage across workspaces. |
 | 1.0.2 | 2026-06-23 | Frontier Cockpit Team | Standardized local Tempo, Prometheus, and Loki retention to 30 days and clarified the Docker and Azure sync boundary. |
 | 1.0.1 | 2026-06-22 | Frontier Cockpit Team | Aligned title, frontmatter, and settings with the Frontier Developer Cockpit offer. |
 | 1.0.0 | 2026-06-17 | Frontier Cockpit Team | Initial local OpenTelemetry kit. |
 
-The setup is scoped to your macOS user and applies across VS Code Insiders windows, workspaces, and repositories. It also exports standard OTel environment variables for terminal-launched dev agents and tools that honor OTLP.
+The cross-platform client bootstrap supports macOS, Linux, and Windows. It applies VS Code or VS Code Insiders GitHub Copilot OpenTelemetry settings, exports standard OTel environment variables for terminal-launched dev agents and tools that honor OTLP, starts the Docker Compose stack, registers the current workspace, and sends a synthetic validation span. Older macOS helper scripts remain available for local automation and LaunchAgent scheduling.
 
 The kit has three run modes:
 
@@ -49,7 +50,7 @@ GitHub Copilot Chat uses OTLP/HTTP on `4318`. Dev apps or SDKs that require gRPC
 
 ## What is configured
 
-VS Code Insiders user settings are configured with:
+VS Code and VS Code Insiders user settings are configured with:
 
 - `github.copilot.chat.otel.enabled`: `true`
 - `github.copilot.chat.otel.exporterType`: `otlp-http`
@@ -79,7 +80,14 @@ Terminal-launched apps get these Aspire defaults:
 - `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://localhost:4318/v1/metrics`
 - `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://localhost:4318/v1/logs`
 
-The shell and macOS user environment are configured through:
+The cross-platform client bootstrap is configured through:
+
+- `local-otel/client.env.example`
+- `local-otel/client.env`, local-only and gitignored
+- `local-otel/client-bootstrap.sh`, for macOS and Linux
+- `local-otel/client-bootstrap.ps1`, for Windows PowerShell
+
+The legacy shell and macOS user environment scripts are still available through:
 
 - `$HOME/frontier-cockpit/local-otel/env.zsh`
 - `$HOME/frontier-cockpit/local-otel/enable-user-env.sh`
@@ -182,6 +190,26 @@ Aspire Dashboard runs with anonymous browser access for local convenience and is
 ## Start local backends
 
 Docker Desktop must be running.
+
+Cross-platform client setup, recommended for customer machines:
+
+macOS or Linux:
+
+```bash
+cp local-otel/client.env.example local-otel/client.env
+# Edit local-otel/client.env with the participant, customer, plan, and seat values.
+bash local-otel/client-bootstrap.sh
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item local-otel/client.env.example local-otel/client.env
+# Edit local-otel/client.env with the participant, customer, plan, and seat values.
+pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1
+```
+
+The bootstrap starts the local Docker Compose stack, updates VS Code and VS Code Insiders user settings, persists `OTEL_*` and `COPILOT_OTEL_*` environment variables for terminal-launched GitHub Copilot CLI and Copilot SDK workloads, registers the current Git workspace when available, sends validation telemetry, and checks the local endpoints. Restart VS Code after the bootstrap so GitHub Copilot Chat and agent hosts pick up the new settings.
 
 Workshop-ready local setup, run from the participant Git repository:
 

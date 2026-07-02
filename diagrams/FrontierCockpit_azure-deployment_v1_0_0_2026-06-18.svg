@@ -9,7 +9,7 @@
 
   <!-- TITLE BLOCK -->
   <text x="60" y="36" font-size="22" font-weight="700" fill="#2C2C2A">Azure Deployment</text>
-  <text x="60" y="57" font-size="13" fill="#888780">rg-agentobs-dev-eus-001  ·  East US  ·  subscription ME-your-subscription-name</text>
+  <text x="60" y="57" font-size="13" fill="#888780">rg-agentobs-dev-eus-001  ·  East US  ·  subscription your-subscription-name</text>
   <rect x="60"  y="66" width="55" height="3" rx="1.5" fill="#0078D4"/>
   <rect x="119" y="66" width="55" height="3" rx="1.5" fill="#7FBA00"/>
   <rect x="178" y="66" width="55" height="3" rx="1.5" fill="#FFB900"/>

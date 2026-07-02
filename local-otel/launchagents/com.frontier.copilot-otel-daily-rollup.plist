@@ -6,15 +6,15 @@
     <string>com.frontier.copilot-otel-daily-rollup</string>
     <key>ProgramArguments</key>
     <array>
-      <string>$HOME/frontier-cockpit/local-otel/daily-rollup.sh</string>
+      <string>__LOCAL_OTEL_DIR__/daily-rollup.sh</string>
     </array>
     <key>StartInterval</key>
     <integer>3600</integer>
     <key>RunAtLoad</key>
     <true />
     <key>StandardOutPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-daily-rollup.log</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-daily-rollup.log</string>
     <key>StandardErrorPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-daily-rollup.err</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-daily-rollup.err</string>
   </dict>
 </plist>

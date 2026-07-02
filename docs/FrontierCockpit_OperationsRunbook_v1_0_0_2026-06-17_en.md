@@ -210,7 +210,7 @@ open http://localhost:18888
 Open Azure dashboard:
 
 ```bash
-open https://your-grafana-workspace.eus.grafana.azure.com/d/agentobs-azure-copilot-overview/github-copilot-agent-observability-azure
+open https://your-grafana-workspace.grafana.azure.com/d/agentobs-azure-copilot-overview/github-copilot-agent-observability-azure
 ```
 
 ### 4.4 Reimport Azure Dashboard

@@ -2,8 +2,8 @@
 title: "Participant Checklist"
 description: "Completion checklist for developers participating in the Frontier Developer Cockpit hands-on workshop."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.0.2"
 status: "approved"
 tags: ["github-copilot", "workshop", "checklist", "developer"]
 ---
@@ -18,26 +18,34 @@ Use this checklist to confirm each participant leaves the workshop with a workin
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.0.2 | 2026-07-02 | Frontier Cockpit Team | Added the cross-platform client bootstrap path for macOS, Linux, and Windows. |
 | 1.0.1 | 2026-07-01 | Frontier Cockpit Team | Added mini app template, participant identity, and AI Credits checks. |
 | 1.0.0 | 2026-06-18 | Frontier Cockpit Team | Initial participant checklist. |
 
 ## Table of Contents
 
-- [1. Local Setup](#1-local-setup)
-- [2. Real Telemetry](#2-real-telemetry)
-- [3. Dashboard Understanding](#3-dashboard-understanding)
-- [4. Azure Understanding](#4-azure-understanding)
-- [5. GitHub Enterprise Understanding](#5-github-enterprise-understanding)
-- [6. Prompt Improvement](#6-prompt-improvement)
-- [7. Final Evidence](#7-final-evidence)
-- [References](#references)
+- [Participant Checklist](#participant-checklist)
+  - [Change Log](#change-log)
+  - [Table of Contents](#table-of-contents)
+  - [1. Local Setup](#1-local-setup)
+  - [2. Real Telemetry](#2-real-telemetry)
+  - [3. Dashboard Understanding](#3-dashboard-understanding)
+  - [4. Azure Understanding](#4-azure-understanding)
+  - [5. GitHub Enterprise Understanding](#5-github-enterprise-understanding)
+  - [6. Prompt Improvement](#6-prompt-improvement)
+  - [7. Final Evidence](#7-final-evidence)
+  - [References](#references)
 
 ## 1. Local Setup
 
 - [ ] Docker Desktop is running.
-- [ ] VS Code Insiders is open.
+- [ ] VS Code or VS Code Insiders is open.
 - [ ] GitHub Copilot Chat works.
-- [ ] Participant repository is open as a Git workspace in VS Code Insiders.
+- [ ] Participant repository is open as a Git workspace in VS Code or VS Code Insiders.
+- [ ] For client machines, `local-otel/client.env.example` was copied to `local-otel/client.env`.
+- [ ] `local-otel/client.env` contains participant name, customer name, role, plan, seat count, and AI Credits configuration.
+- [ ] Client bootstrap completed with `bash local-otel/client-bootstrap.sh` on macOS or Linux, or `pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1` on Windows.
+- [ ] VS Code or VS Code Insiders was restarted after the bootstrap.
 - [ ] `local-otel/workshop.env.example` was copied to `local-otel/workshop.env`.
 - [ ] `local-otel/workshop.env` contains participant name, role, plan, seat count, and AI Credits pool.
 - [ ] Local stack starts with `local-otel/workshop-ready.sh` from the repository root.
@@ -50,6 +58,7 @@ Use this checklist to confirm each participant leaves the workshop with a workin
 ## 2. Real Telemetry
 
 - [ ] A real GitHub Copilot Chat or agent session was generated.
+- [ ] A GitHub Copilot CLI or Copilot SDK workload was launched from a terminal that loaded the `OTEL_*` environment, when those tools are part of the workshop scope.
 - [ ] A `copilot-chat` trace was found in Aspire.
 - [ ] The trace includes `chat` spans.
 - [ ] The trace includes tool spans when tools were used.

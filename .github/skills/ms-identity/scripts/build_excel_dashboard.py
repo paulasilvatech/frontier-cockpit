@@ -281,7 +281,7 @@ def _cli(src, dst):
     if name in wb.sheetnames:
         name = 'Dashboard (ms-identity)'
     ws = wb.create_sheet(name, 0)
-    dash_base(ws, 'PAULASILVA-MS  ·  OFFICE STANDARD',
+    dash_base(ws, 'FRONTIER-COCKPIT-MS  ·  OFFICE STANDARD',
               'Dashboard', 'Smoke test. Replace with KPI cards and charts that '
               'reference the detail sheets.')
     section(ws, 7, 'How to read')

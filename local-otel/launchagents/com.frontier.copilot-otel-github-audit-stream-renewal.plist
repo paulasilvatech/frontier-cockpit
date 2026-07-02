@@ -6,7 +6,7 @@
   <string>com.frontier.copilot-otel-github-audit-stream-renewal</string>
   <key>ProgramArguments</key>
   <array>
-    <string>$HOME/frontier-cockpit/local-otel/configure-github-audit-stream.sh</string>
+    <string>__LOCAL_OTEL_DIR__/configure-github-audit-stream.sh</string>
   </array>
   <key>StartCalendarInterval</key>
   <dict>
@@ -16,8 +16,8 @@
     <integer>0</integer>
   </dict>
   <key>StandardOutPath</key>
-  <string>$HOME/frontier-cockpit/local-otel/launchagent-audit-stream-renewal.log</string>
+  <string>__LOCAL_OTEL_DIR__/launchagent-audit-stream-renewal.log</string>
   <key>StandardErrorPath</key>
-  <string>$HOME/frontier-cockpit/local-otel/launchagent-audit-stream-renewal.err</string>
+  <string>__LOCAL_OTEL_DIR__/launchagent-audit-stream-renewal.err</string>
 </dict>
 </plist>

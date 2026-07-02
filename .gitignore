@@ -11,6 +11,7 @@ local-otel/frontend/**/dist/
 local-otel/frontend/**/*.tsbuildinfo
 
 # Workshop participant identity (local only, never commit personal values)
+local-otel/client.env
 local-otel/workshop.env
 
 # Frontier Cockpit local runtime state
@@ -42,3 +43,14 @@ local-otel/stack/**/data/
 
 # Migration backups kept local only
 _archive/
+
+# Personal marketing decks (not part of client product)
+decks/
+
+# Real secret env files (templates .example are tracked)
+local-otel/azure/github-enterprise-audit-log-streaming.env
+local-otel/stack/.env
+
+# Python bytecode cache
+__pycache__/
+*.pyc

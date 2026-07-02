@@ -6,13 +6,13 @@
   <string>com.frontier.copilot-otel-autostart</string>
   <key>ProgramArguments</key>
   <array>
-    <string>$HOME/frontier-cockpit/local-otel/auto-start.sh</string>
+    <string>__LOCAL_OTEL_DIR__/auto-start.sh</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>$HOME/frontier-cockpit/local-otel/launchagent-autostart.log</string>
+  <string>__LOCAL_OTEL_DIR__/launchagent-autostart.log</string>
   <key>StandardErrorPath</key>
-  <string>$HOME/frontier-cockpit/local-otel/launchagent-autostart.err</string>
+  <string>__LOCAL_OTEL_DIR__/launchagent-autostart.err</string>
 </dict>
 </plist>

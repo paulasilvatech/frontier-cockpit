@@ -33,6 +33,7 @@ done
 
 python3 - "$gh_bin" "$logs_endpoint" "$metrics_endpoint" "$out_dir" <<'PY'
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -77,6 +78,11 @@ status, orgs = run_gh("/user/orgs?per_page=100")
 if status != "ok" or not isinstance(orgs, list):
     orgs = []
 
+# Resolve the authenticated user so membership checks are not tied to a fixed handle.
+viewer_status, viewer = run_gh("/user")
+viewer_login = viewer.get("login", "") if viewer_status == "ok" and isinstance(viewer, dict) else ""
+viewer_login = os.environ.get("GITHUB_USERNAME", viewer_login)
+
 records = []
 metrics = []
 
@@ -84,9 +90,10 @@ for org in orgs:
     login = org.get("login", "unknown")
     org_id = org.get("id", "unknown")
     role = "unknown"
-    membership_status, membership = run_gh(f"/orgs/{login}/memberships/your-handle")
-    if membership_status == "ok" and isinstance(membership, dict):
-        role = membership.get("role", "unknown")
+    if viewer_login:
+        membership_status, membership = run_gh(f"/orgs/{login}/memberships/{viewer_login}")
+        if membership_status == "ok" and isinstance(membership, dict):
+            role = membership.get("role", "unknown")
 
     metrics_status, copilot_metrics = run_gh(f"/orgs/{login}/copilot/metrics?per_page=100")
     billing_status, copilot_billing = run_gh(f"/orgs/{login}/copilot/billing")

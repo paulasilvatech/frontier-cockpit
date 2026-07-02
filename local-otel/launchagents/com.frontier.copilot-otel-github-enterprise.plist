@@ -6,15 +6,15 @@
     <string>com.frontier.copilot-otel-github-enterprise</string>
     <key>ProgramArguments</key>
     <array>
-      <string>$HOME/frontier-cockpit/local-otel/ingest-github-enterprise.sh</string>
+      <string>__LOCAL_OTEL_DIR__/ingest-github-enterprise.sh</string>
     </array>
     <key>StartInterval</key>
     <integer>3600</integer>
     <key>RunAtLoad</key>
     <true />
     <key>StandardOutPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-github-enterprise.log</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-github-enterprise.log</string>
     <key>StandardErrorPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-github-enterprise.err</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-github-enterprise.err</string>
   </dict>
 </plist>

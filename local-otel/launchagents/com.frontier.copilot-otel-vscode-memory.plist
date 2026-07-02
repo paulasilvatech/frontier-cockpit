@@ -6,15 +6,15 @@
     <string>com.frontier.copilot-otel-vscode-memory</string>
     <key>ProgramArguments</key>
     <array>
-      <string>$HOME/frontier-cockpit/local-otel/sample-vscode-memory.sh</string>
+      <string>__LOCAL_OTEL_DIR__/sample-vscode-memory.sh</string>
     </array>
     <key>StartInterval</key>
     <integer>60</integer>
     <key>RunAtLoad</key>
     <true />
     <key>StandardOutPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-vscode-memory.log</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-vscode-memory.log</string>
     <key>StandardErrorPath</key>
-    <string>$HOME/frontier-cockpit/local-otel/launchagent-vscode-memory.err</string>
+    <string>__LOCAL_OTEL_DIR__/launchagent-vscode-memory.err</string>
   </dict>
 </plist>
