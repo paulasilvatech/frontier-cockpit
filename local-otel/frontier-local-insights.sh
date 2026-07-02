@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-# Frontier Developer Cockpit local insight store.
+# Frontier Cockpit Local local insight store.
 # Persists developer-local rollups to DuckDB (preferred) and SQLite-compatible tables can be added later.
 # This does not replace Prometheus or Grafana. It stores derived local insights for trend analysis and reports.
 

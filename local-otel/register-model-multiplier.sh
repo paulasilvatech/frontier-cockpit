@@ -5,7 +5,7 @@ set -euo pipefail
 # Source the value from the official GitHub Copilot pricing docs, do not invent it:
 #   https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/model-multipliers-for-annual-plans
 #
-# This is a LOCAL planning aid for the Frontier Developer Cockpit. It does not
+# This is a LOCAL planning aid for the Frontier Cockpit Local. It does not
 # replace GitHub billing. The official premium-request count and invoice still
 # come from GitHub billing exports or the Copilot usage metrics API.
 #

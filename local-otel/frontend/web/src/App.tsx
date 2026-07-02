@@ -1292,7 +1292,7 @@ function AppShell({ lang, setLang }: Readonly<{ lang: Lang; setLang: (lang: Lang
   const alertCount = summary?.alerts.length ?? 0;
   const activeDef = views.find((view) => view.id === activeView) ?? views[0];
 
-  const dashboardTitle = summary?.participant.dashboardTitle ?? "Frontier Developer Cockpit";
+  const dashboardTitle = summary?.participant.dashboardTitle ?? "Frontier Cockpit Local";
   const participantName = summary?.participant.name ?? "Workshop Participant";
   const participantRole = summary?.participant.role ?? "Developer";
   const participantLine = participantRole ? `${participantName} | ${participantRole}` : participantName;

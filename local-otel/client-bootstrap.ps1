@@ -60,7 +60,7 @@ function Set-OtelEnv {
     Default-Env "FRONTIER_PARTICIPANT_EMAIL" ""
     Default-Env "FRONTIER_PARTICIPANT_TEAM" ""
     Default-Env "FRONTIER_CUSTOMER_NAME" "Client Organization"
-    Default-Env "FRONTIER_DASHBOARD_TITLE" "Frontier Developer Cockpit"
+    Default-Env "FRONTIER_DASHBOARD_TITLE" "Frontier Cockpit Local"
     Default-Env "FRONTIER_COPILOT_PLAN" "business"
     Default-Env "FRONTIER_COPILOT_SEATS" "1"
     Default-Env "FRONTIER_AI_CREDITS_USE_PROMO" "false"
@@ -315,7 +315,7 @@ function Validate-Endpoints {
     Wait-Url "http://localhost:9090/-/ready" "Prometheus"
     Wait-Url "http://localhost:3200/ready" "Tempo"
     Wait-Url "http://localhost:3100/ready" "Loki"
-    Wait-Url "http://localhost:3300" "Frontier Developer Cockpit mini app"
+    Wait-Url "http://localhost:3300" "Frontier Cockpit Local mini app"
 }
 
 Write-Step "Resolve client configuration"
@@ -342,7 +342,7 @@ Write-Step "Validate local endpoints"
 Validate-Endpoints
 
 Write-Host ""
-Write-Host "Frontier Developer Cockpit is configured."
+Write-Host "Frontier Cockpit Local is configured."
 Write-Host ""
 Write-Host "Open:"
 Write-Host "  Mini app:    http://localhost:3300"

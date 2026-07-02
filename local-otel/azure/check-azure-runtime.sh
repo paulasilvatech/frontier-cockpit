@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-# Read-only Azure runtime validation for Frontier FinOps Cockpit.
+# Read-only Azure runtime validation for Frontier Cockpit Hybrid.
 # Requires Azure CLI authentication and the deployed resource group.
 
 script_dir="${0:A:h}"

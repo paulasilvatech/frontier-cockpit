@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-# Unload Frontier Developer Cockpit user LaunchAgents. By default this preserves the
+# Unload Frontier Cockpit Local user LaunchAgents. By default this preserves the
 # copied plist files. Pass --delete to remove them from ~/Library/LaunchAgents.
 
 script_dir="${0:A:h}"
@@ -40,4 +40,4 @@ for template_file in "$template_dir"/*.plist(N); do
   fi
 done
 
-print "Frontier Developer Cockpit LaunchAgent cleanup complete."
+print "Frontier Cockpit Local LaunchAgent cleanup complete."

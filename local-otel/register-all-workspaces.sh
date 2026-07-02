@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 # register-all-workspaces.sh
 #
-# Register every local Git repository in the Frontier Developer Cockpit workspace
+# Register every local Git repository in the Frontier Cockpit Local workspace
 # registry so the materializer can attribute GitHub Copilot sessions to the correct
 # workspace for ALL workspaces at once.
 #

@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-# Install Frontier Developer Cockpit user LaunchAgents from versioned templates.
+# Install Frontier Cockpit Local user LaunchAgents from versioned templates.
 # This copies plist files to ~/Library/LaunchAgents and loads them for the current GUI user.
 
 script_dir="${0:A:h}"

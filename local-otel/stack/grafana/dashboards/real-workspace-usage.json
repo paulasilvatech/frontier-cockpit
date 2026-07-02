@@ -470,7 +470,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "## Content capture is intentionally not a default table\n\nRaw prompts, tool arguments, file snippets, and tool results can be sensitive. Frontier Developer Cockpit keeps that detail local and available for trusted debugging in Aspire or Tempo, but this dashboard does not show raw content by default.\n\nUse Aspire at `http://localhost:18888` for live span inspection, or Grafana Explore with Tempo for trace attributes. Use `$HOME/frontier-cockpit/local-otel/show-trace-content.sh` for CLI inspection. Use `--show-content` only in trusted local demos."
+        "content": "## Content capture is intentionally not a default table\n\nRaw prompts, tool arguments, file snippets, and tool results can be sensitive. Frontier Cockpit Local keeps that detail local and available for trusted debugging in Aspire or Tempo, but this dashboard does not show raw content by default.\n\nUse Aspire at `http://localhost:18888` for live span inspection, or Grafana Explore with Tempo for trace attributes. Use `local-otel/show-trace-content.sh` for CLI inspection. Use `--show-content` only in trusted local demos."
       }
     }
   ],

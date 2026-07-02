@@ -2,7 +2,7 @@ name: copilot-otel-local
 
 services:
   aspire-dashboard:
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.4
     container_name: aspire-dashboard
     env_file:
       - ./aspire-api-key.env
@@ -26,7 +26,7 @@ services:
       - observability
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.154.0
+    image: otel/opentelemetry-collector-contrib:0.155.0
     container_name: copilot-otel-collector
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
     env_file:
@@ -163,7 +163,7 @@ services:
       - observability
 
   grafana:
-    image: grafana/grafana-oss:11.6.0
+    image: grafana/grafana-oss:11.6.16
     container_name: copilot-otel-grafana
     env_file:
       - ./grafana-admin.env
@@ -216,7 +216,7 @@ services:
       FRONTIER_PARTICIPANT_EMAIL: "${FRONTIER_PARTICIPANT_EMAIL:-}"
       FRONTIER_PARTICIPANT_TEAM: "${FRONTIER_PARTICIPANT_TEAM:-}"
       FRONTIER_CUSTOMER_NAME: "${FRONTIER_CUSTOMER_NAME:-}"
-      FRONTIER_DASHBOARD_TITLE: "${FRONTIER_DASHBOARD_TITLE:-Frontier Developer Cockpit}"
+      FRONTIER_DASHBOARD_TITLE: "${FRONTIER_DASHBOARD_TITLE:-Frontier Cockpit Local}"
       FRONTIER_COPILOT_PLAN: "${FRONTIER_COPILOT_PLAN:-business}"
       FRONTIER_COPILOT_SEATS: "${FRONTIER_COPILOT_SEATS:-1}"
       FRONTIER_AI_CREDITS_USE_PROMO: "${FRONTIER_AI_CREDITS_USE_PROMO:-false}"

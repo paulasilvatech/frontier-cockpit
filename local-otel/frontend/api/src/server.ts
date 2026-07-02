@@ -145,7 +145,7 @@ function participantIdentity(): ParticipantIdentity {
     email: stringFromEnv("FRONTIER_PARTICIPANT_EMAIL", ""),
     team: stringFromEnv("FRONTIER_PARTICIPANT_TEAM", ""),
     customerName: stringFromEnv("FRONTIER_CUSTOMER_NAME", ""),
-    dashboardTitle: stringFromEnv("FRONTIER_DASHBOARD_TITLE", "Frontier Developer Cockpit")
+    dashboardTitle: stringFromEnv("FRONTIER_DASHBOARD_TITLE", "Frontier Cockpit Local")
   };
 }
 

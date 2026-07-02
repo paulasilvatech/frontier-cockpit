@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Cross-platform POSIX bootstrap for Frontier Developer Cockpit clients.
+# Cross-platform POSIX bootstrap for Frontier Cockpit Local clients.
 # Supports macOS and Linux. Use client-bootstrap.ps1 on Windows.
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,7 +16,7 @@ caller_dir="$PWD"
 
 usage() {
   cat <<EOF
-Frontier Developer Cockpit client bootstrap
+Frontier Cockpit Local client bootstrap
 
 Usage:
   bash local-otel/client-bootstrap.sh [options]
@@ -99,7 +99,7 @@ FRONTIER_PARTICIPANT_ROLE="${FRONTIER_PARTICIPANT_ROLE:-Developer}"
 FRONTIER_PARTICIPANT_EMAIL="${FRONTIER_PARTICIPANT_EMAIL:-}"
 FRONTIER_PARTICIPANT_TEAM="${FRONTIER_PARTICIPANT_TEAM:-}"
 FRONTIER_CUSTOMER_NAME="${FRONTIER_CUSTOMER_NAME:-Client Organization}"
-FRONTIER_DASHBOARD_TITLE="${FRONTIER_DASHBOARD_TITLE:-Frontier Developer Cockpit}"
+FRONTIER_DASHBOARD_TITLE="${FRONTIER_DASHBOARD_TITLE:-Frontier Cockpit Local}"
 FRONTIER_COPILOT_PLAN="${FRONTIER_COPILOT_PLAN:-business}"
 FRONTIER_COPILOT_SEATS="${FRONTIER_COPILOT_SEATS:-1}"
 FRONTIER_AI_CREDITS_USE_PROMO="${FRONTIER_AI_CREDITS_USE_PROMO:-false}"
@@ -190,8 +190,8 @@ write_user_env() {
     printf 'export %s="%s"\n' "$name" "$value" >> "$env_file"
   done
 
-  local block_start="# Frontier Developer Cockpit OTel start"
-  local block_end="# Frontier Developer Cockpit OTel end"
+  local block_start="# Frontier Cockpit Local OTel start"
+  local block_end="# Frontier Cockpit Local OTel end"
   local block="${block_start}
 if [ -f \"\$HOME/.frontier-cockpit/otel.env\" ]; then
   . \"\$HOME/.frontier-cockpit/otel.env\"
@@ -539,7 +539,7 @@ validate_endpoints() {
   wait_for_url "http://localhost:9090/-/ready" "Prometheus"
   wait_for_url "http://localhost:3200/ready" "Tempo"
   wait_for_url "http://localhost:3100/ready" "Loki"
-  wait_for_url "http://localhost:3300" "Frontier Developer Cockpit mini app"
+  wait_for_url "http://localhost:3300" "Frontier Cockpit Local mini app"
 }
 
 info "Resolve client configuration"
@@ -580,7 +580,7 @@ fi
 
 cat <<EOF
 
-Frontier Developer Cockpit is configured.
+Frontier Cockpit Local is configured.
 
 Open:
   Mini app:    http://localhost:3300

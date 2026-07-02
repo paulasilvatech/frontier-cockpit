@@ -2,7 +2,7 @@
   "dashboard": {
     "id": null,
     "uid": "agentobs-azure-copilot-overview",
-    "title": "Frontier FinOps Cockpit, Azure Enterprise",
+    "title": "Frontier Cockpit Hybrid, Azure Enterprise",
     "tags": [
       "agentobs",
       "azure",
@@ -23,7 +23,7 @@
       {
         "id": 1,
         "type": "text",
-        "title": "Frontier FinOps Cockpit",
+        "title": "Frontier Cockpit Hybrid",
         "gridPos": {
           "h": 5,
           "w": 24,
@@ -32,7 +32,7 @@
         },
         "options": {
           "mode": "markdown",
-          "content": "# Frontier FinOps Cockpit in Azure\n\nThis dashboard is the centralized enterprise view for sanitized GitHub Copilot and agentic development telemetry. It complements Frontier Developer Cockpit, which remains the local full-fidelity developer experience."
+          "content": "# Frontier Cockpit Hybrid in Azure\n\nThis dashboard is the centralized enterprise view for sanitized GitHub Copilot and agentic development telemetry. It complements Frontier Cockpit Local, which remains the local full-fidelity developer experience."
         }
       },
       {

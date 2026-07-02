@@ -4,7 +4,7 @@
 
 ## Repository Purpose
 
-This repository contains Frontier Cockpit, a local-to-enterprise observability package for GitHub Copilot. It combines Frontier Developer Cockpit for local private optimization with Frontier FinOps Cockpit for sanitized Azure rollups, governance, adoption, and leadership views.
+This repository contains Frontier Cockpit, a local-to-enterprise observability package for GitHub Copilot. It combines Frontier Cockpit Local for local private optimization with Frontier Cockpit Hybrid for sanitized Azure rollups, governance, adoption, and leadership views.
 
 ## Primitive Inventory
 
@@ -44,8 +44,8 @@ bash .github/scripts/generate-llms-txt.sh --check
 For local runtime readiness, run:
 
 ```bash
-local-otel/check-otel-local.sh
-local-otel/demo-ready.sh
+local-otel/client-bootstrap.sh
+local-otel/check-workshop-local.sh
 ```
 
 ## External Content
@@ -68,7 +68,9 @@ External agents, skills, prompts, and instructions must keep source metadata, pa
 - `docs/FrontierCockpit_LocalLinksGuide_v1_0_0_2026-06-19_en.md`
 - `docs/FrontierCockpit_EndToEndImplementationManual_v1_0_0_2026-06-18_en.md`
 - `docs/FrontierCockpit_WorkshopGuide_v1_0_0_2026-06-17_en.md`
-- `docs/FrontierCockpit_FirecrawlMCPGuide_v1_0_0_2026-06-18_en.md`
+- `docs/FrontierCockpit_Requirements_v1_0_0_2026-07-02_en.md`
+- `docs/FrontierCockpit_DockerDesktopFrontendRequirements_v1_0_0_2026-06-25_en.md`
+- `docs/FrontierCockpit_PythonAspireLocalArchitecture_v1_0_0_2026-06-18_en.md`
 - `workshop/README.md`
 - `local-otel/README.md`
 

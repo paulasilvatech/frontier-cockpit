@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode, SVGProps } from "react";
 
-// Professional line-icon set for the Frontier Developer Cockpit.
+// Professional line-icon set for the Frontier Cockpit Local.
 //
 // Standard, so every icon stays visually consistent:
 // - 24x24 coordinate space

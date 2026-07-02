@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontier Cockpit: GitHub Copilot observability, local by default</title>
+<meta name="description" content="Frontier Cockpit turns GitHub Copilot OpenTelemetry signals into developer coaching, AI Credits cost control, and enterprise FinOps governance. Local by default, Azure by choice.">
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#111827; --panel2:#0f1522; --line:#1f2a3c;
+    --text:#e7ecf4; --muted:#9aa7ba; --accent:#4f8ff7; --accent2:#37c891;
+    --warn:#e8b339; --max:1080px; --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+  header{border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(11,15,23,.92);backdrop-filter:blur(8px);z-index:10}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-weight:700;letter-spacing:.02em}
+  .brand span{color:var(--accent)}
+  .nav ul{display:flex;gap:22px;list-style:none;font-size:14px}
+  .nav a{color:var(--muted)}
+  .nav a:hover{color:var(--text);text-decoration:none}
+  .hero{padding:88px 0 64px;text-align:left}
+  .kicker{display:inline-block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);border:1px solid var(--line);border-radius:999px;padding:6px 14px;margin-bottom:22px}
+  h1{font-size:clamp(34px,5vw,54px);line-height:1.12;font-weight:800;max-width:820px}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{margin-top:20px;font-size:19px;color:var(--muted);max-width:760px}
+  .cta{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap}
+  .btn{display:inline-block;padding:12px 22px;border-radius:10px;font-weight:600;font-size:15px}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{filter:brightness(1.1);text-decoration:none}
+  .btn-ghost{border:1px solid var(--line);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--accent);text-decoration:none}
+  section{padding:64px 0;border-top:1px solid var(--line)}
+  h2{font-size:28px;font-weight:750;margin-bottom:10px}
+  .lead{color:var(--muted);max-width:780px;margin-bottom:34px}
+  .grid{display:grid;gap:18px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
+  .card h3{font-size:17px;margin-bottom:8px}
+  .card p{font-size:14.5px;color:var(--muted)}
+  .card .tag{display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin-bottom:10px}
+  .edition{border-top:3px solid var(--accent)}
+  .edition.hybrid{border-top-color:var(--warn)}
+  .edition ul{margin:14px 0 0 18px;font-size:14.5px;color:var(--muted)}
+  .edition li{margin:6px 0}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+  .stat b{display:block;font-size:26px;color:var(--text)}
+  .stat span{font-size:13px;color:var(--muted)}
+  .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:14px;color:var(--muted)}
+  .flow .node{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;color:var(--text)}
+  .flow .arrow{color:var(--accent)}
+  pre{background:#0a0e15;border:1px solid var(--line);border-radius:12px;padding:18px 20px;overflow-x:auto;font-size:13.5px;line-height:1.7;color:#c9d6e8}
+  pre .c{color:#5c6b80}
+  .privacy{background:linear-gradient(180deg,var(--panel2),transparent);border:1px solid var(--line);border-radius:var(--radius);padding:28px}
+  .privacy h3{color:var(--accent2)}
+  .refs{font-size:13.5px;color:var(--muted)}
+  .refs li{margin:7px 0}
+  footer{border-top:1px solid var(--line);padding:34px 0;font-size:13px;color:var(--muted)}
+  .disclaimer{font-size:12.5px;color:var(--muted);margin-top:18px}
+  @media (max-width:640px){.nav ul{display:none}.hero{padding:56px 0 40px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand">Frontier <span>Cockpit</span></div>
+    <ul>
+      <li><a href="#why">Why</a></li>
+      <li><a href="#editions">Editions</a></li>
+      <li><a href="#metrics">Metrics</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#privacy">Privacy</a></li>
+      <li><a href="#start">Get started</a></li>
+    </ul>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <span class="kicker">GitHub Copilot observability for engineering teams</span>
+    <h1>See what your AI spends, learns, and delivers. <em>Local by default, Azure by choice.</em></h1>
+    <p class="sub">Frontier Cockpit turns the OpenTelemetry signals that GitHub Copilot already emits into developer coaching, AI Credits cost control, and enterprise governance, without raw prompts ever leaving the developer's machine.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#start">Get started in 3 commands</a>
+      <a class="btn btn-ghost" href="https://github.com/paulanunes85/frontier-cockpit">View the repository</a>
+    </div>
+  </div>
+
+  <section id="why">
+    <div class="wrap">
+      <h2>Why now</h2>
+      <p class="lead">Three industry shifts in 2025 and 2026 made AI usage observability a first-class engineering discipline instead of a nice-to-have.</p>
+      <div class="grid g3">
+        <div class="stat"><b>Usage-based billing</b><span>Since June 2026, every GitHub Copilot plan is billed in AI Credits at per-token model rates. Cache reuse, context size, and model mix are now money, on every request.</span></div>
+        <div class="stat"><b>Throughput up, stability down</b><span>The 2025 DORA report found AI adoption at 90 percent and correlated with higher throughput but worse delivery stability. Feedback loops are the control system.</span></div>
+        <div class="stat"><b>98% manage AI spend</b><span>The State of FinOps 2026 reports the fastest adoption curve in survey history, with AI cost visibility and unit economics as the top open challenges.</span></div>
+      </div>
+      <div class="grid g3" style="margin-top:18px">
+        <div class="card"><span class="tag">Educate</span><h3>Developers learn their own patterns</h3><p>Cold context, cache misses, oversized prompts, and error loops become visible minutes after they happen, with coaching cards that explain what to change and why it matters.</p></div>
+        <div class="card"><span class="tag">Impact</span><h3>Leaders get honest numbers</h3><p>AI Credits burn versus allowance, projection to end of month, model cost concentration, and adoption quality signals, clearly labeled as operational telemetry, never fabricated billing.</p></div>
+        <div class="card"><span class="tag">Govern</span><h3>Platform teams keep the boundary</h3><p>Raw content stays local. The optional Azure path forwards only sanitized, redacted telemetry to client-owned resources, with the same redaction applied twice, locally and in the cloud.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="editions">
+    <div class="wrap">
+      <h2>Two editions, one product</h2>
+      <p class="lead">Start local for every developer. Add the Azure hybrid path when the organization needs shared history and FinOps governance.</p>
+      <div class="grid g2">
+        <div class="card edition">
+          <span class="tag">Developer Edition</span>
+          <h3>Frontier Cockpit Local</h3>
+          <p>A complete observability stack on the developer's machine: OpenTelemetry Collector, Aspire Dashboard, Prometheus, Tempo, Loki, Grafana, scheduled jobs, and a purpose-built cockpit app at localhost:3300.</p>
+          <ul>
+            <li>100 percent local; all ports bind to 127.0.0.1</li>
+            <li>Content capture off by default, opt-in only</li>
+            <li>Runs identically on macOS, Linux, and Windows</li>
+            <li>AI Credits estimates, cache and context coaching</li>
+          </ul>
+        </div>
+        <div class="card edition hybrid">
+          <span class="tag">Enterprise Edition</span>
+          <h3>Frontier Cockpit Hybrid</h3>
+          <p>Everything in Local, plus sanitized forwarding to client-owned Azure: Container Apps collector, Application Insights, Log Analytics, Azure Monitor workspace, and Azure Managed Grafana, deployed with Bicep.</p>
+          <ul>
+            <li>Raw prompts and tool payloads never leave the machine</li>
+            <li>Defense in depth: redaction applied locally and in Azure</li>
+            <li>Dev, test, and prod parameter sets; cost and data classification tags</li>
+            <li>GitHub Enterprise audit log and usage metrics ingestion</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="metrics">
+    <div class="wrap">
+      <h2>Metrics that change behavior</h2>
+      <p class="lead">Volume metrics tell you what happened. Frontier Cockpit pairs them with efficiency and outcome metrics that tell you what to do next.</p>
+      <div class="grid g3">
+        <div class="card"><h3>Cost and FinOps</h3><p>AI Credits estimates per session, repository, and model. Monthly budget utilization with projection and alert levels. Cache savings expressed in credits, the number executives remember.</p></div>
+        <div class="card"><h3>Context and cache</h3><p>Hot, warm, and cold token composition. Context utilization, typical and peak. Compaction events. The coach flags cold starts and context pressure before they burn the budget.</p></div>
+        <div class="card"><h3>Experience and outcomes</h3><p>Time to first token, response duration, tool call depth, error rates, edit acceptance, and edit survival without revert, attributed to real Git workspaces, branches, and sessions.</p></div>
+      </div>
+      <p class="disclaimer">Local AIU and AI Credits values are operational estimates for planning and coaching. Official GitHub Copilot billing and adoption reporting come from GitHub billing exports and the GitHub Copilot usage metrics API, which this product ingests where available.</p>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <p class="lead">GitHub Copilot in VS Code emits OpenTelemetry traces, metrics, and logs following the GenAI semantic conventions. Frontier Cockpit receives, stores, summarizes, and explains them.</p>
+      <div class="flow">
+        <span class="node">VS Code + GitHub Copilot</span><span class="arrow">&#8594;</span>
+        <span class="node">Local OTel Collector</span><span class="arrow">&#8594;</span>
+        <span class="node">Tempo &middot; Prometheus &middot; Loki &middot; Aspire</span><span class="arrow">&#8594;</span>
+        <span class="node">Jobs: materializer + rollup</span><span class="arrow">&#8594;</span>
+        <span class="node">Cockpit app + Grafana + Coach</span>
+      </div>
+      <div class="flow" style="margin-top:12px">
+        <span class="node">Local Collector</span><span class="arrow">&#8594;</span>
+        <span class="node" style="border-color:#3a2f14">Redaction pipeline (deletes raw content)</span><span class="arrow">&#8594;</span>
+        <span class="node">Azure Container Apps collector</span><span class="arrow">&#8594;</span>
+        <span class="node">Application Insights &middot; Log Analytics &middot; Managed Grafana</span>
+      </div>
+      <p class="disclaimer">Ten pinned containers, healthchecked, loopback-only, with scheduled processing inside Docker so macOS, Linux, and Windows behave identically. Validated in CI: shell quality, app builds, compose config, dashboards, secret scanning.</p>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="wrap">
+      <div class="privacy">
+        <h3>Privacy first, by construction</h3>
+        <p style="margin-top:8px;color:var(--muted);max-width:820px">Content capture (raw prompts, responses, file paths, tool arguments and results) is disabled by default at every layer and requires an explicit opt-in per installation. In hybrid mode, dedicated pipelines delete raw content attributes before anything leaves the machine, and the cloud collector applies the same redaction again. Credentials are generated per installation; nothing ships with default passwords.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <h2>Get started</h2>
+      <p class="lead">From a fresh clone to a working cockpit in three commands. Requires Docker Desktop (or Docker Engine on Linux), Git, Python 3, and VS Code with GitHub Copilot.</p>
+<pre><span class="c"># macOS or Linux</span>
+git clone https://github.com/paulanunes85/frontier-cockpit.git &amp;&amp; cd frontier-cockpit
+cp local-otel/client.env.example local-otel/client.env
+bash local-otel/client-bootstrap.sh
+
+<span class="c"># Windows (PowerShell 7)</span>
+pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
+      <p style="margin-top:16px;color:var(--muted)">Then reload VS Code, run one GitHub Copilot Chat or agent request inside a Git repository, and open <a href="http://localhost:3300">http://localhost:3300</a>.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Grounded in current research</h2>
+      <ul class="refs">
+        <li>GitHub, "GitHub Copilot is moving to usage-based billing" (April 2026) and GitHub Docs on AI Credits allowances and budgets.</li>
+        <li>GitHub changelog, "Copilot Metrics is now generally available" (February 2026), including per-user AI Credits in the usage metrics API (June 2026).</li>
+        <li>Visual Studio Code 1.119 and 1.121 release notes: GitHub Copilot agent monitoring with OpenTelemetry (experimental).</li>
+        <li>DORA, "State of AI-assisted Software Development" (2025) and "The ROI of AI-assisted Software Development" (2026).</li>
+        <li>FinOps Foundation, State of FinOps 2026 and the FOCUS 1.4 specification (virtual currency and token lifecycle).</li>
+        <li>OpenTelemetry GenAI semantic conventions (dedicated repository, 2026) and the OpenTelemetry AI agent observability blog series.</li>
+        <li>Ziegler et al., "Measuring GitHub Copilot's Impact on Productivity", Communications of the ACM (2024).</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><b>Frontier Cockpit</b> &middot; GitHub Copilot observability, from the developer to FinOps. Local by default, Azure by choice.</p>
+    <p style="margin-top:6px">GitHub Copilot is a product of GitHub. Azure is a product of Microsoft. Frontier Cockpit is an independent client-run observability package and reports local operational telemetry, not official billing.</p>
+  </div>
+</footer>
+
+</body>
+</html>

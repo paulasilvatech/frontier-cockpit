@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-# Workshop validation gate for the local Frontier Developer Cockpit.
+# Workshop validation gate for the local Frontier Cockpit Local.
 # Default mode validates stack, endpoints, workspace registry, and reports whether
 # real GitHub Copilot telemetry is present. Use --strict-data after the participant
 # has run at least one GitHub Copilot Chat or agent session in this repository.
@@ -52,7 +52,7 @@ except Exception:
 PY
 }
 
-print "==> Frontier Developer Cockpit workshop validation"
+print "==> Frontier Cockpit Local workshop validation"
 print "mode=$([[ "$strict_data" -eq 1 ]] && print strict-data || print setup)"
 print ""
 
@@ -89,7 +89,7 @@ if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
 fi
 
 for item in \
-  "http://localhost:3300|Frontier Developer Cockpit mini app" \
+  "http://localhost:3300|Frontier Cockpit Local mini app" \
   "http://localhost:3300/api/health|Dashboard API health" \
   "http://localhost:3300/api/summary?range=24h&repo=all|Dashboard summary API" \
   "http://localhost:3300/api/sessions?range=24h&repo=all|Dashboard sessions API" \

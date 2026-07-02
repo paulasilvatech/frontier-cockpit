@@ -45,7 +45,7 @@
       "id": 1,
       "options": {
         "mode": "markdown",
-        "content": "# Frontier Developer Cockpit\n\nThis is the local home for GitHub Copilot and agentic development telemetry. Use it to confirm the local stack is producing data, then drill into real workspace sessions, context behavior, model labels, tool calls, data quality, and coaching views. Local telemetry is operational telemetry, not official billing or adoption reporting."
+        "content": "# Frontier Cockpit Local\n\nThis is the local home for GitHub Copilot and agentic development telemetry. Use it to confirm the local stack is producing data, then drill into real workspace sessions, context behavior, model labels, tool calls, data quality, and coaching views. Local telemetry is operational telemetry, not official billing or adoption reporting."
       }
     },
     {
@@ -330,7 +330,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Frontier Developer Cockpit Home (Local)",
+  "title": "Frontier Cockpit Local Home",
   "uid": "copilot-agent-local",
   "version": 2,
   "weekStart": ""
