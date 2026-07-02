@@ -5,7 +5,7 @@ author: "Frontier Cockpit Team"
 date: "2026-07-02"
 version: "2.0.0"
 status: "approved"
-tags: ["frontier-cockpit", "github-copilot", "opentelemetry", "docker", "grafana", "aspire", "finops"]
+tags: ["frontier-cockpit", "github-copilot", "opentelemetry", "docker", "grafana", "aspire", "finops", "ai-observability", "azure", "agentic-devops", "ai-credits"]
 ---
 
 <!-- markdownlint-disable MD025 -->
@@ -20,6 +20,12 @@ Frontier Cockpit is a client-run observability product for GitHub Copilot Chat a
 - **Frontier Cockpit Hybrid (Enterprise Edition):** everything in Local, plus sanitized telemetry forwarding to client-owned Azure resources for governed history, FinOps rollups, and Azure Managed Grafana.
 
 This repository is prepared for client installation. The committed defaults are generic, no customer or personal data is required, content capture is off by default, and local secret/configuration files are ignored by git.
+
+## About This Repository
+
+Frontier Cockpit is a GitHub Copilot observability and governance package for teams that want practical visibility into AI-assisted development. It combines local OpenTelemetry collection, developer coaching, AI Credits cost awareness, data-quality checks, and an optional Azure hybrid path for sanitized enterprise rollups.
+
+Repository topics include GitHub Copilot, OpenTelemetry, AI observability, developer experience, FinOps, Azure, Grafana, Aspire, Prometheus, Tempo, Loki, Docker, AI Credits, cost optimization, and Agentic DevOps.
 
 ## What You Get
 
@@ -305,6 +311,16 @@ Expected result:
 | --- | --- |
 | `develop` | Active development branch. All changes land here first and are validated by CI. |
 | `main` | Client-ready branch, promoted from `develop`. Use this branch for installation and customer delivery. |
+
+## Contributors And AI-Assisted Workflow
+
+| Contributor | Role |
+| --- | --- |
+| [Paula Silva / paulanunes85](https://github.com/paulanunes85) | Product direction, architecture, implementation, documentation, and release validation. |
+| [Claude](https://github.com/claude) | Agent-assisted repository implementation commits where recorded in Git history. |
+| GitHub Copilot in VS Code | AI-assisted development workflow for code review, implementation support, validation, and repository hygiene. |
+
+This repository treats GitHub Copilot and other AI-assisted development tools as implementation accelerators, not as authoritative sources. All product claims, billing statements, and adoption metrics must remain grounded in the cited references below or be clearly labeled as local operational telemetry.
 
 ## References
 
