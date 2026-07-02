@@ -41,13 +41,18 @@ body { background:var(--bg); color:var(--ink); font-family:var(--font-sans); fon
 .container { max-width:1200px; margin:0 auto; padding:0 48px; }
 
 /* meta bar */
-.meta-bar { background:var(--paper); border-bottom:1px solid var(--rule-2); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:13px; letter-spacing:0.08em; color:var(--ink-3); position:sticky; top:0; z-index:100; backdrop-filter:blur(8px); }
+.meta-bar { background:var(--paper); border-bottom:1px solid var(--rule-2); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; font-family:var(--font-mono); font-size:13px; letter-spacing:0.08em; color:var(--ink-3); position:sticky; top:0; z-index:100; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
 .brand { display:flex; align-items:center; gap:14px; text-decoration:none; color:inherit; }
+.brand__mark { width:34px; height:auto; flex-shrink:0; }
 .brand__title { color:var(--ink); font-weight:600; font-size:14px; font-family:var(--font-sans); }
 .brand__sub { font-size:11px; letter-spacing:0.12em; }
-.top-tools { display:flex; align-items:center; gap:4px; }
+.top-tools { display:flex; align-items:center; justify-content:flex-end; gap:4px; flex-wrap:wrap; }
 .top-link { padding:6px 12px; text-decoration:none; color:var(--ink-2); font-family:var(--font-mono); font-size:12px; letter-spacing:0.08em; border-radius:4px; transition:background 0.15s,color 0.15s; }
 .top-link:hover { background:var(--bg-alt); color:var(--ink); }
+.language-switcher { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; margin-left:6px; border:1px solid var(--rule-2); border-radius:6px; background:var(--paper); color:var(--ink-3); font-family:var(--font-mono); font-size:12px; letter-spacing:0.08em; line-height:1; }
+.language-switcher a { color:var(--ink-2); text-decoration:none; }
+.language-switcher a:hover { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
+.language-switcher strong { color:var(--ink); font-weight:600; }
 .tool-btn { width:38px; height:38px; border:1px solid var(--rule-2); background:var(--paper); border-radius:6px; color:var(--ink-2); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; margin-left:8px; }
 .tool-btn svg { width:16px; height:16px; }
 
@@ -56,7 +61,7 @@ body { background:var(--bg); color:var(--ink); font-family:var(--font-sans); fon
 .hero__grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:80px; align-items:center; max-width:1200px; margin:0 auto; }
 .hero__eyebrow { font-family:var(--font-mono); font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--c-blue-700); font-weight:500; display:inline-flex; align-items:center; gap:10px; margin-bottom:24px; }
 .hero__eyebrow .dot { width:6px; height:6px; background:var(--c-blue-500); border-radius:50%; }
-.hero__title { font-size:clamp(38px,5vw,58px); font-weight:600; letter-spacing:-0.025em; line-height:1.04; margin:0 0 24px; text-wrap:balance; }
+.hero__title { font-size:clamp(38px,5vw,58px); font-weight:600; letter-spacing:-0.025em; line-height:1.04; margin:0 0 24px; }
 .hero__title em { font-style:normal; color:var(--c-blue-700); }
 .hero__subtitle { font-size:20px; line-height:1.5; color:var(--ink-2); margin:0 0 36px; max-width:620px; }
 .hero__cta { display:flex; gap:14px; flex-wrap:wrap; }
@@ -75,8 +80,12 @@ body { background:var(--bg); color:var(--ink); font-family:var(--font-sans); fon
 .section--alt { background:var(--paper); }
 .section__header { margin-bottom:48px; }
 .section__label { font-family:var(--font-mono); font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-3); font-weight:500; margin-bottom:10px; }
-.section__title { font-size:clamp(30px,3.2vw,42px); font-weight:600; letter-spacing:-0.02em; line-height:1.1; margin:0 0 16px; text-wrap:balance; }
+.section__title { font-size:clamp(30px,3.2vw,42px); font-weight:600; letter-spacing:-0.02em; line-height:1.1; margin:0 0 16px; }
 .section__lead { font-size:18px; line-height:1.55; color:var(--ink-2); max-width:var(--measure); }
+.section__note { margin-top:22px; font-size:14px; }
+.section__note--flow { margin-top:24px; }
+.section__note--start { margin-top:18px; font-size:15px; }
+.inline-code { font-family:var(--font-mono); font-size:14px; color:var(--c-blue-700); }
 
 /* stat row */
 .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; margin-bottom:22px; }
@@ -199,7 +208,7 @@ pre .c { color:#8A8A85; }
 <!-- meta bar -->
 <header class="meta-bar">
   <a href="#top" class="brand">
-    <svg viewBox="0 0 1600 900" role="img" aria-label="paulasilva" style="width:34px;height:auto;flex-shrink:0;"><title>paulasilva</title><path d="M528 200 L300 385 L528 565" fill="none" stroke="#FF3133" stroke-width="112" stroke-linecap="round" stroke-linejoin="round"/><rect x="518" y="455" width="136" height="136" rx="30" fill="#7ED956"/><line x1="855" y1="150" x2="692" y2="610" stroke="#FFDE59" stroke-width="112" stroke-linecap="round"/><path d="M975 200 L1203 385 L975 565" fill="none" stroke="#39B8FF" stroke-width="112" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg class="brand__mark" viewBox="0 0 1600 900" role="img" aria-label="paulasilva"><title>paulasilva</title><path d="M528 200 L300 385 L528 565" fill="none" stroke="#FF3133" stroke-width="112" stroke-linecap="round" stroke-linejoin="round"/><rect x="518" y="455" width="136" height="136" rx="30" fill="#7ED956"/><line x1="855" y1="150" x2="692" y2="610" stroke="#FFDE59" stroke-width="112" stroke-linecap="round"/><path d="M975 200 L1203 385 L975 565" fill="none" stroke="#39B8FF" stroke-width="112" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <div class="brand__text">
       <div class="brand__title">Frontier Cockpit</div>
       <div class="brand__sub">by Paula Silva</div>
@@ -211,8 +220,15 @@ pre .c { color:#8A8A85; }
     <a href="#metrics" class="top-link">Metrics</a>
     <a href="#how" class="top-link">How it works</a>
     <a href="#start" class="top-link">Get started</a>
+    <div class="language-switcher" id="language-switcher" aria-label="Language selector">
+      <a href="?lang=pt">PT</a>
+      <span aria-hidden="true">&middot;</span>
+      <strong aria-current="page">EN</strong>
+      <span aria-hidden="true">&middot;</span>
+      <a href="?lang=es">ES</a>
+    </div>
     <button class="tool-btn" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
-      <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" hidden><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
       <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
   </div>
@@ -392,7 +408,7 @@ pre .c { color:#8A8A85; }
           </div>
         </div>
       </div>
-      <p class="section__lead" style="margin-top:22px; font-size:14px;">Local AIU and AI Credits values are operational estimates for planning and coaching. Official GitHub Copilot billing and adoption reporting come from GitHub billing exports and the GitHub Copilot usage metrics API, which the product ingests where available.</p>
+      <p class="section__lead section__note">Local AIU and AI Credits values are operational estimates for planning and coaching. Official GitHub Copilot billing and adoption reporting come from GitHub billing exports and the GitHub Copilot usage metrics API, which the product ingests where available.</p>
     </div>
   </section>
 
@@ -401,7 +417,7 @@ pre .c { color:#8A8A85; }
     <div class="container">
       <div class="section__header">
         <div class="section__label">How it works</div>
-        <h2 class="section__title">Receive, store, summarize, and explain the signals Copilot already emits.</h2>
+        <h2 class="section__title">Receive, store, summarize, and explain the signals GitHub Copilot already emits.</h2>
         <p class="section__lead">GitHub Copilot in VS Code emits OpenTelemetry traces, metrics, and logs following the GenAI semantic conventions. Frontier Cockpit gives them a home and a meaning.</p>
       </div>
       <div class="flow">
@@ -417,7 +433,7 @@ pre .c { color:#8A8A85; }
         <span class="node">Azure Container Apps collector</span><span class="arrow">&#8594;</span>
         <span class="node">Application Insights, Log Analytics, Managed Grafana</span>
       </div>
-      <p class="section__lead" style="margin-top:24px; font-size:14px;">Ten pinned containers, healthchecked, loopback-only, with scheduled processing inside Docker so macOS, Linux, and Windows behave identically. Continuous integration validates shell quality, app builds, compose configuration, dashboards, and secret scanning on every change.</p>
+      <p class="section__lead section__note section__note--flow">Ten pinned containers, healthchecked, loopback-only, with scheduled processing inside Docker so macOS, Linux, and Windows behave identically. Continuous integration validates shell quality, app builds, compose configuration, dashboards, and secret scanning on every change.</p>
     </div>
   </section>
 
@@ -449,7 +465,7 @@ bash local-otel/client-bootstrap.sh
 
 <span class="c"># Windows, PowerShell 7</span>
 pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
-      <p class="section__lead" style="margin-top:18px; font-size:15px;">Then reload VS Code, run one GitHub Copilot Chat or agent request inside a Git repository, and open the local cockpit at <code style="font-family:var(--font-mono);font-size:14px;color:var(--c-blue-700);">localhost:3300</code>.</p>
+      <p class="section__lead section__note--start">Then reload VS Code, run one GitHub Copilot Chat or agent request inside a Git repository, and open the local cockpit at <code class="inline-code">localhost:3300</code>.</p>
     </div>
   </section>
 
@@ -542,19 +558,327 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
 <script>
 (function () {
   var root = document.documentElement;
-  var saved = null;
-  try { saved = localStorage.getItem('fc-theme'); } catch (e) {}
-  if (saved) { root.setAttribute('data-theme', saved); }
+  var translations = {
+    pt: {
+      title: 'Frontier Cockpit, por Paula Silva',
+      description: 'Frontier Cockpit transforma os sinais OpenTelemetry que o GitHub Copilot ja emite em coaching para desenvolvedores, controle de AI Credits e governanca FinOps enterprise. Local por padrao, Azure por escolha.',
+      languageLabel: 'Seletor de idioma',
+      toggleTheme: 'Alternar tema',
+      text: {
+        'by Paula Silva': 'por Paula Silva',
+        'Why': 'Por que',
+        'Editions': 'Edicoes',
+        'Metrics': 'Metricas',
+        'How it works': 'Como funciona',
+        'Get started': 'Comecar',
+        'GitHub Copilot observability for engineering teams': 'Observabilidade do GitHub Copilot para equipes de engenharia',
+        'See what your AI spends, learns, and delivers.': 'Veja quanto sua IA gasta, aprende e entrega.',
+        'Local by default, Azure by choice.': 'Local por padrao, Azure por escolha.',
+        "Frontier Cockpit turns the OpenTelemetry signals GitHub Copilot already emits into developer coaching, AI Credits cost control, and enterprise governance, without raw prompts ever leaving the developer's machine.": 'Frontier Cockpit transforma os sinais OpenTelemetry que o GitHub Copilot ja emite em coaching para desenvolvedores, controle de AI Credits e governanca enterprise, sem que prompts brutos saiam da maquina do desenvolvedor.',
+        'Get started in three commands': 'Comece com tres comandos',
+        'View the repository': 'Ver repositorio',
+        'SOURCE': 'ORIGEM',
+        'VS Code and GitHub Copilot, OTLP signals': 'VS Code e GitHub Copilot, sinais OTLP',
+        'COLLECT AND STORE, LOCAL': 'COLETAR E ARMAZENAR, LOCAL',
+        'Collector, Tempo, Prometheus, Loki, Aspire': 'Collector, Tempo, Prometheus, Loki, Aspire',
+        'EXPLAIN': 'EXPLICAR',
+        'Cockpit app, Grafana, coaching cards': 'App do cockpit, Grafana, cards de coaching',
+        'OPTIONAL, SANITIZED FORWARD TO AZURE': 'OPCIONAL, ENVIO SANITIZADO PARA O AZURE',
+        'Why now': 'Por que agora',
+        'AI usage observability became a first-class engineering discipline.': 'A observabilidade de uso de IA virou uma disciplina central de engenharia.',
+        'Three shifts in 2025 and 2026 turned "how much is our AI costing, and is it helping" into a question every engineering organization now has to answer with data.': 'Tres mudancas em 2025 e 2026 transformaram "quanto nossa IA custa, e se ela esta ajudando" em uma pergunta que toda organizacao de engenharia precisa responder com dados.',
+        'Per token': 'Por token',
+        'Usage-based billing.': 'Cobranca baseada em uso.',
+        'GitHub Copilot is moving to AI Credits, so cache reuse, context size, and model mix now translate into cost on every request.': 'O GitHub Copilot esta migrando para AI Credits, entao reutilizacao de cache, tamanho de contexto e combinacao de modelos agora viram custo em cada solicitacao.',
+        'Adoption is near-universal.': 'A adocao esta quase universal.',
+        'The 2025 DORA report found roughly 90 percent AI adoption, with higher throughput but pressure on delivery stability. Fast feedback loops are the control system.': 'O relatorio DORA 2025 encontrou cerca de 90 por cento de adocao de IA, com maior throughput, mas pressao sobre a estabilidade de entrega. Loops rapidos de feedback sao o sistema de controle.',
+        'Top ask': 'Pedido principal',
+        'FinOps for AI.': 'FinOps para IA.',
+        'The State of FinOps 2026 ranks managing AI and GenAI spend among the highest priorities, with unit economics and cost visibility the open challenges.': 'O State of FinOps 2026 coloca a gestao de gastos com IA e GenAI entre as maiores prioridades, com economia por unidade e visibilidade de custos como desafios em aberto.',
+        'Educate': 'Educar',
+        'Developers learn their own patterns': 'Desenvolvedores aprendem seus proprios padroes',
+        'Cold context, cache misses, oversized prompts, and error loops become visible minutes after they happen, with coaching cards that explain what to change and why it matters.': 'Contexto frio, misses de cache, prompts grandes demais e loops de erro ficam visiveis minutos depois de acontecerem, com cards de coaching que explicam o que mudar e por que isso importa.',
+        'Impact': 'Impacto',
+        'Leaders get honest numbers': 'Lideres recebem numeros honestos',
+        'AI Credits burn versus allowance, projection to end of month, model cost concentration, and adoption quality signals, clearly labeled as operational telemetry, never fabricated billing.': 'Consumo de AI Credits versus franquia, projecao ate o fim do mes, concentracao de custo por modelo e sinais de qualidade de adocao, claramente rotulados como telemetria operacional, nunca faturamento fabricado.',
+        'Govern': 'Governar',
+        'Platform teams keep the boundary': 'Equipes de plataforma preservam a fronteira',
+        'Raw content stays local. The optional Azure path forwards only sanitized, redacted telemetry to client-owned resources, with the same redaction applied twice, locally and in the cloud.': 'Conteudo bruto permanece local. O caminho opcional para Azure envia apenas telemetria sanitizada e redigida para recursos do cliente, com a mesma redacao aplicada duas vezes, localmente e na nuvem.',
+        'Two editions, one product': 'Duas edicoes, um produto',
+        'Start local for every developer. Add Azure when the organization needs governance.': 'Comece local para cada desenvolvedor. Adicione Azure quando a organizacao precisar de governanca.',
+        'Developer Edition': 'Edicao Developer',
+        "A complete observability stack on the developer's machine: OpenTelemetry Collector, Aspire Dashboard, Prometheus, Tempo, Loki, Grafana, scheduled jobs, and a purpose-built cockpit app at localhost:3300.": 'Uma stack completa de observabilidade na maquina do desenvolvedor: OpenTelemetry Collector, Aspire Dashboard, Prometheus, Tempo, Loki, Grafana, jobs agendados e um app cockpit criado para localhost:3300.',
+        'One hundred percent local, all ports bind to 127.0.0.1': 'Cem por cento local, todas as portas vinculadas a 127.0.0.1',
+        'Content capture off by default, opt-in only': 'Captura de conteudo desligada por padrao, somente opt-in',
+        'Runs identically on macOS, Linux, and Windows': 'Roda de forma identica no macOS, Linux e Windows',
+        'AI Credits estimates with cache and context coaching': 'Estimativas de AI Credits com coaching de cache e contexto',
+        'Enterprise Edition': 'Edicao Enterprise',
+        'Everything in Local, plus sanitized forwarding to client-owned Azure: Container Apps collector, Application Insights, Log Analytics, Azure Monitor workspace, and Azure Managed Grafana, deployed with Bicep.': 'Tudo do Local, mais envio sanitizado para Azure do cliente: coletor em Container Apps, Application Insights, Log Analytics, workspace do Azure Monitor e Azure Managed Grafana, implantados com Bicep.',
+        'Raw prompts and tool payloads never leave the machine': 'Prompts brutos e payloads de ferramentas nunca saem da maquina',
+        'Defense in depth, redaction applied locally and in Azure': 'Defesa em profundidade, redacao aplicada localmente e no Azure',
+        'Dev, test, and prod parameter sets with cost tags': 'Conjuntos de parametros para dev, test e prod com tags de custo',
+        'GitHub Enterprise audit log and usage metrics ingestion': 'Ingestao de audit log e metricas de uso do GitHub Enterprise',
+        'Metrics that change behavior': 'Metricas que mudam comportamento',
+        'Volume tells you what happened. Efficiency and outcomes tell you what to do next.': 'Volume mostra o que aconteceu. Eficiencia e resultados mostram o que fazer depois.',
+        'Frontier Cockpit pairs raw counts with the efficiency, cost, and outcome signals a developer, a tech lead, and a FinOps owner each need.': 'Frontier Cockpit combina contagens brutas com sinais de eficiencia, custo e resultado que um desenvolvedor, um tech lead e um responsavel por FinOps precisam.',
+        'Cost and FinOps': 'Custo e FinOps',
+        'AI Credits estimates per session, repository, and model. Monthly budget utilization with projection and alert levels. Cache savings expressed in credits, the number executives remember.': 'Estimativas de AI Credits por sessao, repositorio e modelo. Uso do orcamento mensal com projecao e niveis de alerta. Economia de cache expressa em credits, o numero que executivos lembram.',
+        'Context and cache': 'Contexto e cache',
+        'Hot, warm, and cold token composition. Context utilization, typical and peak. Compaction events. The coach flags cold starts and context pressure before they burn the budget.': 'Composicao de tokens quentes, mornos e frios. Utilizacao de contexto, tipica e de pico. Eventos de compactacao. O coach sinaliza cold starts e pressao de contexto antes que queimem o orcamento.',
+        'Experience and outcomes': 'Experiencia e resultados',
+        'Time to first token, response duration, tool call depth, error rates, edit acceptance, and edit survival without revert, attributed to real Git workspaces, branches, and sessions.': 'Tempo ate o primeiro token, duracao de resposta, profundidade de chamadas de ferramenta, taxas de erro, aceitacao de edicoes e sobrevivencia de edicoes sem revert, atribuidos a workspaces, branches e sessoes Git reais.',
+        'Data quality and coverage': 'Qualidade e cobertura dos dados',
+        'Workspace attribution, observed versus expected coverage, and materializer freshness, so every number carries an honest confidence signal instead of a false sense of completeness.': 'Atribuicao de workspace, cobertura observada versus esperada e frescor do materializador, para que cada numero carregue um sinal honesto de confianca em vez de uma falsa sensacao de completude.',
+        'Local AIU and AI Credits values are operational estimates for planning and coaching. Official GitHub Copilot billing and adoption reporting come from GitHub billing exports and the GitHub Copilot usage metrics API, which the product ingests where available.': 'Valores locais de AIU e AI Credits sao estimativas operacionais para planejamento e coaching. Faturamento oficial do GitHub Copilot e relatorios de adocao vem de exportacoes de billing do GitHub e da API de metricas de uso do GitHub Copilot, que o produto ingere quando disponivel.',
+        'Receive, store, summarize, and explain the signals GitHub Copilot already emits.': 'Receba, armazene, sumarize e explique os sinais que o GitHub Copilot ja emite.',
+        'GitHub Copilot in VS Code emits OpenTelemetry traces, metrics, and logs following the GenAI semantic conventions. Frontier Cockpit gives them a home and a meaning.': 'O GitHub Copilot no VS Code emite traces, metricas e logs OpenTelemetry seguindo as convencoes semanticas de GenAI. Frontier Cockpit da a esses sinais uma casa e um significado.',
+        'VS Code and GitHub Copilot': 'VS Code e GitHub Copilot',
+        'Local OTel Collector': 'Collector OTel local',
+        'Jobs, materializer and rollup': 'Jobs, materializador e rollup',
+        'Cockpit app, Grafana, Coach': 'App cockpit, Grafana, Coach',
+        'Local Collector': 'Collector local',
+        'Redaction pipeline, deletes raw content': 'Pipeline de redacao, remove conteudo bruto',
+        'Azure Container Apps collector': 'Collector em Azure Container Apps',
+        'Application Insights, Log Analytics, Managed Grafana': 'Application Insights, Log Analytics, Managed Grafana',
+        'Ten pinned containers, healthchecked, loopback-only, with scheduled processing inside Docker so macOS, Linux, and Windows behave identically. Continuous integration validates shell quality, app builds, compose configuration, dashboards, and secret scanning on every change.': 'Dez containers fixados por versao, com healthcheck e somente loopback, com processamento agendado dentro do Docker para que macOS, Linux e Windows se comportem de forma identica. A integracao continua valida qualidade de shell, builds dos apps, configuracao compose, dashboards e secret scanning em cada mudanca.',
+        'Privacy first, by construction': 'Privacidade primeiro, por construcao',
+        'Content capture, meaning raw prompts, responses, file paths, tool arguments and results, is disabled by default at every layer and requires an explicit opt-in per installation. In hybrid mode, dedicated pipelines delete raw content attributes before anything leaves the machine, and the cloud collector applies the same redaction again. Credentials are generated per installation, so nothing ships with default passwords.': 'Captura de conteudo, ou seja, prompts brutos, respostas, caminhos de arquivos, argumentos e resultados de ferramentas, fica desabilitada por padrao em todas as camadas e exige opt-in explicito por instalacao. No modo hibrido, pipelines dedicados removem atributos de conteudo bruto antes de qualquer coisa sair da maquina, e o collector na nuvem aplica a mesma redacao novamente. Credenciais sao geradas por instalacao, entao nada e entregue com senhas padrao.',
+        'From a fresh clone to a working cockpit in three commands.': 'De um clone limpo a um cockpit funcionando em tres comandos.',
+        'Requires Docker Desktop or Docker Engine on Linux, Git, Python 3, and VS Code with GitHub Copilot.': 'Requer Docker Desktop ou Docker Engine no Linux, Git, Python 3 e VS Code com GitHub Copilot.',
+        'Then reload VS Code, run one GitHub Copilot Chat or agent request inside a Git repository, and open the local cockpit at': 'Depois recarregue o VS Code, execute uma solicitacao do GitHub Copilot Chat ou de agente dentro de um repositorio Git e abra o cockpit local em',
+        'Grounded in current research': 'Baseado em pesquisa atual',
+        'Built on public GitHub, Microsoft, and industry sources.': 'Construido sobre fontes publicas do GitHub, Microsoft e da industria.',
+        'GitHub Docs and changelog on GitHub Copilot usage-based billing and AI Credits allowances, requests, and budgets.': 'GitHub Docs e changelog sobre cobranca baseada em uso do GitHub Copilot, franquias de AI Credits, solicitacoes e orcamentos.',
+        'GitHub changelog, GitHub Copilot metrics general availability, including per-user AI Credits in the usage metrics API.': 'GitHub changelog, disponibilidade geral das metricas do GitHub Copilot, incluindo AI Credits por usuario na API de metricas de uso.',
+        'Visual Studio Code release notes, GitHub Copilot agent monitoring with OpenTelemetry.': 'Notas de versao do Visual Studio Code, monitoramento de agentes do GitHub Copilot com OpenTelemetry.',
+        'DORA, State of AI-assisted Software Development, 2025, and follow-on 2026 research on AI impact.': 'DORA, State of AI-assisted Software Development, 2025, e pesquisas subsequentes de 2026 sobre impacto da IA.',
+        'FinOps Foundation, State of FinOps 2026, and the FOCUS specification on virtual currency and token cost.': 'FinOps Foundation, State of FinOps 2026, e a especificacao FOCUS sobre moeda virtual e custo por token.',
+        'OpenTelemetry GenAI semantic conventions and the OpenTelemetry AI agent observability guidance.': 'Convencoes semanticas GenAI do OpenTelemetry e orientacao de observabilidade de agentes de IA do OpenTelemetry.',
+        "Peer-reviewed research on GitHub Copilot's measured impact on developer productivity.": 'Pesquisa revisada por pares sobre o impacto medido do GitHub Copilot na produtividade de desenvolvedores.',
+        'About': 'Sobre',
+        'Who built this, and why.': 'Quem construiu isto, e por que.',
+        'I am Paula Silva, Software Global Black Belt. My work sits between platform engineering, AI infrastructure, and the practical reality of helping teams adopt GitHub Copilot and agentic development at enterprise scale.': 'Eu sou Paula Silva, Software Global Black Belt. Meu trabalho fica entre engenharia de plataforma, infraestrutura de IA e a realidade pratica de ajudar equipes a adotarem GitHub Copilot e desenvolvimento agentico em escala enterprise.',
+        "Across those engagements the same question kept coming up: what is our AI actually costing, is it making developers better, and how do we govern it without reading everyone's prompts. Frontier Cockpit is the answer I wanted to hand teams, local and private by default, with an optional path to governed Azure history when the organization is ready.": 'Nesses engajamentos, a mesma pergunta sempre aparecia: quanto nossa IA esta custando de verdade, ela esta tornando desenvolvedores melhores, e como governamos isso sem ler os prompts de todo mundo. Frontier Cockpit e a resposta que eu queria entregar as equipes, local e privado por padrao, com um caminho opcional para historico governado no Azure quando a organizacao estiver pronta.',
+        'It is a client-run package, designed to be installed, taught, and adapted. The goal is not just a dashboard, it is helping developers and leaders learn from their own AI usage.': 'E um pacote executado pelo cliente, desenhado para ser instalado, ensinado e adaptado. O objetivo nao e apenas um dashboard, e ajudar desenvolvedores e lideres a aprenderem com seu proprio uso de IA.',
+        'Contact': 'Contato',
+        'Product repository': 'Repositorio do produto',
+        'Frontier Cockpit Local and Hybrid': 'Frontier Cockpit Local e Hybrid',
+        'Product': 'Produto',
+        'Repository': 'Repositorio',
+        'GitHub Copilot observability, from the developer to FinOps. Local by default, Azure by choice. A client-run package that turns OpenTelemetry signals into coaching, cost control, and governance.': 'Observabilidade do GitHub Copilot, do desenvolvedor ao FinOps. Local por padrao, Azure por escolha. Um pacote executado pelo cliente que transforma sinais OpenTelemetry em coaching, controle de custos e governanca.',
+        'GitHub Copilot is a product of GitHub. Azure is a product of Microsoft. Frontier Cockpit is an independent, client-run observability package and reports local operational telemetry, not official billing. Building the future of software development with AI and Agentic DevOps.': 'GitHub Copilot e um produto do GitHub. Azure e um produto da Microsoft. Frontier Cockpit e um pacote independente de observabilidade executado pelo cliente e reporta telemetria operacional local, nao faturamento oficial. Construindo o futuro do desenvolvimento de software com IA e Agentic DevOps.'
+      }
+    },
+    es: {
+      title: 'Frontier Cockpit, por Paula Silva',
+      description: 'Frontier Cockpit convierte las senales OpenTelemetry que GitHub Copilot ya emite en coaching para desarrolladores, control de AI Credits y gobierno FinOps empresarial. Local por defecto, Azure por eleccion.',
+      languageLabel: 'Selector de idioma',
+      toggleTheme: 'Cambiar tema',
+      text: {
+        'by Paula Silva': 'por Paula Silva',
+        'Why': 'Por que',
+        'Editions': 'Ediciones',
+        'Metrics': 'Metricas',
+        'How it works': 'Como funciona',
+        'Get started': 'Empezar',
+        'GitHub Copilot observability for engineering teams': 'Observabilidad de GitHub Copilot para equipos de ingenieria',
+        'See what your AI spends, learns, and delivers.': 'Vea cuanto gasta, aprende y entrega su IA.',
+        'Local by default, Azure by choice.': 'Local por defecto, Azure por eleccion.',
+        "Frontier Cockpit turns the OpenTelemetry signals GitHub Copilot already emits into developer coaching, AI Credits cost control, and enterprise governance, without raw prompts ever leaving the developer's machine.": 'Frontier Cockpit convierte las senales OpenTelemetry que GitHub Copilot ya emite en coaching para desarrolladores, control de AI Credits y gobierno empresarial, sin que los prompts sin procesar salgan de la maquina del desarrollador.',
+        'Get started in three commands': 'Empiece con tres comandos',
+        'View the repository': 'Ver repositorio',
+        'SOURCE': 'ORIGEN',
+        'VS Code and GitHub Copilot, OTLP signals': 'VS Code y GitHub Copilot, senales OTLP',
+        'COLLECT AND STORE, LOCAL': 'RECOLECTAR Y ALMACENAR, LOCAL',
+        'EXPLAIN': 'EXPLICAR',
+        'Cockpit app, Grafana, coaching cards': 'App cockpit, Grafana, tarjetas de coaching',
+        'OPTIONAL, SANITIZED FORWARD TO AZURE': 'OPCIONAL, ENVIO SANITIZADO A AZURE',
+        'Why now': 'Por que ahora',
+        'AI usage observability became a first-class engineering discipline.': 'La observabilidad del uso de IA se convirtio en una disciplina central de ingenieria.',
+        'Three shifts in 2025 and 2026 turned "how much is our AI costing, and is it helping" into a question every engineering organization now has to answer with data.': 'Tres cambios en 2025 y 2026 convirtieron "cuanto cuesta nuestra IA y si esta ayudando" en una pregunta que toda organizacion de ingenieria debe responder con datos.',
+        'Per token': 'Por token',
+        'Usage-based billing.': 'Facturacion basada en uso.',
+        'GitHub Copilot is moving to AI Credits, so cache reuse, context size, and model mix now translate into cost on every request.': 'GitHub Copilot esta migrando a AI Credits, asi que la reutilizacion de cache, el tamano del contexto y la mezcla de modelos ahora se traducen en costo en cada solicitud.',
+        'Adoption is near-universal.': 'La adopcion es casi universal.',
+        'The 2025 DORA report found roughly 90 percent AI adoption, with higher throughput but pressure on delivery stability. Fast feedback loops are the control system.': 'El informe DORA 2025 encontro cerca de 90 por ciento de adopcion de IA, con mayor throughput pero presion sobre la estabilidad de entrega. Los ciclos rapidos de feedback son el sistema de control.',
+        'Top ask': 'Principal pedido',
+        'FinOps for AI.': 'FinOps para IA.',
+        'The State of FinOps 2026 ranks managing AI and GenAI spend among the highest priorities, with unit economics and cost visibility the open challenges.': 'State of FinOps 2026 ubica la gestion del gasto en IA y GenAI entre las mayores prioridades, con economia unitaria y visibilidad de costos como desafios abiertos.',
+        'Educate': 'Educar',
+        'Developers learn their own patterns': 'Los desarrolladores aprenden sus propios patrones',
+        'Cold context, cache misses, oversized prompts, and error loops become visible minutes after they happen, with coaching cards that explain what to change and why it matters.': 'Contexto frio, fallos de cache, prompts demasiado grandes y ciclos de error se vuelven visibles minutos despues de ocurrir, con tarjetas de coaching que explican que cambiar y por que importa.',
+        'Impact': 'Impacto',
+        'Leaders get honest numbers': 'Los lideres reciben numeros honestos',
+        'AI Credits burn versus allowance, projection to end of month, model cost concentration, and adoption quality signals, clearly labeled as operational telemetry, never fabricated billing.': 'Consumo de AI Credits frente a la asignacion, proyeccion a fin de mes, concentracion de costo por modelo y senales de calidad de adopcion, claramente etiquetadas como telemetria operacional, nunca facturacion fabricada.',
+        'Govern': 'Gobernar',
+        'Platform teams keep the boundary': 'Los equipos de plataforma mantienen el limite',
+        'Raw content stays local. The optional Azure path forwards only sanitized, redacted telemetry to client-owned resources, with the same redaction applied twice, locally and in the cloud.': 'El contenido sin procesar permanece local. La ruta opcional a Azure envia solo telemetria sanitizada y redactada a recursos del cliente, con la misma redaccion aplicada dos veces, localmente y en la nube.',
+        'Two editions, one product': 'Dos ediciones, un producto',
+        'Start local for every developer. Add Azure when the organization needs governance.': 'Empiece local para cada desarrollador. Agregue Azure cuando la organizacion necesite gobierno.',
+        'Developer Edition': 'Edicion Developer',
+        "A complete observability stack on the developer's machine: OpenTelemetry Collector, Aspire Dashboard, Prometheus, Tempo, Loki, Grafana, scheduled jobs, and a purpose-built cockpit app at localhost:3300.": 'Una stack completa de observabilidad en la maquina del desarrollador: OpenTelemetry Collector, Aspire Dashboard, Prometheus, Tempo, Loki, Grafana, jobs programados y una app cockpit creada para localhost:3300.',
+        'One hundred percent local, all ports bind to 127.0.0.1': 'Cien por ciento local, todos los puertos enlazados a 127.0.0.1',
+        'Content capture off by default, opt-in only': 'Captura de contenido desactivada por defecto, solo opt-in',
+        'Runs identically on macOS, Linux, and Windows': 'Corre de forma identica en macOS, Linux y Windows',
+        'AI Credits estimates with cache and context coaching': 'Estimaciones de AI Credits con coaching de cache y contexto',
+        'Enterprise Edition': 'Edicion Enterprise',
+        'Everything in Local, plus sanitized forwarding to client-owned Azure: Container Apps collector, Application Insights, Log Analytics, Azure Monitor workspace, and Azure Managed Grafana, deployed with Bicep.': 'Todo lo de Local, mas envio sanitizado al Azure del cliente: collector en Container Apps, Application Insights, Log Analytics, workspace de Azure Monitor y Azure Managed Grafana, desplegados con Bicep.',
+        'Raw prompts and tool payloads never leave the machine': 'Prompts sin procesar y payloads de herramientas nunca salen de la maquina',
+        'Defense in depth, redaction applied locally and in Azure': 'Defensa en profundidad, redaccion aplicada localmente y en Azure',
+        'Dev, test, and prod parameter sets with cost tags': 'Conjuntos de parametros para dev, test y prod con tags de costo',
+        'GitHub Enterprise audit log and usage metrics ingestion': 'Ingesta de audit log y metricas de uso de GitHub Enterprise',
+        'Metrics that change behavior': 'Metricas que cambian comportamiento',
+        'Volume tells you what happened. Efficiency and outcomes tell you what to do next.': 'El volumen muestra que ocurrio. La eficiencia y los resultados muestran que hacer despues.',
+        'Frontier Cockpit pairs raw counts with the efficiency, cost, and outcome signals a developer, a tech lead, and a FinOps owner each need.': 'Frontier Cockpit combina conteos brutos con senales de eficiencia, costo y resultado que necesita un desarrollador, un tech lead y un responsable de FinOps.',
+        'Cost and FinOps': 'Costo y FinOps',
+        'AI Credits estimates per session, repository, and model. Monthly budget utilization with projection and alert levels. Cache savings expressed in credits, the number executives remember.': 'Estimaciones de AI Credits por sesion, repositorio y modelo. Uso del presupuesto mensual con proyeccion y niveles de alerta. Ahorro de cache expresado en credits, el numero que recuerdan los ejecutivos.',
+        'Context and cache': 'Contexto y cache',
+        'Hot, warm, and cold token composition. Context utilization, typical and peak. Compaction events. The coach flags cold starts and context pressure before they burn the budget.': 'Composicion de tokens calientes, tibios y frios. Utilizacion de contexto, tipica y pico. Eventos de compactacion. El coach senala cold starts y presion de contexto antes de que quemen el presupuesto.',
+        'Experience and outcomes': 'Experiencia y resultados',
+        'Time to first token, response duration, tool call depth, error rates, edit acceptance, and edit survival without revert, attributed to real Git workspaces, branches, and sessions.': 'Tiempo al primer token, duracion de respuesta, profundidad de llamadas de herramienta, tasas de error, aceptacion de ediciones y supervivencia de ediciones sin revert, atribuidos a workspaces, ramas y sesiones Git reales.',
+        'Data quality and coverage': 'Calidad y cobertura de datos',
+        'Workspace attribution, observed versus expected coverage, and materializer freshness, so every number carries an honest confidence signal instead of a false sense of completeness.': 'Atribucion de workspace, cobertura observada frente a esperada y frescura del materializador, para que cada numero lleve una senal honesta de confianza en lugar de una falsa sensacion de completitud.',
+        'Local AIU and AI Credits values are operational estimates for planning and coaching. Official GitHub Copilot billing and adoption reporting come from GitHub billing exports and the GitHub Copilot usage metrics API, which the product ingests where available.': 'Los valores locales de AIU y AI Credits son estimaciones operacionales para planificacion y coaching. La facturacion oficial de GitHub Copilot y los reportes de adopcion provienen de exportaciones de billing de GitHub y de la API de metricas de uso de GitHub Copilot, que el producto ingiere cuando esta disponible.',
+        'Receive, store, summarize, and explain the signals GitHub Copilot already emits.': 'Reciba, almacene, resuma y explique las senales que GitHub Copilot ya emite.',
+        'GitHub Copilot in VS Code emits OpenTelemetry traces, metrics, and logs following the GenAI semantic conventions. Frontier Cockpit gives them a home and a meaning.': 'GitHub Copilot en VS Code emite traces, metricas y logs OpenTelemetry siguiendo las convenciones semanticas de GenAI. Frontier Cockpit les da un hogar y un significado.',
+        'VS Code and GitHub Copilot': 'VS Code y GitHub Copilot',
+        'Local OTel Collector': 'Collector OTel local',
+        'Jobs, materializer and rollup': 'Jobs, materializador y rollup',
+        'Cockpit app, Grafana, Coach': 'App cockpit, Grafana, Coach',
+        'Local Collector': 'Collector local',
+        'Redaction pipeline, deletes raw content': 'Pipeline de redaccion, elimina contenido sin procesar',
+        'Azure Container Apps collector': 'Collector en Azure Container Apps',
+        'Application Insights, Log Analytics, Managed Grafana': 'Application Insights, Log Analytics, Managed Grafana',
+        'Ten pinned containers, healthchecked, loopback-only, with scheduled processing inside Docker so macOS, Linux, and Windows behave identically. Continuous integration validates shell quality, app builds, compose configuration, dashboards, and secret scanning on every change.': 'Diez contenedores fijados por version, con healthcheck y solo loopback, con procesamiento programado dentro de Docker para que macOS, Linux y Windows se comporten de forma identica. La integracion continua valida calidad de shell, builds de apps, configuracion compose, dashboards y secret scanning en cada cambio.',
+        'Privacy first, by construction': 'Privacidad primero, por construccion',
+        'Content capture, meaning raw prompts, responses, file paths, tool arguments and results, is disabled by default at every layer and requires an explicit opt-in per installation. In hybrid mode, dedicated pipelines delete raw content attributes before anything leaves the machine, and the cloud collector applies the same redaction again. Credentials are generated per installation, so nothing ships with default passwords.': 'La captura de contenido, es decir, prompts sin procesar, respuestas, rutas de archivos, argumentos y resultados de herramientas, esta desactivada por defecto en todas las capas y requiere opt-in explicito por instalacion. En modo hibrido, pipelines dedicados eliminan atributos de contenido sin procesar antes de que algo salga de la maquina, y el collector en la nube aplica la misma redaccion otra vez. Las credenciales se generan por instalacion, asi que nada se entrega con contrasenas por defecto.',
+        'From a fresh clone to a working cockpit in three commands.': 'De un clone limpio a un cockpit funcionando en tres comandos.',
+        'Requires Docker Desktop or Docker Engine on Linux, Git, Python 3, and VS Code with GitHub Copilot.': 'Requiere Docker Desktop o Docker Engine en Linux, Git, Python 3 y VS Code con GitHub Copilot.',
+        'Then reload VS Code, run one GitHub Copilot Chat or agent request inside a Git repository, and open the local cockpit at': 'Luego recargue VS Code, ejecute una solicitud de GitHub Copilot Chat o de agente dentro de un repositorio Git y abra el cockpit local en',
+        'Grounded in current research': 'Basado en investigacion actual',
+        'Built on public GitHub, Microsoft, and industry sources.': 'Construido sobre fuentes publicas de GitHub, Microsoft y la industria.',
+        'GitHub Docs and changelog on GitHub Copilot usage-based billing and AI Credits allowances, requests, and budgets.': 'GitHub Docs y changelog sobre facturacion basada en uso de GitHub Copilot, asignaciones de AI Credits, solicitudes y presupuestos.',
+        'GitHub changelog, GitHub Copilot metrics general availability, including per-user AI Credits in the usage metrics API.': 'GitHub changelog, disponibilidad general de metricas de GitHub Copilot, incluidos AI Credits por usuario en la API de metricas de uso.',
+        'Visual Studio Code release notes, GitHub Copilot agent monitoring with OpenTelemetry.': 'Notas de version de Visual Studio Code, monitoreo de agentes de GitHub Copilot con OpenTelemetry.',
+        'DORA, State of AI-assisted Software Development, 2025, and follow-on 2026 research on AI impact.': 'DORA, State of AI-assisted Software Development, 2025, e investigacion posterior de 2026 sobre impacto de IA.',
+        'FinOps Foundation, State of FinOps 2026, and the FOCUS specification on virtual currency and token cost.': 'FinOps Foundation, State of FinOps 2026, y la especificacion FOCUS sobre moneda virtual y costo por token.',
+        'OpenTelemetry GenAI semantic conventions and the OpenTelemetry AI agent observability guidance.': 'Convenciones semanticas GenAI de OpenTelemetry y guia de observabilidad de agentes de IA de OpenTelemetry.',
+        "Peer-reviewed research on GitHub Copilot's measured impact on developer productivity.": 'Investigacion revisada por pares sobre el impacto medido de GitHub Copilot en la productividad de desarrolladores.',
+        'About': 'Acerca de',
+        'Who built this, and why.': 'Quien construyo esto, y por que.',
+        'I am Paula Silva, Software Global Black Belt. My work sits between platform engineering, AI infrastructure, and the practical reality of helping teams adopt GitHub Copilot and agentic development at enterprise scale.': 'Soy Paula Silva, Software Global Black Belt. Mi trabajo esta entre ingenieria de plataformas, infraestructura de IA y la realidad practica de ayudar a equipos a adoptar GitHub Copilot y desarrollo agentico a escala empresarial.',
+        "Across those engagements the same question kept coming up: what is our AI actually costing, is it making developers better, and how do we govern it without reading everyone's prompts. Frontier Cockpit is the answer I wanted to hand teams, local and private by default, with an optional path to governed Azure history when the organization is ready.": 'En esos proyectos, la misma pregunta aparecia una y otra vez: cuanto cuesta realmente nuestra IA, esta haciendo mejores a los desarrolladores y como la gobernamos sin leer los prompts de todos. Frontier Cockpit es la respuesta que queria entregar a los equipos, local y privada por defecto, con una ruta opcional hacia historial gobernado en Azure cuando la organizacion este lista.',
+        'It is a client-run package, designed to be installed, taught, and adapted. The goal is not just a dashboard, it is helping developers and leaders learn from their own AI usage.': 'Es un paquete ejecutado por el cliente, disenado para instalarse, ensenarse y adaptarse. El objetivo no es solo un dashboard, es ayudar a desarrolladores y lideres a aprender de su propio uso de IA.',
+        'Contact': 'Contacto',
+        'Product repository': 'Repositorio del producto',
+        'Frontier Cockpit Local and Hybrid': 'Frontier Cockpit Local e Hybrid',
+        'Product': 'Producto',
+        'Repository': 'Repositorio',
+        'GitHub Copilot observability, from the developer to FinOps. Local by default, Azure by choice. A client-run package that turns OpenTelemetry signals into coaching, cost control, and governance.': 'Observabilidad de GitHub Copilot, del desarrollador a FinOps. Local por defecto, Azure por eleccion. Un paquete ejecutado por el cliente que convierte senales OpenTelemetry en coaching, control de costos y gobierno.',
+        'GitHub Copilot is a product of GitHub. Azure is a product of Microsoft. Frontier Cockpit is an independent, client-run observability package and reports local operational telemetry, not official billing. Building the future of software development with AI and Agentic DevOps.': 'GitHub Copilot es un producto de GitHub. Azure es un producto de Microsoft. Frontier Cockpit es un paquete independiente de observabilidad ejecutado por el cliente y reporta telemetria operacional local, no facturacion oficial. Construyendo el futuro del desarrollo de software con IA y Agentic DevOps.'
+      }
+    }
+  };
+  var languages = ['pt', 'en', 'es'];
+  function readStorage(key) {
+    if (!globalThis.localStorage) { return null; }
+    return globalThis.localStorage.getItem(key);
+  }
+  function writeStorage(key, value) {
+    if (!globalThis.localStorage) { return false; }
+    globalThis.localStorage.setItem(key, value);
+    return true;
+  }
+  function getRequestedLanguage() {
+    var params = new URLSearchParams(globalThis.location.search);
+    var requested = params.get('lang');
+    if (!requested) {
+      requested = readStorage('fc-lang');
+    }
+    requested = (requested || 'en').toLowerCase();
+    return languages.includes(requested) ? requested : 'en';
+  }
+  function languageUrl(lang) {
+    var url = new URL(globalThis.location.href);
+    url.searchParams.set('lang', lang);
+    url.hash = '';
+    return url.pathname + url.search;
+  }
+  function renderLanguageSwitcher(lang) {
+    var switcher = document.getElementById('language-switcher');
+    if (!switcher) { return; }
+    var languageLabel = 'Language selector';
+    if (lang === 'pt') { languageLabel = translations.pt.languageLabel; }
+    if (lang === 'es') { languageLabel = translations.es.languageLabel; }
+    switcher.setAttribute('aria-label', languageLabel);
+    switcher.textContent = '';
+    languages.forEach(function (code, index) {
+      if (index > 0) {
+        var separator = document.createElement('span');
+        separator.setAttribute('aria-hidden', 'true');
+        separator.textContent = '\u00b7';
+        switcher.appendChild(separator);
+      }
+      if (code === lang) {
+        var current = document.createElement('strong');
+        current.setAttribute('aria-current', 'page');
+        current.textContent = code.toUpperCase();
+        switcher.appendChild(current);
+      } else {
+        var link = document.createElement('a');
+        link.href = languageUrl(code);
+        link.textContent = code.toUpperCase();
+        switcher.appendChild(link);
+      }
+    });
+  }
+  function translatePage(lang) {
+    var config = translations[lang];
+    root.lang = lang;
+    document.title = config ? config.title : 'Frontier Cockpit, by Paula Silva';
+    var description = document.querySelector('meta[name="description"]');
+    var ogDescription = document.querySelector('meta[property="og:description"]');
+    if (description) { description.setAttribute('content', config ? config.description : 'Frontier Cockpit turns the OpenTelemetry signals GitHub Copilot already emits into developer coaching, AI Credits cost control, and enterprise FinOps governance. Local by default, Azure by choice.'); }
+    if (ogDescription) { ogDescription.setAttribute('content', config ? config.description : 'GitHub Copilot observability, from the developer to FinOps. Local by default, Azure by choice.'); }
+    var dictionary = config ? config.text : {};
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        var parent = node.parentElement;
+        if (!parent) { return NodeFilter.FILTER_REJECT; }
+        if (parent.closest('script,style,pre,code,#language-switcher')) { return NodeFilter.FILTER_REJECT; }
+        return node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    var nodes = [];
+    while (walker.nextNode()) { nodes.push(walker.currentNode); }
+    nodes.forEach(function (node) {
+      var original = node.__frontierOriginalText || node.nodeValue;
+      node.__frontierOriginalText = original;
+      var key = original.trim();
+      var translated = dictionary[key] || key;
+      node.nodeValue = original.replace(key, translated);
+    });
+    var themeButton = document.getElementById('theme-toggle');
+    if (themeButton) {
+      themeButton.setAttribute('title', config ? config.toggleTheme : 'Toggle theme');
+      themeButton.setAttribute('aria-label', config ? config.toggleTheme : 'Toggle theme');
+    }
+    renderLanguageSwitcher(lang);
+    writeStorage('fc-lang', lang);
+  }
+  translatePage(getRequestedLanguage());
+  var saved = readStorage('fc-theme');
+  if (saved) { root.dataset.theme = saved; }
   function updateThemeIcon() {
-    var isDark = root.getAttribute('data-theme') === 'dark';
-    document.getElementById('icon-sun').style.display = isDark ? 'block' : 'none';
-    document.getElementById('icon-moon').style.display = isDark ? 'none' : 'block';
+    var isDark = root.dataset.theme === 'dark';
+    document.getElementById('icon-sun').hidden = !isDark;
+    document.getElementById('icon-moon').hidden = isDark;
   }
   updateThemeIcon();
   document.getElementById('theme-toggle').addEventListener('click', function () {
-    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
-    try { localStorage.setItem('fc-theme', next); } catch (e) {}
+    var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    writeStorage('fc-theme', next);
     updateThemeIcon();
   });
 })();
