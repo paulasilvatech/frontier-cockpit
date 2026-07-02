@@ -895,14 +895,97 @@
 
       /* footer */
       .footer {
-        background: var(--paper);
-        padding: 56px 0 48px;
+        background: #141414;
+        color: #F0F0F0;
+        padding: 0 0 48px;
+      }
+
+      .footer__stripe {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        height: 3px;
+      }
+
+      .footer__stripe span:nth-child(1) {
+        background: var(--c-red-500);
+      }
+
+      .footer__stripe span:nth-child(2) {
+        background: var(--c-green-500);
+      }
+
+      .footer__stripe span:nth-child(3) {
+        background: var(--c-blue-500);
+      }
+
+      .footer__stripe span:nth-child(4) {
+        background: var(--c-yellow-500);
+      }
+
+      .footer__hub {
+        padding: 88px 0 64px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
+      .footer__kicker,
+      .footer__label,
+      .footer__hub-kicker {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #A8A8A4;
+      }
+
+      .footer__headline {
+        max-width: 780px;
+        margin: 34px 0 28px;
+        font-size: clamp(38px, 5vw, 58px);
+        font-weight: 300;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+      }
+
+      .footer__headline-accent {
+        color: var(--c-blue-500);
+      }
+
+      .footer__hub-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 18px;
+        margin-top: 34px;
+        padding: 20px 28px;
+        min-width: 280px;
+        background: #F7F7F5;
+        color: #1A1A1A;
+        border: 1px solid transparent;
+        text-decoration: none;
+        transition: transform 0.16s, border-color 0.16s;
+      }
+
+      .footer__hub-link:hover {
+        transform: translateY(-2px);
+        border-color: var(--c-blue-500);
+      }
+
+      .footer__hub-icon {
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .footer__hub-title {
+        display: block;
+        margin-top: 4px;
+        font-size: 16px;
+        font-weight: 500;
       }
 
       .footer__grid {
         display: grid;
         grid-template-columns: 2fr 1fr 1fr;
         gap: 48px;
+        padding-top: 40px;
       }
 
       .footer h5 {
@@ -914,7 +997,7 @@
       .footer p {
         font-size: 14px;
         line-height: 1.6;
-        color: var(--ink-3);
+        color: #A8A8A4;
         max-width: 420px;
       }
 
@@ -923,7 +1006,7 @@
         font-size: 11px;
         letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: var(--ink-3);
+        color: #A8A8A4;
         margin-bottom: 12px;
       }
 
@@ -935,22 +1018,13 @@
 
       .footer__links a {
         font-size: 14px;
-        color: var(--ink-2);
+        color: #C7C7C2;
         text-decoration: none;
       }
 
       .footer__links a:hover {
-        color: var(--ink);
+        color: #F7F7F5;
         text-decoration: underline;
-      }
-
-      .footer__legal {
-        margin-top: 40px;
-        padding-top: 24px;
-        border-top: 1px solid var(--rule);
-        font-size: 12.5px;
-        line-height: 1.6;
-        color: var(--ink-3);
       }
 
       @media (max-width:900px) {
@@ -1415,7 +1489,25 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
 
     <!-- footer -->
     <footer class="footer">
+      <div class="footer__stripe" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
       <div class="container">
+        <section class="footer__hub" aria-label="Agentic DevOps Hub">
+          <div class="footer__kicker">Paula Silva | AI-native software engineer</div>
+          <h2 class="footer__headline">From data center transformation to <span class="footer__headline-accent">agentic engineering.</span></h2>
+          <div class="footer__label">Agentic DevOps Hub</div>
+          <a class="footer__hub-link" href="https://agenticdevopsplatform.ai/">
+            <span class="footer__hub-icon" aria-hidden="true">&#8593;</span>
+            <span>
+              <span class="footer__hub-kicker">Back to hub</span>
+              <span class="footer__hub-title">Agentic DevOps Hub</span>
+            </span>
+          </a>
+        </section>
         <div class="footer__grid">
           <div>
             <h5>Frontier Cockpit</h5>
@@ -1440,9 +1532,6 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
             </div>
           </div>
         </div>
-        <p class="footer__legal">GitHub Copilot is a product of GitHub. Azure is a product of Microsoft. Frontier
-          Cockpit is an independent, client-run observability package and reports local operational telemetry, not
-          official billing. Building the future of software development with AI and Agentic DevOps.</p>
       </div>
     </footer>
 
@@ -1556,8 +1645,11 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
               'Frontier Cockpit Local and Hybrid': 'Frontier Cockpit Local e Hybrid',
               'Product': 'Produto',
               'Repository': 'Repositorio',
-              'GitHub Copilot observability, from the developer to FinOps. Local by default, Azure by choice. A client-run package that turns OpenTelemetry signals into coaching, cost control, and governance.': 'Observabilidade do GitHub Copilot, do desenvolvedor ao FinOps. Local por padrao, Azure por escolha. Um pacote executado pelo cliente que transforma sinais OpenTelemetry em coaching, controle de custos e governanca.',
-              'GitHub Copilot is a product of GitHub. Azure is a product of Microsoft. Frontier Cockpit is an independent, client-run observability package and reports local operational telemetry, not official billing. Building the future of software development with AI and Agentic DevOps.': 'GitHub Copilot e um produto do GitHub. Azure e um produto da Microsoft. Frontier Cockpit e um pacote independente de observabilidade executado pelo cliente e reporta telemetria operacional local, nao faturamento oficial. Construindo o futuro do desenvolvimento de software com IA e Agentic DevOps.'
+              'Paula Silva | AI-native software engineer': 'Paula Silva | engenheira de software AI-native',
+              'From data center transformation to': 'Da transformação de data centers à',
+              'agentic engineering.': 'engenharia agêntica.',
+              'Back to hub': 'Voltar ao hub',
+              'GitHub Copilot observability, from the developer to FinOps. Local by default, Azure by choice. A client-run package that turns OpenTelemetry signals into coaching, cost control, and governance.': 'Observabilidade do GitHub Copilot, do desenvolvedor ao FinOps. Local por padrao, Azure por escolha. Um pacote executado pelo cliente que transforma sinais OpenTelemetry em coaching, controle de custos e governanca.'
             }
           },
           es: {
@@ -1665,8 +1757,11 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
               'Frontier Cockpit Local and Hybrid': 'Frontier Cockpit Local e Hybrid',
               'Product': 'Producto',
               'Repository': 'Repositorio',
-              'GitHub Copilot observability, from the developer to FinOps. Local by default, Azure by choice. A client-run package that turns OpenTelemetry signals into coaching, cost control, and governance.': 'Observabilidad de GitHub Copilot, del desarrollador a FinOps. Local por defecto, Azure por eleccion. Un paquete ejecutado por el cliente que convierte senales OpenTelemetry en coaching, control de costos y gobierno.',
-              'GitHub Copilot is a product of GitHub. Azure is a product of Microsoft. Frontier Cockpit is an independent, client-run observability package and reports local operational telemetry, not official billing. Building the future of software development with AI and Agentic DevOps.': 'GitHub Copilot es un producto de GitHub. Azure es un producto de Microsoft. Frontier Cockpit es un paquete independiente de observabilidad ejecutado por el cliente y reporta telemetria operacional local, no facturacion oficial. Construyendo el futuro del desarrollo de software con IA y Agentic DevOps.'
+              'Paula Silva | AI-native software engineer': 'Paula Silva | ingeniera de software AI-native',
+              'From data center transformation to': 'De la transformacion del centro de datos a la',
+              'agentic engineering.': 'ingenieria agentica.',
+              'Back to hub': 'Volver al hub',
+              'GitHub Copilot observability, from the developer to FinOps. Local by default, Azure by choice. A client-run package that turns OpenTelemetry signals into coaching, cost control, and governance.': 'Observabilidad de GitHub Copilot, del desarrollador a FinOps. Local por defecto, Azure por eleccion. Un paquete ejecutado por el cliente que convierte senales OpenTelemetry en coaching, control de costos y gobierno.'
             }
           }
         };
@@ -1769,8 +1864,7 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
             [/compactacao/g, 'compactação'], [/Tempo ate/g, 'Tempo até'], [/sobrevivencia/g, 'sobrevivência'], [/Atribuicao/g, 'Atribuição'],
             [/exportacoes/g, 'exportações'], [/da a esses/g, 'dá a esses'], [/versao/g, 'versão'], [/continua/g, 'contínua'],
             [/configuracao/g, 'configuração'], [/entao/g, 'então'], [/\be entregue\b/g, 'é entregue'],
-            [/GitHub Copilot e um produto/g, 'GitHub Copilot é um produto'], [/Azure e um produto/g, 'Azure é um produto'],
-            [/Frontier Cockpit e um pacote/g, 'Frontier Cockpit é um pacote'], [/não e apenas/g, 'não é apenas'],
+            [/transformacao/g, 'transformação'], [/agentica/g, 'agêntica'], [/não e apenas/g, 'não é apenas'],
             [/e ajudar desenvolvedores/g, 'é ajudar desenvolvedores'], [/as equipes/g, 'às equipes'], [/\be a resposta\b/g, 'é a resposta'],
             [/\besta\b/g, 'está']
           ],
@@ -1785,6 +1879,7 @@ pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1</pre>
             [/duracion/g, 'duración'], [/atribucion/g, 'atribución'], [/planificacion/g, 'planificación'], [/semanticas/g, 'semánticas'], [/cuanto/g, 'cuánto'],
             [/version/g, 'versión'], [/investigacion/g, 'investigación'], [/Quien construyo/g, 'Quién construyó'], [/disenado/g, 'diseñado'],
             [/ensenarse/g, 'enseñarse'], [/lideres/g, 'líderes'], [/telemetria/g, 'telemetría'], [/contrasenas/g, 'contraseñas'],
+            [/transformacion/g, 'transformación'], [/agentica/g, 'agéntica'],
             [/\besta\b/g, 'está']
           ]
         };
