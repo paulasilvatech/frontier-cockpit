@@ -20,7 +20,6 @@ Frontier Cockpit is the umbrella platform for GitHub Copilot and agentic develop
 | --- | --- | --- |
 | Documentation | [docs/](docs/) | Strategy, playbook, implementation manual, guides, runbooks, taxonomy, and local links. |
 | Local OpenTelemetry kit | [local-otel/](local-otel/) | User-level local runtime, Docker stack, Azure forwarding, GitHub Enterprise ingestion, materialization, and demo scripts. |
-| Deck deliverables | [decks/](decks/) | Trilingual presenter HTML decks, previews, vector PDF derivatives, and native editable PPTX derivatives. |
 | Architecture diagrams | [diagrams/](diagrams/) | Editable draw.io source and SVG exports for C4, deployment, telemetry flow, and GitHub Enterprise flow. |
 | Hands-on workshop | [workshop/](workshop/) | Labs and checklist for participants to build their local cockpit and understand Azure consolidation. |
 | GitHub Copilot customization | [.github/](.github/) | Agents, prompts, skills, instructions, workflows, validation scripts, and repository policy. |
@@ -55,7 +54,6 @@ The local experience teaches developers how GitHub Copilot sessions behave. The 
 | Workshop | [Workshop Guide](docs/FrontierCockpit_WorkshopGuide_v1_0_0_2026-06-17_en.md) | Facilitator guidance for teaching the local and Azure cockpit flow. |
 | Workshop | [Workshop README](workshop/README.md) | Hands-on lab entry point and participant path. |
 | Tooling | [Firecrawl MCP Guide](docs/FrontierCockpit_FirecrawlMCPGuide_v1_0_0_2026-06-18_en.md) | Firecrawl MCP setup and research workflow support. |
-| Deliverables | [Deck README](decks/README.md) | Deck source, derivative layout, and validation rules. |
 
 ## Product Taxonomy
 
@@ -90,18 +88,6 @@ Frontier Developer Cockpit always includes **Prometheus and Grafana** for the co
 4. Use the [Data Consolidation Guide](docs/FrontierCockpit_DataConsolidationGuide_v1_0_0_2026-06-17_en.md) to plan official GitHub usage, billing, repository, and governance joins.
 5. Use the [Enterprise Readiness Checklist](docs/FrontierCockpit_EnterpriseReadinessChecklist_v1_0_0_2026-06-22_en.md) before customer or field delivery.
 6. Use the [Operations Runbook](docs/FrontierCockpit_OperationsRunbook_v1_0_0_2026-06-17_en.md) for validation, troubleshooting, security, retention, and teardown.
-
-## Deck Deliverables
-
-The [decks/](decks/) folder contains presentation assets that support the Frontier Cockpit offer and related GitHub Copilot enablement topics.
-
-| Audience | Use |
-| --- | --- |
-| Developers and team leads | Explain local observability, context, model labels, token behavior, and prompt optimization. |
-| Platform and FinOps teams | Explain governance, cost-awareness patterns, enterprise rollups, and operating models. |
-| Customer workshops | Provide visual briefings that pair with hands-on labs and demos. |
-
-See [decks/README.md](decks/README.md) for layout, derivative naming, and validation requirements.
 
 ## Common Commands
 

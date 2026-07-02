@@ -39,7 +39,7 @@ Write the design to `{system}_AI_Architecture.md` with: an executive summary, th
 
 ## Rules
 
-- Apply the `ms-identity` design system to any rendered visual or document. Author identity is Frontier Cockpit Team, Software Global Black Belt; no personal social handles.
+- Apply a consistent Microsoft 4-color visual style to any rendered visual or document. Author identity is Frontier Cockpit Team; no personal social handles.
 - Write "GitHub Copilot", never "Copilot" alone. No em dashes in any output.
 - Never fabricate metrics, limits, prices, or benchmarks. Cite Microsoft Learn, GitHub Docs, or named analyst firms with links, or state the value as an explicit assumption. End data documents with a References section.
 - Respect the official icon terms of use: use Azure and Microsoft icons to depict their products in diagrams without modifying them; use GitHub Octicons and logos per the GitHub brand guidelines.

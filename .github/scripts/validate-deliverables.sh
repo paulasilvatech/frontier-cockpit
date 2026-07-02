@@ -9,9 +9,7 @@
 #   2. With a path: dispatcher. Routes every file under <path> to the matching
 #      validator by convention:
 #        *_Architecture.md            -> architecture-doc/validate_arch.py
-#        *deck*.html / decks          -> ms-presentation-deck/audit.py
-#        other identity *.html        -> ms-identity/validate_html.py
-#        other *.md                   -> ms-research-report/validate_report.py
+#        *.drawio                     -> azure-architecture-diagrams/validate_drawio.py
 #
 # Exits non-zero if any gate fails. Used by .vscode/tasks.json and CI.
 set -u
@@ -20,11 +18,6 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SK="$ROOT/.github/skills"
 ARCH="$SK/architecture-doc/scripts/validate_arch.py"
 DRAWIO="$SK/azure-architecture-diagrams/scripts/validate_drawio.py"
-DECK="$SK/ms-presentation-deck/scripts/audit.py"
-DECK_DERIV="$SK/ms-presentation-deck/scripts/validate_derivatives.py"
-DECK_PPTX="$SK/ms-presentation-deck/scripts/build_native_pptx.py"
-HTML="$SK/ms-identity/scripts/validate_html.py"
-REPORT="$SK/ms-research-report/scripts/validate_report.py"
 DASHBOARDS="$ROOT/.github/scripts/validate-dashboards.sh"
 fail=0
 
@@ -40,7 +33,7 @@ run() {  # run <label> <command...>
 }
 
 echo "==> Validator scripts are runnable"
-for s in "$ARCH" "$DRAWIO" "$DECK" "$DECK_DERIV" "$DECK_PPTX" "$HTML" "$REPORT"; do
+for s in "$ARCH" "$DRAWIO"; do
   if [ -f "$s" ]; then
     run "compile $(basename "$s")" python3 -c "import os,py_compile,tempfile; py_compile.compile(r'$s', cfile=os.path.join(tempfile.gettempdir(), '$(basename "$s").pyc'), doraise=True)"
   else
@@ -59,12 +52,8 @@ dispatch() {  # dispatch <file>
   case "$base" in
     *_Architecture.md|*_architecture.md)
       run "arch  $base" python3 "$ARCH" "$f" ;;
-    *deck*.html|*Deck*.html)
-      run "deck  $base" python3 "$DECK" "$f" ;;
-    *.html)
-      run "html  $base" python3 "$HTML" "$f" ;;
-    *.md)
-      run "report $base" python3 "$REPORT" "$f" ;;
+    *.drawio)
+      run "drawio $base" python3 "$DRAWIO" "$f" ;;
     *) : ;;  # ignore other file types
   esac
 }
@@ -73,7 +62,7 @@ if [ "$#" -ge 1 ]; then
   TARGET="$1"
   echo "==> Dispatch deliverables under $TARGET"
   if [ -d "$TARGET" ]; then
-    while IFS= read -r f; do dispatch "$f"; done < <(find "$TARGET" -type f \( -name '*.md' -o -name '*.html' \) | sort)
+    while IFS= read -r f; do dispatch "$f"; done < <(find "$TARGET" -type f \( -name '*_Architecture.md' -o -name '*.drawio' \) | sort)
   elif [ -f "$TARGET" ]; then
     dispatch "$TARGET"
   else
@@ -81,14 +70,9 @@ if [ "$#" -ge 1 ]; then
   fi
 else
   echo "==> Regression guard: committed skill example assets"
-  PMS="$SK/ms-identity/assets"
-  run "identity landing.html" python3 "$HTML" "$PMS/landing.html"
-  run "identity showcase.html" python3 "$HTML" "$PMS/showcase.html"
-  run "identity identity-preview.html" python3 "$HTML" "$PMS/ms-identity-identity-preview.html"
-  run "identity playbook/index.html" python3 "$HTML" "$PMS/playbook/index.html"
-  MPD="$SK/ms-presentation-deck/assets"
-  run "deck example_deck_multi.html" python3 "$DECK" "$MPD/example_deck_multi.html"
-  run "deck example_deck_public.html" python3 "$DECK" "$MPD/example_deck_public.html"
+  AAD="$SK/azure-architecture-diagrams/assets"
+  [ -f "$AAD/example-agentic.drawio" ] && run "drawio example-agentic.drawio" python3 "$DRAWIO" "$AAD/example-agentic.drawio"
+  [ -f "$AAD/showcase-diagrams.drawio" ] && run "drawio showcase-diagrams.drawio" python3 "$DRAWIO" "$AAD/showcase-diagrams.drawio"
   run "grafana dashboards" bash "$DASHBOARDS"
 fi
 

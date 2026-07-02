@@ -358,7 +358,7 @@ Azure dashboards should:
 
 ### 10.2 Documentation Placement
 
-Repository strategy, guide, runbook, and architecture index documents live under `docs/`. Hands-on lab material lives under `workshop/`, editable diagrams and SVG exports live under `diagrams/`, deck deliverables live under `decks/`, and the local runtime source lives under `local-otel/`. The user-level compatibility path remains `~/.copilot-otel/` because it configures the local machine and can be reused across workspaces.
+Repository strategy, guide, runbook, and architecture index documents live under `docs/`. Hands-on lab material lives under `workshop/`, editable diagrams and SVG exports live under `diagrams/`, and the local runtime source lives under `local-otel/`. The user-level compatibility path remains `~/.copilot-otel/` because it configures the local machine and can be reused across workspaces.
 
 ### 10.3 Documentation Standards
 

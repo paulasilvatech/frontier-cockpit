@@ -16,7 +16,6 @@ The platform observes GitHub Copilot Chat, agent mode, tool calls, context use, 
 - `README.md`: root package index and product taxonomy.
 - `docs/`: approved strategy, playbook, architecture, guides, runbooks, and taxonomy.
 - `diagrams/`: editable draw.io source and SVG architecture exports.
-- `decks/`: trilingual Microsoft-identity HTML decks plus PDF, PPTX, previews, and assets.
 - `local-otel/`: local OpenTelemetry kit, Docker stack, Azure deployment, GitHub Enterprise ingestion, dashboards, materialization, and demo scripts.
 - `workshop/`: hands-on labs and participant checklist.
 - `.github/`: GitHub Copilot agents, prompts, skills, instructions, validation scripts, workflows, plugins, and repository policy.
@@ -30,7 +29,7 @@ The platform observes GitHub Copilot Chat, agent mode, tool calls, context use, 
 4. Keep raw prompts, responses, tool arguments, and tool results local unless an explicit approved workflow says otherwise.
 5. Azure forwarding must sanitize raw content and oversized sensitive attributes before enterprise ingestion.
 6. Use the locked product names: Frontier Cockpit, Frontier Developer Cockpit, Frontier FinOps Cockpit, Frontier Platform Layers, Fleet Overview.
-7. Documentation is English by default. User-facing workshop, deck, or app content may be multilingual when the artifact requires it.
+7. Documentation is English by default. User-facing workshop or app content may be multilingual when the artifact requires it.
 8. No em dashes in repository-authored documentation or UI copy.
 9. Prefer verified repository scripts and existing patterns over new one-off tooling.
 10. Do not run destructive reset, teardown, or secret-rotation commands unless explicitly requested.
@@ -62,11 +61,8 @@ GitHub Enterprise and organization signals are ingested through `local-otel/inge
 ## Documentation And Deliverables
 
 - Markdown docs under `docs/` and `workshop/` use YAML frontmatter, versioned filenames, a change log, a table of contents when useful, and a References section for claims.
-- Deck HTML sources live directly under `decks/`.
-- Deck derivatives live under `decks/pdf/<DeckBase>/` and `decks/pptx/<DeckBase>/`.
-- Deck previews live under `decks/previews/`; deck-only support assets live under `decks/assets/`.
 - Architecture source lives in `diagrams/*.drawio`; exported SVGs live beside it.
-- Keep `README.md`, [../decks/README.md](../decks/README.md), and workshop indexes current when adding logical artifacts.
+- Keep `README.md` and workshop indexes current when adding logical artifacts.
 
 ## Development Conventions
 
@@ -75,7 +71,6 @@ GitHub Enterprise and organization signals are ingested through `local-otel/inge
 - For zsh scripts, do not use reserved names such as `path` or `status` for variables.
 - Dashboard JSON lives under `local-otel/stack/grafana/` for local Grafana and `local-otel/azure/` for Azure Managed Grafana.
 - For diagrams, use official Azure, Microsoft, and GitHub icons when product icons are required.
-- For decks and Microsoft-identity deliverables, load the relevant `ms-identity` or deck skill first.
 
 ## Customizations
 
@@ -107,8 +102,6 @@ local-otel/check-otel-local.sh
 local-otel/demo-ready.sh
 ```
 
-For deck validation, follow [../decks/README.md](../decks/README.md) and use the `ms-presentation-deck` audit and derivative validators.
-
 ## Repository Hygiene
 
 Do not commit `.DS_Store`, `.playwright-mcp/`, local OpenTelemetry logs, local runtime state, DuckDB files, Azure `.env`, token files, GitHub Enterprise JSON exports, Docker generated data, or `_archive/` contents. These are covered by `.gitignore`.
@@ -119,5 +112,4 @@ Do not commit `.DS_Store`, `.playwright-mcp/`, local OpenTelemetry logs, local r
 - Local OpenTelemetry kit: [../local-otel/README.md](../local-otel/README.md)
 - Operations runbook: [../docs/FrontierCockpit_OperationsRunbook_v1_0_0_2026-06-17_en.md](../docs/FrontierCockpit_OperationsRunbook_v1_0_0_2026-06-17_en.md)
 - Local links: [../docs/FrontierCockpit_LocalLinksGuide_v1_0_0_2026-06-19_en.md](../docs/FrontierCockpit_LocalLinksGuide_v1_0_0_2026-06-19_en.md)
-- Deck rules: [../decks/README.md](../decks/README.md)
 - Workshop entry point: [../workshop/README.md](../workshop/README.md)

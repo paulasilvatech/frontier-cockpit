@@ -10,7 +10,7 @@ Create an architecture diagram for `${input:target:what to diagram, for example 
 
 ## First step, always
 
-Load `azure-architecture-diagrams` before deriving the diagram or editing any output. For an AI-native system, also load `agentic-architecture-patterns` to get the service map first. Apply the `ms-identity` palette to containers, labels, and connectors, never to the vendor icons themselves.
+Load `azure-architecture-diagrams` before deriving the diagram or editing any output. For an AI-native system, also load `agentic-architecture-patterns` to get the service map first. Apply a consistent Microsoft 4-color palette to containers, labels, and connectors, never to the vendor icons themselves.
 
 ## Steps
 

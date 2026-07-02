@@ -10,7 +10,7 @@ Design `${input:system:the agentic system to design, for example an agentic RAG 
 
 ## First step, always
 
-Use the `AI-Native Engineer` agent persona. Load `agentic-architecture-patterns` before clarifying, designing, generating, or editing. Then load the companion skills that match the design: `azure-managed-redis-cache`, `foundry-agent-blueprint`, `azure-api-center`, `apim-ai-gateway`, and `azure-architecture-diagrams`. Apply the `ms-identity` design system to any rendered output.
+Use the `AI-Native Engineer` agent persona. Load `agentic-architecture-patterns` before clarifying, designing, generating, or editing. Then load the companion skills that match the design: `azure-managed-redis-cache`, `foundry-agent-blueprint`, `azure-api-center`, `apim-ai-gateway`, and `azure-architecture-diagrams`. Apply a consistent Microsoft 4-color visual style to any rendered output.
 
 ## Steps
 
