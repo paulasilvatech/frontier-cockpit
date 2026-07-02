@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Cross-platform POSIX bootstrap for Frontier Developer Cockpit clients.
+# Cross-platform POSIX bootstrap for Frontier Cockpit Local clients.
 # Supports macOS and Linux. Use client-bootstrap.ps1 on Windows.
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$(cd "$script_dir/.." && pwd)"
 stack_dir="$script_dir/stack"
 config_file="$script_dir/client.env"
 skip_vscode_settings="false"
@@ -17,7 +16,7 @@ caller_dir="$PWD"
 
 usage() {
   cat <<EOF
-Frontier Developer Cockpit client bootstrap
+Frontier Cockpit Local client bootstrap
 
 Usage:
   bash local-otel/client-bootstrap.sh [options]
@@ -100,13 +99,13 @@ FRONTIER_PARTICIPANT_ROLE="${FRONTIER_PARTICIPANT_ROLE:-Developer}"
 FRONTIER_PARTICIPANT_EMAIL="${FRONTIER_PARTICIPANT_EMAIL:-}"
 FRONTIER_PARTICIPANT_TEAM="${FRONTIER_PARTICIPANT_TEAM:-}"
 FRONTIER_CUSTOMER_NAME="${FRONTIER_CUSTOMER_NAME:-Client Organization}"
-FRONTIER_DASHBOARD_TITLE="${FRONTIER_DASHBOARD_TITLE:-Frontier Developer Cockpit}"
+FRONTIER_DASHBOARD_TITLE="${FRONTIER_DASHBOARD_TITLE:-Frontier Cockpit Local}"
 FRONTIER_COPILOT_PLAN="${FRONTIER_COPILOT_PLAN:-business}"
 FRONTIER_COPILOT_SEATS="${FRONTIER_COPILOT_SEATS:-1}"
 FRONTIER_AI_CREDITS_USE_PROMO="${FRONTIER_AI_CREDITS_USE_PROMO:-false}"
 FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE="${FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE:-}"
 FRONTIER_VSCODE_CHANNELS="${FRONTIER_VSCODE_CHANNELS:-stable,insiders}"
-FRONTIER_ENABLE_CONTENT_CAPTURE="${FRONTIER_ENABLE_CONTENT_CAPTURE:-true}"
+FRONTIER_ENABLE_CONTENT_CAPTURE="${FRONTIER_ENABLE_CONTENT_CAPTURE:-false}"
 
 find_python() {
   if command -v python3 >/dev/null 2>&1; then
@@ -148,7 +147,9 @@ export OTEL_EXPORTER_OTLP_LOGS_PROTOCOL="http/protobuf"
 export OTEL_TRACES_EXPORTER="otlp"
 export OTEL_METRICS_EXPORTER="otlp"
 export OTEL_LOGS_EXPORTER="otlp"
-export OTEL_RESOURCE_ATTRIBUTES="service.namespace=frontier-cockpit,environment=local,collection.scope=user,frontier.customer=$(sanitize_attr "$FRONTIER_CUSTOMER_NAME"),frontier.team=$(sanitize_attr "$FRONTIER_PARTICIPANT_TEAM")"
+frontier_customer_attr="$(sanitize_attr "$FRONTIER_CUSTOMER_NAME")"
+frontier_team_attr="$(sanitize_attr "$FRONTIER_PARTICIPANT_TEAM")"
+export OTEL_RESOURCE_ATTRIBUTES="service.namespace=frontier-cockpit,environment=local,collection.scope=user,frontier.customer=$frontier_customer_attr,frontier.team=$frontier_team_attr"
 
 otel_vars=(
   COPILOT_OTEL_ENABLED
@@ -189,8 +190,8 @@ write_user_env() {
     printf 'export %s="%s"\n' "$name" "$value" >> "$env_file"
   done
 
-  local block_start="# Frontier Developer Cockpit OTel start"
-  local block_end="# Frontier Developer Cockpit OTel end"
+  local block_start="# Frontier Cockpit Local OTel start"
+  local block_end="# Frontier Cockpit Local OTel end"
   local block="${block_start}
 if [ -f \"\$HOME/.frontier-cockpit/otel.env\" ]; then
   . \"\$HOME/.frontier-cockpit/otel.env\"
@@ -231,7 +232,8 @@ ${block_end}"
 
 apply_vscode_settings() {
   local settings_paths=()
-  local os_name="$(uname -s)"
+  local os_name
+  os_name="$(uname -s)"
   IFS=',' read -r -a channels <<< "$FRONTIER_VSCODE_CHANNELS"
   for channel in "${channels[@]}"; do
     channel="$(printf '%s' "$channel" | tr '[:upper:]' '[:lower:]' | xargs)"
@@ -295,7 +297,7 @@ def strip_jsonc(text: str) -> str:
         i += 1
     return re.sub(r",\s*([}\]])", r"\1", "".join(output))
 
-capture = os.environ.get("FRONTIER_ENABLE_CONTENT_CAPTURE", "true").lower() == "true"
+capture = os.environ.get("FRONTIER_ENABLE_CONTENT_CAPTURE", "false").lower() == "true"
 settings_update = {
     "github.copilot.chat.otel.enabled": True,
     "github.copilot.chat.otel.exporterType": "otlp-http",
@@ -348,6 +350,19 @@ PY
   ok "Created local Aspire API key file."
 }
 
+ensure_grafana_admin() {
+  local admin_file="$stack_dir/grafana-admin.env"
+  if [[ -f "$admin_file" ]]; then
+    return 0
+  fi
+  umask 077
+  "$python_cmd" - <<'PY' > "$admin_file"
+import secrets
+print(f"GF_SECURITY_ADMIN_PASSWORD={secrets.token_urlsafe(24)}")
+PY
+  ok "Created local Grafana admin credentials. Username admin, password stored in $admin_file."
+}
+
 start_stack() {
   if docker ps --format '{{.Names}}' | grep -qx 'aspire-dashboard'; then
     local standalone_owns_otlp
@@ -366,7 +381,7 @@ start_stack() {
   export FRONTIER_PARTICIPANT_NAME FRONTIER_PARTICIPANT_ROLE FRONTIER_PARTICIPANT_EMAIL
   export FRONTIER_PARTICIPANT_TEAM FRONTIER_CUSTOMER_NAME FRONTIER_DASHBOARD_TITLE
   export FRONTIER_COPILOT_PLAN FRONTIER_COPILOT_SEATS FRONTIER_AI_CREDITS_USE_PROMO
-  export FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE
+  export FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE FRONTIER_ENABLE_CONTENT_CAPTURE
 
   (cd "$stack_dir" && docker compose -f docker-compose.yml up -d ${build_flag})
   ok "Docker Compose stack is starting."
@@ -524,7 +539,7 @@ validate_endpoints() {
   wait_for_url "http://localhost:9090/-/ready" "Prometheus"
   wait_for_url "http://localhost:3200/ready" "Tempo"
   wait_for_url "http://localhost:3100/ready" "Loki"
-  wait_for_url "http://localhost:3300" "Frontier Developer Cockpit mini app"
+  wait_for_url "http://localhost:3300" "Frontier Cockpit Local mini app"
 }
 
 info "Resolve client configuration"
@@ -549,6 +564,7 @@ fi
 info "Start Docker Compose stack"
 ensure_docker
 ensure_aspire_key
+ensure_grafana_admin
 start_stack
 
 info "Emit local validation telemetry"
@@ -564,7 +580,7 @@ fi
 
 cat <<EOF
 
-Frontier Developer Cockpit is configured.
+Frontier Cockpit Local is configured.
 
 Open:
   Mini app:    http://localhost:3300

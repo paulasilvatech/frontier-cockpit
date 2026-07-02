@@ -1,9 +1,9 @@
 ---
 title: "Participant Checklist"
-description: "Completion checklist for developers participating in the Frontier Developer Cockpit hands-on workshop."
+description: "Completion checklist for developers participating in the Frontier Cockpit Local hands-on workshop."
 author: "Frontier Cockpit Team"
 date: "2026-07-02"
-version: "1.0.2"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "workshop", "checklist", "developer"]
 ---
@@ -12,12 +12,13 @@ tags: ["github-copilot", "workshop", "checklist", "developer"]
 
 # Participant Checklist
 
-Use this checklist to confirm each participant leaves the workshop with a working personal Frontier Developer Cockpit mini app and understands the local data boundary.
+Use this checklist to confirm each participant leaves the workshop with a working personal Frontier Cockpit Local mini app and understands the local data boundary.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local, repository-relative paths, containerized jobs, privacy-first defaults, per-lab durations. |
 | 1.0.2 | 2026-07-02 | Frontier Cockpit Team | Added the cross-platform client bootstrap path for macOS, Linux, and Windows. |
 | 1.0.1 | 2026-07-01 | Frontier Cockpit Team | Added mini app template, participant identity, and AI Credits checks. |
 | 1.0.0 | 2026-06-18 | Frontier Cockpit Team | Initial participant checklist. |
@@ -42,30 +43,25 @@ Use this checklist to confirm each participant leaves the workshop with a workin
 - [ ] VS Code or VS Code Insiders is open.
 - [ ] GitHub Copilot Chat works.
 - [ ] Participant repository is open as a Git workspace in VS Code or VS Code Insiders.
-- [ ] For client machines, `local-otel/client.env.example` was copied to `local-otel/client.env`.
+- [ ] `local-otel/client.env.example` was copied to `local-otel/client.env`.
 - [ ] `local-otel/client.env` contains participant name, customer name, role, plan, seat count, and AI Credits configuration.
-- [ ] Client bootstrap completed with `bash local-otel/client-bootstrap.sh` on macOS or Linux, or `pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1` on Windows.
+- [ ] Bootstrap completed from the repository root with `bash local-otel/client-bootstrap.sh` on macOS or Linux, or `pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1` on Windows. The bootstrap starts the Docker compose stack, and Docker `restart: unless-stopped` brings it back automatically.
 - [ ] VS Code or VS Code Insiders was restarted after the bootstrap.
-- [ ] `local-otel/check-workshop-local.sh` reports ready.
-- [ ] Frontier Developer Cockpit mini app opens at `http://localhost:3300`.
+- [ ] `local-otel/check-workshop-local.sh` reports ready. The facilitator can also run `local-otel/workshop-ready.sh` as a convenience wrapper that refreshes and validates a participant machine.
+- [ ] The `copilot-otel-jobs` container is running, so the session materializer and daily rollup run automatically on macOS, Linux, and Windows without any LaunchAgents or other host schedulers.
+- [ ] Content capture is off unless the facilitator approved opting in with `FRONTIER_ENABLE_CONTENT_CAPTURE=true` in `local-otel/client.env`.
+- [ ] Frontier Cockpit Local mini app opens at `http://localhost:3300`.
 - [ ] Aspire opens at `http://localhost:18888`.
-- [ ] Grafana opens at `http://localhost:3000`.
-
-Optional workshop path, only when following the hands-on labs:
-
-- [ ] `local-otel/workshop.env.example` was copied to `local-otel/workshop.env`.
-- [ ] `local-otel/workshop.env` contains participant name, role, plan, seat count, and AI Credits pool.
-- [ ] Local stack starts with `local-otel/workshop-ready.sh` from the repository root.
-- [ ] Hourly LaunchAgents are installed with `local-otel/install-launchagents.sh` when scheduled dashboard refresh is expected on macOS.
+- [ ] Grafana opens at `http://localhost:3000` with the `admin` login and the generated password from `local-otel/stack/grafana-admin.env`.
 
 ## 2. Real Telemetry
 
 - [ ] A real GitHub Copilot Chat or agent session was generated.
-- [ ] A GitHub Copilot CLI or Copilot SDK workload was launched from a terminal that loaded the `OTEL_*` environment, when those tools are part of the workshop scope.
+- [ ] A GitHub Copilot CLI or GitHub Copilot SDK workload was launched from a terminal that loaded the `OTEL_*` environment, when those tools are part of the workshop scope.
 - [ ] A `copilot-chat` trace was found in Aspire.
 - [ ] The trace includes `chat` spans.
 - [ ] The trace includes tool spans when tools were used.
-- [ ] `~/.copilot-otel/materialize-copilot-sessions.sh` ran successfully.
+- [ ] Session metrics were materialized, either automatically by the `copilot-otel-jobs` container or manually with `local-otel/materialize-copilot-sessions.sh`.
 - [ ] A real workspace session appears in the mini app and Grafana if repository attribution was emitted.
 
 ## 3. Dashboard Understanding
@@ -76,7 +72,7 @@ Optional workshop path, only when following the hands-on labs:
 - [ ] Participant opened the mini app Overview at `http://localhost:3300`.
 - [ ] Participant opened the mini app Credits view.
 - [ ] Participant opened the mini app Coach view.
-- [ ] Participant opened Frontier Developer Cockpit Home at `http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-home-local`.
+- [ ] Participant opened Frontier Cockpit Local Home at `http://localhost:3000/d/copilot-agent-local/frontier-cockpit-local-home`.
 - [ ] Participant opened GitHub Copilot Real Workspace Usage at `http://localhost:3000/d/copilot-real-workspace-usage-local/github-copilot-real-workspace-usage-local`.
 - [ ] Participant opened GitHub Copilot Context and Cost at `http://localhost:3000/d/copilot-context-cost-local/github-copilot-context-and-cost-local`.
 - [ ] Participant opened GitHub Copilot Data Quality at `http://localhost:3000/d/copilot-data-quality-local/github-copilot-data-quality-local`.
@@ -101,8 +97,8 @@ Optional workshop path, only when following the hands-on labs:
 
 ## 5. GitHub Enterprise Understanding
 
-- [ ] Participant can explain enterprise audit log vs Copilot metrics API.
-- [ ] Participant understands that `404` for Copilot metrics is a real status.
+- [ ] Participant can explain enterprise audit log vs GitHub Copilot metrics API.
+- [ ] Participant understands that `404` for GitHub Copilot metrics is a real status.
 - [ ] Participant understands that some policies must be enabled in GitHub UI.
 - [ ] Participant understands that audit log streaming can be configured through GitHub API.
 

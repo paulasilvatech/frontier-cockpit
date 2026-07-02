@@ -1,9 +1,9 @@
 ---
 title: "Frontier Cockpit End-to-End Implementation Manual"
-description: "Step-by-step implementation manual for Frontier Developer Cockpit, Frontier FinOps Cockpit, GitHub Enterprise ingestion, audit log streaming, and dashboard validation."
+description: "Step-by-step implementation manual for Frontier Cockpit Local, Frontier Cockpit Hybrid, GitHub Enterprise ingestion, audit log streaming, and dashboard validation."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "opentelemetry", "azure", "aspire", "grafana", "implementation"]
 ---
@@ -12,12 +12,13 @@ tags: ["github-copilot", "opentelemetry", "azure", "aspire", "grafana", "impleme
 
 # Frontier Cockpit End-to-End Implementation Manual
 
-This manual documents the complete implementation sequence for Frontier Cockpit, from Frontier Developer Cockpit setup through Frontier FinOps Cockpit consolidation and GitHub Enterprise audit-log streaming.
+This manual documents the complete implementation sequence for Frontier Cockpit, from Frontier Cockpit Local setup through Frontier Cockpit Hybrid consolidation and GitHub Enterprise audit-log streaming.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-18 | Frontier Cockpit Team | Initial end-to-end implementation manual. |
 
 ## Table of Contents
@@ -42,8 +43,8 @@ This implementation provides two coordinated layers.
 
 | Layer | Purpose | Implementation Status |
 | --- | --- | --- |
-| Local developer cockpit | Full fidelity local observability for GitHub Copilot Chat, agent work, context, AIU, tool calls, and content capture | Implemented |
-| Frontier FinOps Cockpit | Sanitized enterprise history, rollups, dashboards, GitHub Enterprise API ingestion, and audit-log streaming | Implemented with known API availability limits |
+| Frontier Cockpit Local | Full fidelity local observability for GitHub Copilot Chat, agent work, context, AIU, tool calls, and opt-in content capture | Implemented |
+| Frontier Cockpit Hybrid | Sanitized enterprise history, rollups, dashboards, GitHub Enterprise API ingestion, and audit-log streaming | Implemented with known API availability limits |
 
 The implementation does not treat local OpenTelemetry values as official billing. Official GitHub Copilot billing and AI Credits still require GitHub billing or usage exports.
 
@@ -66,17 +67,12 @@ The implementation does not treat local OpenTelemetry values as official billing
 | --- | --- |
 | Azure | Contributor or sufficient permission on subscription `your-subscription-name` |
 | GitHub | `admin:enterprise`, `admin:org`, `manage_billing:copilot`, `repo`, `workflow` scopes in GitHub CLI |
-| Firecrawl | Firecrawl API key supplied through secure MCP input |
 
 ## 3. Local Developer Cockpit Setup
 
 ### 3.1 User-Level Configuration
 
-The local kit lives in:
-
-```text
-~/.copilot-otel
-```
+The local kit lives in the `local-otel/` directory of the cloned repository. Run all commands from the repository root.
 
 Key files:
 
@@ -84,10 +80,12 @@ Key files:
 | --- | --- |
 | `env.zsh` | User-level OpenTelemetry environment |
 | `enable-user-env.sh` | Loads OTel variables into macOS `launchd` |
-| `check-otel-local.sh` | Validates local readiness |
+| `check-workshop-local.sh` | Validates local readiness |
+| `client-bootstrap.sh` | One-command bootstrap of the full local stack |
 | `start-full-stack.sh` | Starts local or hybrid stack |
 | `stop-full-stack.sh` | Stops local stack |
-| `auto-start.sh` | Login-time automatic startup |
+
+Automatic restarts do not require a login-time script. The Docker Compose `restart: unless-stopped` policy restarts the stack containers.
 
 ### 3.2 VS Code Settings
 
@@ -98,31 +96,33 @@ The setup enables:
 | `github.copilot.chat.otel.enabled` | `true` |
 | `github.copilot.chat.otel.exporterType` | `otlp-http` |
 | `github.copilot.chat.otel.otlpEndpoint` | `http://localhost:4318` |
-| `github.copilot.chat.otel.captureContent` | `true` |
+| `github.copilot.chat.otel.captureContent` | `false` by default, opt-in |
 | `github.copilot.chat.otel.maxAttributeSizeChars` | `0` |
 | `github.copilot.chat.otel.dbSpanExporter.enabled` | `true` |
 | `chat.agentHost.otel.enabled` | `true` |
-| `chat.agentHost.otel.captureContent` | `true` |
-| `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` | `true` |
+| `chat.agentHost.otel.captureContent` | `false` by default, opt-in |
+| `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` | `false` by default, opt-in |
+
+Content capture is privacy first: `FRONTIER_ENABLE_CONTENT_CAPTURE` defaults to `false`. Set it to `true` only in trusted local environments to enable the content-capture settings above.
 
 ### 3.3 Local Stack
 
 Start local only:
 
 ```bash
-~/.copilot-otel/start-full-stack.sh
+local-otel/start-full-stack.sh
 ```
 
 Start hybrid local plus Azure forwarding:
 
 ```bash
-~/.copilot-otel/start-full-stack.sh --hybrid
+local-otel/start-full-stack.sh --hybrid
 ```
 
 Validate:
 
 ```bash
-~/.copilot-otel/check-otel-local.sh
+local-otel/check-workshop-local.sh
 ```
 
 ## 4. Local Data Materialization
@@ -132,8 +132,10 @@ Validate:
 Script:
 
 ```text
-~/.copilot-otel/materialize-copilot-sessions.sh
+local-otel/materialize-copilot-sessions.sh
 ```
+
+Schedule: the materializer runs automatically inside the Docker `copilot-otel-jobs` container on every platform (macOS, Linux, Windows). No host-side scheduler is required.
 
 Purpose:
 
@@ -148,14 +150,10 @@ Purpose:
 Script:
 
 ```text
-~/.copilot-otel/daily-rollup.sh
+local-otel/daily-rollup.sh
 ```
 
-Schedule:
-
-```text
-~/Library/LaunchAgents/com.frontier.copilot-otel-daily-rollup.plist
-```
+Schedule: the daily rollup runs automatically inside the Docker `copilot-otel-jobs` container on every platform (macOS, Linux, Windows). No host-side scheduler is required.
 
 Daily rollup fields:
 
@@ -178,10 +176,10 @@ Daily rollup fields:
 Script:
 
 ```text
-~/.copilot-otel/sample-vscode-memory.sh
+local-otel/sample-vscode-memory.sh
 ```
 
-Schedule:
+Schedule, optional macOS host-side automation only:
 
 ```text
 ~/Library/LaunchAgents/com.frontier.copilot-otel-vscode-memory.plist
@@ -216,8 +214,8 @@ Region: eastus
 
 ```bash
 az account set --subscription "your-subscription-name"
-~/.copilot-otel/azure/validate.sh
-~/.copilot-otel/azure/deploy.sh
+local-otel/azure/validate.sh
+local-otel/azure/deploy.sh
 ```
 
 ### 5.4 Azure Managed Grafana
@@ -232,7 +230,7 @@ Dashboards imported:
 
 | Dashboard | UID |
 | --- | --- |
-| Frontier Developer Cockpit, Azure | `agentobs-azure-copilot-overview` |
+| Frontier Cockpit Hybrid, Azure | `agentobs-azure-copilot-overview` |
 | GitHub API Ingestion, Enterprise and Orgs | `agentobs-github-api-ingestion` |
 
 ## 6. Hybrid Forwarding
@@ -242,7 +240,7 @@ Dashboards imported:
 File:
 
 ```text
-~/.copilot-otel/azure/.env
+local-otel/azure/.env
 ```
 
 Contains:
@@ -274,15 +272,15 @@ Redacted fields include:
 
 ## 7. GitHub Enterprise And Organization Ingestion
 
-### 7.1 Enterprise Audit Log And Copilot Metrics Status
+### 7.1 Enterprise Audit Log And GitHub Copilot Metrics Status
 
 Script:
 
 ```text
-~/.copilot-otel/ingest-github-enterprise.sh
+local-otel/ingest-github-enterprise.sh
 ```
 
-Schedule:
+Schedule, optional macOS host-side automation only:
 
 ```text
 ~/Library/LaunchAgents/com.frontier.copilot-otel-github-enterprise.plist
@@ -299,17 +297,17 @@ Current result:
 | Signal | Status |
 | --- | --- |
 | Enterprise audit log | Available |
-| Enterprise Copilot metrics | Not available, API returned 404 |
+| Enterprise GitHub Copilot metrics | Not available, API returned 404 |
 
 ### 7.2 Organization Policy And Metrics Availability
 
 Script:
 
 ```text
-~/.copilot-otel/ingest-github-orgs.sh
+local-otel/ingest-github-orgs.sh
 ```
 
-Schedule:
+Schedule, optional macOS host-side automation only:
 
 ```text
 ~/Library/LaunchAgents/com.frontier.copilot-otel-github-orgs.plist
@@ -321,13 +319,13 @@ Current result:
 | --- | ---: |
 | Visible organizations | 32 |
 | Admin organizations | 23 |
-| Copilot billing/settings visible | 23 |
+| GitHub Copilot billing/settings visible | 23 |
 | Copilot Business organizations | 18 |
 | IDE Chat enabled organizations | 23 |
 | CLI enabled organizations | 19 |
-| Copilot metrics available organizations | 0 |
+| GitHub Copilot metrics available organizations | 0 |
 
-The API exposes Copilot billing/settings with `GET /orgs/{org}/copilot/billing`. GitHub documentation states that policy changes are made in organization settings on GitHub.com, not through this endpoint.
+The API exposes GitHub Copilot billing/settings with `GET /orgs/{org}/copilot/billing`. GitHub documentation states that policy changes are made in organization settings on GitHub.com, not through this endpoint.
 
 ## 8. Audit Log Streaming To Azure Blob Storage
 
@@ -338,7 +336,7 @@ The API exposes Copilot billing/settings with `GET /orgs/{org}/copilot/billing`.
 | Storage account | `yourstorageaccount` |
 | Container | `github-audit-log` |
 | SAS kind | User Delegation SAS |
-| Stream id | `7222` |
+| Stream id | `<your-stream-id>` |
 | Stream type | `Azure Blob Storage` |
 | Stream enabled | `true` |
 
@@ -357,10 +355,10 @@ Therefore, account-key SAS is not permitted. The implementation uses User Delega
 Script:
 
 ```text
-~/.copilot-otel/configure-github-audit-stream.sh
+local-otel/configure-github-audit-stream.sh
 ```
 
-Schedule:
+Schedule, optional macOS host-side automation only:
 
 ```text
 ~/Library/LaunchAgents/com.frontier.copilot-otel-github-audit-stream-renewal.plist
@@ -382,7 +380,7 @@ The script:
 Local dashboards live under:
 
 ```text
-~/.copilot-otel/stack/grafana/dashboards
+local-otel/stack/grafana/dashboards
 ```
 
 ### 9.2 Azure Dashboards
@@ -390,7 +388,7 @@ Local dashboards live under:
 Azure dashboard JSON files live under:
 
 ```text
-~/.copilot-otel/azure
+local-otel/azure
 ```
 
 Import commands:
@@ -400,14 +398,14 @@ az grafana dashboard import \
   -g rg-agentobs-dev-eus-001 \
   -n amg-agentobs-dev-eus01 \
   --folder "GitHub Copilot" \
-  --definition ~/.copilot-otel/azure/agentobs-azure-grafana-dashboard.json \
+  --definition local-otel/azure/agentobs-azure-grafana-dashboard.json \
   --overwrite true
 
 az grafana dashboard import \
   -g rg-agentobs-dev-eus-001 \
   -n amg-agentobs-dev-eus01 \
   --folder "GitHub Copilot" \
-  --definition ~/.copilot-otel/azure/github-api-ingestion-dashboard.json \
+  --definition local-otel/azure/github-api-ingestion-dashboard.json \
   --overwrite true
 ```
 
@@ -416,10 +414,10 @@ az grafana dashboard import \
 ### 10.1 Local
 
 ```bash
-~/.copilot-otel/check-otel-local.sh
-~/.copilot-otel/audit-coverage.sh
-~/.copilot-otel/materialize-copilot-sessions.sh
-~/.copilot-otel/daily-rollup.sh
+local-otel/check-workshop-local.sh
+local-otel/audit-coverage.sh
+local-otel/materialize-copilot-sessions.sh
+local-otel/daily-rollup.sh
 ```
 
 ### 10.2 Azure Telemetry
@@ -450,8 +448,8 @@ gh api \
 
 - Do not expose the SAS URL in shared logs.
 - User Delegation SAS must be renewed regularly.
-- Copilot Metrics API can return 404 even when Copilot billing/settings are available.
-- A 404 for Copilot Metrics is recorded as real availability status, not replaced with synthetic data.
+- The GitHub Copilot Metrics API can return 404 even when GitHub Copilot billing/settings are available.
+- A 404 for GitHub Copilot Metrics is recorded as real availability status, not replaced with synthetic data.
 - Raw prompt/tool content stays local by default.
 - Azure receives sanitized telemetry and rollups.
 

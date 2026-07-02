@@ -1,6 +1,8 @@
 # Dynamic workspace tags for terminal-launched agents and dev tools.
 # This file updates OTEL_RESOURCE_ATTRIBUTES from the current directory.
 
+typeset -g _copilot_otel_dir="${0:A:h}"
+
 if [[ "${COPILOT_OTEL_DISABLE_DYNAMIC_WORKSPACE_TAGS:-false}" == "true" ]]; then
   return 0
 fi
@@ -48,24 +50,24 @@ _copilot_otel_path_hash() {
 _copilot_otel_register_workspace_once() {
   emulate -L zsh
   local hash_value="$1"
-  local stamp_dir="$HOME/frontier-cockpit/local-otel/workspaces"
+  local stamp_dir="$_copilot_otel_dir/workspaces"
   local stamp_file="$stamp_dir/$hash_value"
   local now=""
   local last="0"
 
   [[ -n "$hash_value" && "$hash_value" != "unavailable" ]] || return 0
-  [[ -f "$HOME/frontier-cockpit/local-otel/register-workspace.sh" ]] || return 0
+  [[ -f "$_copilot_otel_dir/register-workspace.sh" ]] || return 0
 
   now="$(date +%s)"
   if [[ -f "$stamp_file" ]]; then
-    last="$(stat -f %m "$stamp_file" 2>/dev/null || print 0)"
+    last="$(stat -f %m "$stamp_file" 2>/dev/null || stat -c %Y "$stamp_file" 2>/dev/null || print 0)"
     if (( now - last < 300 )); then
       return 0
     fi
   fi
 
   mkdir -p "$stamp_dir"
-  ( "$HOME/frontier-cockpit/local-otel/register-workspace.sh" >/dev/null 2>&1 && touch "$stamp_file" ) &!
+  ( "$_copilot_otel_dir/register-workspace.sh" >/dev/null 2>&1 && touch "$stamp_file" ) &!
 }
 
 copilot_otel_update_workspace_tags() {

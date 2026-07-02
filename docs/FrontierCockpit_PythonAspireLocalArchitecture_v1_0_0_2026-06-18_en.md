@@ -1,23 +1,24 @@
 ---
-title: "Frontier Developer Cockpit Python And Aspire Local Architecture"
-description: "Architecture decision and implementation guide for a Python-based Frontier Developer Cockpit local runtime using Aspire, DuckDB or SQLite, Prometheus, Grafana, Tempo, and Loki."
+title: "Frontier Cockpit Local Python And Aspire Local Architecture"
+description: "Architecture decision and implementation guide for a Python-based Frontier Cockpit Local local runtime using Aspire, DuckDB or SQLite, Prometheus, Grafana, Tempo, and Loki."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["frontier-cockpit", "python", "aspire", "duckdb", "sqlite", "prometheus", "grafana", "opentelemetry"]
 ---
 
 <!-- markdownlint-disable MD025 -->
 
-# Frontier Developer Cockpit Python And Aspire Local Architecture
+# Frontier Cockpit Local Python And Aspire Local Architecture
 
-This document defines the Python-based local architecture for **Frontier Developer Cockpit**, using Aspire as the live local telemetry viewer and Prometheus plus Grafana as mandatory dashboard and metrics infrastructure.
+This document defines the Python-based local architecture for **Frontier Cockpit Local**, using Aspire as the live local telemetry viewer and Prometheus plus Grafana as mandatory dashboard and metrics infrastructure.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-18 | Frontier Cockpit Team | Initial Python and Aspire local architecture guide. |
 
 ## Table of Contents
@@ -37,19 +38,19 @@ This document defines the Python-based local architecture for **Frontier Develop
 
 ## 1. Decision Summary
 
-Frontier Developer Cockpit can be implemented with Python. The recommended local architecture is:
+Frontier Cockpit Local can be implemented with Python. The recommended local architecture is:
 
 ```text
 Aspire Dashboard + OpenTelemetry Collector + Python materializer + DuckDB or SQLite + Prometheus + Grafana + Tempo + Loki
 ```
 
-Prometheus and Grafana are not optional in the complete Frontier Developer Cockpit experience. Aspire is the live GenAI trace and resource viewer. Prometheus and Grafana are the durable metrics and dashboard experience. DuckDB or SQLite provide lightweight local analytical state and derived insights.
+Prometheus and Grafana are not optional in the complete Frontier Cockpit Local experience. Aspire is the live GenAI trace and resource viewer. Prometheus and Grafana are the durable metrics and dashboard experience. DuckDB or SQLite provide lightweight local analytical state and derived insights.
 
 ## 2. Why Python Is Supported
 
 Aspire supports polyglot local development. The official Python FastAPI sample demonstrates a TypeScript AppHost with `addUvicornApp`, a Python FastAPI API, and PostgreSQL as an orchestrated resource. The database in the sample is PostgreSQL, but the pattern is not limited to PostgreSQL. A Python materializer can write local insight state to DuckDB or SQLite while Aspire still orchestrates the application and displays OpenTelemetry data.
 
-Key Aspire capabilities relevant to Frontier Developer Cockpit:
+Key Aspire capabilities relevant to Frontier Cockpit Local:
 
 - run Python apps through Aspire AppHost;
 - orchestrate containers and local services;
@@ -62,7 +63,7 @@ OpenTelemetry GenAI instrumentation is still evolving. The local Python material
 
 ## 3. Required Local Stack
 
-The complete Frontier Developer Cockpit local stack requires:
+The complete Frontier Cockpit Local local stack requires:
 
 | Component | Required | Role |
 | --- | --- | --- |
@@ -73,9 +74,8 @@ The complete Frontier Developer Cockpit local stack requires:
 | Tempo | Yes | Historical trace store for Grafana Explore and trace links |
 | Loki | Yes | Historical logs and content-capture metadata |
 | DuckDB or SQLite | Yes for Python insight store | Lightweight local derived insights, rollups, and coaching state |
-| PostgreSQL | Optional implementation detail | Useful for Grafana metadata, not required for Frontier insights |
 
-PostgreSQL remains acceptable for Grafana metadata or multi-container parity, but DuckDB or SQLite are better for a Python-first lightweight insight database.
+Grafana stores its own metadata in its embedded SQLite database, so no separate database container is required. DuckDB or SQLite are the right fit for a Python-first lightweight insight database.
 
 ## 4. DuckDB And SQLite Role
 
@@ -105,7 +105,7 @@ Aspire is the local live developer experience. It is best for:
 - logs and traces while the session is active;
 - AI coding agent access to resource status, logs, traces, and docs through Aspire MCP.
 
-Aspire standalone is not the long-term dashboard store for Frontier Developer Cockpit. It keeps the live loop simple, while Prometheus, Tempo, Loki, DuckDB, and Grafana carry history and analytical UX.
+Aspire standalone is not the long-term dashboard store for Frontier Cockpit Local. It keeps the live loop simple, while Prometheus, Tempo, Loki, DuckDB, and Grafana carry history and analytical UX.
 
 ## 6. Prometheus And Grafana Role
 
@@ -174,7 +174,7 @@ The dashboards must be friendly, card-based, and actionable.
 Required dashboard UX patterns:
 
 - a home dashboard with cards;
-- clear distinction between Frontier Developer Cockpit and Frontier FinOps Cockpit;
+- clear distinction between Frontier Cockpit Local and Frontier Cockpit Hybrid;
 - cards for last session, context utilization, AIU, cache-read share, cold context, tool calls, and errors;
 - value mappings for available, unavailable, not observed yet, and synthetic validation;
 - drill-down links to Aspire, Tempo, and detailed dashboards;
@@ -216,7 +216,7 @@ frontier-cockpit/lite/
   reports/
 ```
 
-This structure keeps the Python local cockpit independent from the existing user-level `~/.copilot-otel` kit while still compatible with it.
+This structure keeps the Python local cockpit independent from the existing repository `local-otel/` kit while still compatible with it.
 
 ## 11. Validation
 

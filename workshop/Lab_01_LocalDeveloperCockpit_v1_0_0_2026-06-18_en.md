@@ -1,9 +1,9 @@
 ---
 title: "Lab 01, Local Developer Cockpit"
-description: "Hands-on lab for starting and validating the local Frontier Developer Cockpit observability cockpit."
+description: "Hands-on lab for starting and validating the Frontier Cockpit Local observability stack."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "workshop", "local", "grafana", "aspire"]
 ---
@@ -12,7 +12,9 @@ tags: ["github-copilot", "workshop", "local", "grafana", "aspire"]
 
 # Lab 01, Local Developer Cockpit
 
-This lab helps participants start the Frontier Developer Cockpit and understand each local component.
+This lab helps participants start Frontier Cockpit Local and understand each local component.
+
+Estimated duration: 30 minutes.
 
 ## Goals
 
@@ -23,10 +25,10 @@ This lab helps participants start the Frontier Developer Cockpit and understand 
 
 ## Step 1, Start The Local Stack
 
-Run:
+Run from the cloned repository root:
 
 ```bash
-~/.copilot-otel/start-full-stack.sh
+local-otel/start-full-stack.sh
 ```
 
 Expected local endpoints:
@@ -41,23 +43,29 @@ Expected local endpoints:
 | Tempo | `http://localhost:3200` |
 | Loki | `http://localhost:3100` |
 
+All ports bind to `127.0.0.1`, so the stack is reachable only from the local machine. The stack runs 10 containers, including `copilot-otel-jobs`, which runs the session materializer and daily rollup automatically on macOS, Linux, and Windows. Grafana uses its embedded SQLite database and requires the `admin` login with the generated password from `local-otel/stack/grafana-admin.env`. Anonymous access is disabled.
+
 ## Step 2, Validate The Stack
 
-Run:
+Run from the cloned repository root:
 
 ```bash
-~/.copilot-otel/check-otel-local.sh
+local-otel/check-workshop-local.sh
 ```
 
-The output should show Docker, Collector, Aspire, Grafana, Prometheus, Tempo, Loki, PostgreSQL, VS Code settings, and launchd variables as ready.
+The output should show Docker, Collector, Aspire, Grafana, Prometheus, Tempo, Loki, the jobs container, and VS Code settings as ready.
 
 ## Step 3, Open The Interfaces
 
-```bash
-open http://localhost:18888
-open http://localhost:3000
-open http://localhost:9090
+Open these URLs in your browser:
+
+```text
+http://localhost:18888
+http://localhost:3000
+http://localhost:9090
 ```
+
+On macOS you can use `open <url>`, on Linux `xdg-open <url>`, and on Windows `start <url>`.
 
 Explain:
 
@@ -71,17 +79,17 @@ Explain:
 
 ## Step 4, Register The Workspace
 
-From the target repository folder:
+From the cloned repository root:
 
 ```bash
-~/.copilot-otel/register-workspace.sh
+local-otel/register-workspace.sh
 ```
 
 This creates a local mapping from `workspace_path_hash` to a friendly workspace, repository, and branch. It does not fabricate usage.
 
 ## Step 5, Explain Local Privacy
 
-Local telemetry can include raw content. The local stack is intended for trusted developer machines and workshops where content capture is explicitly approved.
+Content capture is disabled by default. Local telemetry can include raw content only when a participant opts in by setting `FRONTIER_ENABLE_CONTENT_CAPTURE=true`, which should happen only when the facilitator approves. The local stack is intended for trusted developer machines and workshops where content capture is explicitly approved.
 
 Azure forwarding redacts raw content before enterprise ingestion.
 

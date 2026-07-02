@@ -6,8 +6,8 @@ Repository-wide guidance for GitHub Copilot in the **Frontier Cockpit** workspac
 
 Frontier Cockpit is the umbrella platform for GitHub Copilot and agentic development observability. It has two coordinated experiences:
 
-- **Frontier Developer Cockpit:** local, private developer learning and optimization.
-- **Frontier FinOps Cockpit:** centralized Azure cost, governance, adoption, ROI, and leadership views.
+- **Frontier Cockpit Local:** local, private developer learning and optimization.
+- **Frontier Cockpit Hybrid:** centralized Azure cost, governance, adoption, ROI, and leadership views.
 
 The platform observes GitHub Copilot Chat, agent mode, tool calls, context use, AIU signals, model labels, workspace attribution, and GitHub Enterprise signals. Local views can be full fidelity. Azure views must be sanitized, governed, and suitable for enterprise history.
 
@@ -18,8 +18,7 @@ The platform observes GitHub Copilot Chat, agent mode, tool calls, context use, 
 - `diagrams/`: editable draw.io source and SVG architecture exports.
 - `local-otel/`: local OpenTelemetry kit, Docker stack, Azure deployment, GitHub Enterprise ingestion, dashboards, materialization, and demo scripts.
 - `workshop/`: hands-on labs and participant checklist.
-- `.github/`: GitHub Copilot agents, prompts, skills, instructions, validation scripts, workflows, plugins, and repository policy.
-- `_archive/`: local migration backups. Do not use as source of truth unless explicitly asked.
+- `.github/`: GitHub Copilot agents, prompts, skills, instructions, validation scripts, workflows, and repository policy.
 
 ## Golden Rules
 
@@ -28,7 +27,7 @@ The platform observes GitHub Copilot Chat, agent mode, tool calls, context use, 
 3. Treat local OpenTelemetry as operational telemetry, not official billing. Official billing and adoption claims require GitHub APIs, billing exports, or cited sources.
 4. Keep raw prompts, responses, tool arguments, and tool results local unless an explicit approved workflow says otherwise.
 5. Azure forwarding must sanitize raw content and oversized sensitive attributes before enterprise ingestion.
-6. Use the locked product names: Frontier Cockpit, Frontier Developer Cockpit, Frontier FinOps Cockpit, Frontier Platform Layers, Fleet Overview.
+6. Use the locked product names: Frontier Cockpit, Frontier Cockpit Local, Frontier Cockpit Hybrid, Frontier Platform Layers, Fleet Overview.
 7. Documentation is English by default. User-facing workshop or app content may be multilingual when the artifact requires it.
 8. No em dashes in repository-authored documentation or UI copy.
 9. Prefer verified repository scripts and existing patterns over new one-off tooling.
@@ -36,7 +35,7 @@ The platform observes GitHub Copilot Chat, agent mode, tool calls, context use, 
 
 ## Local Runtime
 
-The local runtime source of truth is `local-otel/`. The user-level compatibility path may be `~/.copilot-otel`.
+The local runtime source of truth is `local-otel/`. All commands run from the cloned repository root.
 
 Default endpoints:
 
@@ -48,9 +47,9 @@ Default endpoints:
 - OTLP HTTP: `http://localhost:4318`
 - OTLP gRPC: `http://localhost:4317`
 
-The complete Frontier Developer Cockpit requires OpenTelemetry Collector, Aspire Dashboard, Tempo, Prometheus, Loki, Grafana OSS, and PostgreSQL for Grafana metadata. DuckDB or SQLite may support Python-first local insights, but they do not replace Prometheus or Grafana.
+The complete Frontier Cockpit Local runs ten containers: OpenTelemetry Collector, Aspire Dashboard, Tempo, Prometheus, Loki, Grafana OSS (embedded SQLite), the model price registry sidecar, the scheduled jobs container, and the dashboard API and web containers. DuckDB may support Python-first local insights, but it does not replace Prometheus or Grafana.
 
-Use `local-otel/demo-ready.sh` before demos. Use `local-otel/check-otel-local.sh` for readiness. Use `local-otel/materialize-copilot-sessions.sh` and `local-otel/daily-rollup.sh` for session summaries and rollups.
+Use `bash local-otel/client-bootstrap.sh` to configure and start the stack. Use `local-otel/check-workshop-local.sh` for readiness. The session materializer and daily rollup run automatically inside the `copilot-otel-jobs` container.
 
 ## Azure And GitHub Enterprise
 
@@ -78,7 +77,6 @@ GitHub Enterprise and organization signals are ingested through `local-otel/inge
 - Agents live under `.github/agents/`.
 - Prompts live under `.github/prompts/`.
 - Skills live under `.github/skills/`.
-- Specky SDD assets and MCP configuration are present. Use Specky flows when the user asks for spec-driven requirements, design, tasks, verification, or release planning.
 - External GitHub Copilot primitives must keep provenance metadata and pass external-content validation.
 
 ## Validation
@@ -98,8 +96,8 @@ bash .github/scripts/generate-llms-txt.sh --check
 For local runtime validation:
 
 ```bash
-local-otel/check-otel-local.sh
-local-otel/demo-ready.sh
+bash local-otel/client-bootstrap.sh
+local-otel/check-workshop-local.sh
 ```
 
 ## Repository Hygiene

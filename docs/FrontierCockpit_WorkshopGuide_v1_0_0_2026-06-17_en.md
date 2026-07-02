@@ -1,18 +1,18 @@
 ---
-title: "Frontier Developer Cockpit Workshop Guide"
-description: "Workshop guide for teaching developers and platform teams how to use Frontier Developer Cockpit and Frontier FinOps Cockpit for GitHub Copilot agent work."
+title: "Frontier Cockpit Local Workshop Guide"
+description: "Workshop guide for teaching developers and platform teams how to use Frontier Cockpit Local and Frontier Cockpit Hybrid for GitHub Copilot agent work."
 author: "Frontier Cockpit Team"
-date: "2026-06-17"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "workshop", "developer-enablement", "opentelemetry", "aspire", "grafana"]
 ---
 
 <!-- markdownlint-disable MD025 -->
 
-# Frontier Developer Cockpit Workshop Guide
+# Frontier Cockpit Local Workshop Guide
 
-This guide helps facilitators teach developers and platform teams how to observe, understand, and improve GitHub Copilot Chat and agent work using the Frontier Developer Cockpit and Frontier FinOps Cockpit.
+This guide helps facilitators teach developers and platform teams how to observe, understand, and improve GitHub Copilot Chat and agent work using the Frontier Cockpit Local and Frontier Cockpit Hybrid.
 
 For participant-facing lab navigation, use [../workshop/README.md](../workshop/README.md). This document is the facilitator guide for agenda, talking points, and demo framing.
 
@@ -20,6 +20,7 @@ For participant-facing lab navigation, use [../workshop/README.md](../workshop/R
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-17 | Frontier Cockpit Team | Initial workshop guide. |
 
 ## Table of Contents
@@ -61,10 +62,10 @@ By the end of the workshop, participants should be able to:
 
 - VS Code Insiders with GitHub Copilot enabled.
 - Docker Desktop running.
-- Local stack ready under `~/.copilot-otel`.
+- The repository cloned locally with the stack ready from `local-otel/`.
 - Azure deployment available for enterprise demo.
 - A Git repository open in VS Code.
-- Consent to use content capture in the local demo environment.
+- Content capture is disabled by default; obtain explicit consent before opting in for the local demo environment.
 
 ## 4. Agenda
 
@@ -75,7 +76,7 @@ By the end of the workshop, participants should be able to:
 | 00:25-00:45 | Grafana local dashboards and developer coaching |
 | 00:45-01:05 | Context, hot/warm/cold, AIU, and model labels |
 | 01:05-01:20 | Prompt improvement exercise |
-| 01:20-01:35 | Frontier FinOps Cockpit |
+| 01:20-01:35 | Frontier Cockpit Hybrid |
 | 01:35-01:45 | GitHub API enrichment roadmap |
 | 01:45-02:00 | Questions, teardown, and next steps |
 
@@ -83,8 +84,10 @@ By the end of the workshop, participants should be able to:
 
 ### 5.1 Start And Validate
 
+Run from the root of the cloned repository:
+
 ```bash
-~/.copilot-otel/check-otel-local.sh
+local-otel/check-workshop-local.sh
 ```
 
 ### 5.2 Generate A Real Session

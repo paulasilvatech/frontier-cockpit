@@ -1,9 +1,9 @@
 ---
 title: "Frontier Cockpit Enterprise Readiness Checklist"
-description: "Readiness checklist for packaging Frontier Cockpit as a coherent enterprise offer across local developer telemetry, Azure FinOps consolidation, governance, privacy, validation, and workshop delivery."
+description: "Readiness checklist for packaging Frontier Cockpit as a coherent enterprise offer across local developer telemetry, Azure hybrid consolidation, governance, privacy, validation, and workshop delivery."
 author: "Frontier Cockpit Team"
-date: "2026-06-22"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["frontier-cockpit", "enterprise-readiness", "github-copilot", "opentelemetry", "azure", "governance"]
 ---
@@ -18,6 +18,7 @@ This checklist defines what must be true before presenting Frontier Cockpit as a
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-22 | Frontier Cockpit Team | Initial enterprise readiness checklist for the integrated Frontier Cockpit offer. |
 
 ## Table of Contents
@@ -37,7 +38,7 @@ This checklist defines what must be true before presenting Frontier Cockpit as a
 
 | Check | Required State | Status |
 | --- | --- | --- |
-| Product taxonomy | Frontier Cockpit, Frontier Developer Cockpit, Frontier FinOps Cockpit, Frontier Platform Layers, GitHub Intelligence Layer, and Fleet Overview are consistently named. | Required |
+| Product taxonomy | Frontier Cockpit, Frontier Cockpit Local, Frontier Cockpit Hybrid, Frontier Platform Layers, GitHub Intelligence Layer, and Fleet Overview are consistently named. | Required |
 | Developer path | Developers can find how to start the local runtime, inspect Aspire, use Grafana, and improve prompts. | Required |
 | Platform path | Platform and FinOps teams can find Azure deployment, data consolidation, operations, and governance guidance. | Required |
 | Official sources | Local OpenTelemetry is described as operational telemetry. Official billing, AI Credits, and adoption require GitHub-provided sources. | Required |
@@ -49,11 +50,11 @@ This checklist defines what must be true before presenting Frontier Cockpit as a
 | --- | --- | --- |
 | Collector | Local OpenTelemetry Collector accepts OTLP HTTP on `4318` and OTLP gRPC on `4317`. | Required |
 | Live trace view | Aspire Dashboard opens at `http://localhost:18888`. | Required |
-| Durable local history | Prometheus, Tempo, Loki, Grafana, and PostgreSQL run through Docker Compose. | Required |
+| Durable local history | Prometheus, Tempo, Loki, and Grafana run through Docker Compose. Grafana uses its embedded SQLite database. | Required |
 | Grafana dashboards | Local dashboards are provisioned from source-controlled JSON. | Required |
-| Materialization | Real `copilot-chat` traces are summarized into `copilot_real_session_*` metrics. | Required |
-| Daily rollup | `copilot_daily_workspace_*` metrics and logs are emitted from real workspace telemetry. | Required |
-| LaunchAgents | Versioned templates exist and can be installed or removed with repository scripts. | Required |
+| Materialization | Real `copilot-chat` traces are summarized into `copilot_real_session_*` metrics by the Docker `copilot-otel-jobs` container. | Required |
+| Daily rollup | `copilot_daily_workspace_*` metrics and logs are emitted from real workspace telemetry by the Docker `copilot-otel-jobs` container. | Required |
+| LaunchAgents | Optional macOS host-side templates for GitHub Enterprise ingestion, audit stream renewal, VS Code memory sampling, and workspace registration exist and can be installed or removed with repository scripts. | Optional |
 | Hourly dashboard data refresh | Coverage metadata, rolling 24-hour workspace rollups, GitHub Enterprise ingestion, and organization status ingestion refresh at least hourly while the local stack and credentials are available. | Required |
 | Local insights | DuckDB local insight store is optional and documented as complementary to Prometheus and Grafana. | Recommended |
 
@@ -64,7 +65,7 @@ This checklist defines what must be true before presenting Frontier Cockpit as a
 | Azure resources | Container Apps Collector, Application Insights, Log Analytics, Azure Monitor workspace, Azure Managed Grafana, and managed identity are deployable with Bicep. | Required |
 | Hybrid forwarding | Local Collector can forward sanitized traces, metrics, and logs to Azure. | Required |
 | Customer parameters | Subscription, region, resource group, workload token, and environment are documented as customer-specific values. | Required |
-| Runtime validation | `~/.copilot-otel/azure/check-azure-runtime.sh` can verify deployed Azure resources and Log Analytics queries without changing resources. | Required |
+| Runtime validation | `local-otel/azure/check-azure-runtime.sh` can verify deployed Azure resources and Log Analytics queries without changing resources. | Required |
 | Dashboard import | Azure Managed Grafana dashboard import command is documented. | Required |
 | Teardown | Azure resource teardown is documented and explicit. | Required |
 
@@ -73,7 +74,7 @@ This checklist defines what must be true before presenting Frontier Cockpit as a
 | Check | Required State | Status |
 | --- | --- | --- |
 | Enterprise audit log | Enterprise audit log API ingestion records availability and bounded events when permitted. | Required |
-| Audit streaming | Azure Blob Storage audit stream renewal is documented and automated through LaunchAgent templates. | Required |
+| Audit streaming | Azure Blob Storage audit stream renewal is documented, with optional macOS LaunchAgent templates for host-side automation. | Required |
 | Organization status | Organization GitHub Copilot billing/settings and metrics availability are recorded as real status signals. | Required |
 | API failures | `404`, `403`, and `422` API outcomes are treated as availability data, not synthetic usage gaps. | Required |
 | Official usage | GitHub Copilot usage metrics and billing exports remain roadmap items until approved sources are connected. | Required |
@@ -82,7 +83,7 @@ This checklist defines what must be true before presenting Frontier Cockpit as a
 
 | Check | Required State | Status |
 | --- | --- | --- |
-| Home dashboard | Frontier Developer Cockpit Home provides starting context and drill-down links. | Required |
+| Home dashboard | Frontier Cockpit Local Home provides starting context and drill-down links. | Required |
 | Context dashboard | Context, cache behavior, cold tokens, and operational AIU are shown without implying official billing. | Required |
 | Real workspace dashboard | Real workspace-attributed sessions are separated from non-workspace telemetry. | Required |
 | Data quality dashboard | Real, non-workspace, synthetic, unavailable, and not-observed-yet states are clear. | Required |

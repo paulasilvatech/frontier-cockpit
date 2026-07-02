@@ -1,23 +1,24 @@
 ---
 title: "Frontier Cockpit Docker Desktop Frontend Requirements"
-description: "Functional, non-functional, architecture, and acceptance requirements for the Docker Desktop hosted Frontier Developer Cockpit frontend."
+description: "Functional, non-functional, architecture, and acceptance requirements for the Docker Desktop hosted Frontier Cockpit Local frontend."
 author: "Frontier Cockpit Team"
-date: "2026-06-25"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
-tags: ["frontier-cockpit", "frontier-developer-cockpit", "docker-desktop", "frontend", "requirements", "github-copilot"]
+tags: ["frontier-cockpit", "frontier-cockpit-local", "docker-desktop", "frontend", "requirements", "github-copilot"]
 ---
 
 <!-- markdownlint-disable MD025 -->
 
 # Frontier Cockpit Docker Desktop Frontend Requirements
 
-> This document defines the local Docker Desktop frontend requirements for Frontier Developer Cockpit, including datasource boundaries, runtime containers, billing semantics, and validation criteria.
+> This document defines the local Docker Desktop frontend requirements for Frontier Cockpit Local, including datasource boundaries, runtime containers, billing semantics, and validation criteria.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-25 | Frontier Cockpit Team | Initial Docker Desktop frontend requirements. |
 
 ## Table of Contents
@@ -38,8 +39,8 @@ The current local runtime already contains the core observability services. The 
 
 | Area | Current State | Gap |
 | --- | --- | --- |
-| Docker Desktop runtime | OpenTelemetry Collector, Aspire Dashboard, Prometheus, Grafana, Tempo, Loki, and PostgreSQL are defined in [local-otel/stack/docker-compose.yml](../local-otel/stack/docker-compose.yml). | No dedicated frontend app container exists yet. Model and price registry refresh must move fully into Docker when the runtime rule is "all backend services run in Docker Desktop." |
-| Data sources | Prometheus, Tempo, Loki, Grafana, Aspire Dashboard, PostgreSQL, and DuckDB files exist in the local architecture. | No single application frontend and API layer normalizes these sources. |
+| Docker Desktop runtime | OpenTelemetry Collector, Aspire Dashboard, Prometheus, Grafana, Tempo, and Loki are defined in [local-otel/stack/docker-compose.yml](../local-otel/stack/docker-compose.yml). Grafana uses its embedded SQLite database. | No dedicated frontend app container exists yet. Model and price registry refresh must move fully into Docker when the runtime rule is "all backend services run in Docker Desktop." |
+| Data sources | Prometheus, Tempo, Loki, Grafana, Aspire Dashboard, and DuckDB files exist in the local architecture. | No single application frontend and API layer normalizes these sources. |
 | C4 diagrams | Existing C4 Context and C4 Container diagrams are present in [Frontier Cockpit Architecture Diagrams](./FrontierCockpit_ArchitectureDiagrams_v1_0_0_2026-06-18_en.md) and [diagrams/](../diagrams/). | The local Docker Desktop deployment view needs to include the frontend, registry sidecar, and frontend API. |
 | Additional diagrams | Azure deployment, telemetry flow, and GitHub Enterprise flow diagrams exist. | The local Docker Desktop deployment diagram needs to represent the new application layer. |
 | ADRs | ADR authoring support exists in the repository customization package. | Product ADRs for the Docker Desktop runtime boundary, frontend datasource strategy, browser data boundary, billing semantics, and registry sidecar are required under `docs/adr/`. |
@@ -56,9 +57,9 @@ The frontend must not query every backend directly from browser code. The local 
 | Aspire Dashboard | Live trace tree and GenAI visualizer. | Deep links first. API access only through the backend proxy when API key handling is required. |
 | Tempo | Trace search and trace detail. | Backend proxy or Grafana Explore links. |
 | Loki | Logs and content-capture metadata. | Backend proxy or Grafana Explore links. Raw log content must not be embedded by default. |
-| PostgreSQL | Grafana metadata only. | Do not query directly for product analytics. |
+| Grafana embedded SQLite | Grafana metadata only. | Do not query directly for product analytics. |
 | DuckDB | Local analytical rollups. | Backend API only, never browser direct file access. |
-| GitHub billing and usage APIs | Official AI Credits, official spend, and official usage. | Future Frontier FinOps Cockpit ingestion path, not local OpenTelemetry inference. |
+| GitHub billing and usage APIs | Official AI Credits, official spend, and official usage. | Future Frontier Cockpit Hybrid ingestion path, not local OpenTelemetry inference. |
 
 The frontend can use data from Aspire Dashboard, Grafana, Prometheus, Tempo, Loki, and local stores. The browser must not hold secrets, query internal databases directly, or display raw prompts, responses, file contents, tool arguments, or tool results by default.
 
@@ -73,7 +74,7 @@ Docker Desktop
   copilot-otel-grafana
   copilot-otel-tempo
   copilot-otel-loki
-  copilot-otel-postgres
+  copilot-otel-jobs
   aspire-dashboard
   copilot-otel-registry
   frontier-dashboard-api
@@ -86,9 +87,9 @@ VS Code Insiders and GitHub Copilot remain external telemetry producers running 
 
 | ID | Requirement |
 | --- | --- |
-| FR-001 | The system shall run the complete Frontier Developer Cockpit backend runtime through Docker Compose in Docker Desktop. |
-| FR-002 | The system shall expose a single web entry point for the custom Frontier Developer Cockpit frontend. |
-| FR-003 | The frontend shall show local stack health for OpenTelemetry Collector, Prometheus, Grafana, Tempo, Loki, PostgreSQL, Aspire Dashboard, the registry sidecar, and the frontend API. |
+| FR-001 | The system shall run the complete Frontier Cockpit Local backend runtime through Docker Compose in Docker Desktop. |
+| FR-002 | The system shall expose a single web entry point for the custom Frontier Cockpit Local frontend. |
+| FR-003 | The frontend shall show local stack health for OpenTelemetry Collector, Prometheus, Grafana, Tempo, Loki, the jobs container, Aspire Dashboard, the registry sidecar, and the frontend API. |
 | FR-004 | The frontend shall show real AIU consumed from `copilot_real_session_nano_aiu_ratio / 1e9`. |
 | FR-005 | The frontend shall label AIU as local operational telemetry, not official billing. |
 | FR-006 | The frontend shall show token volume by `gen_ai_request_model` and `gen_ai_token_type`. |
@@ -105,7 +106,7 @@ VS Code Insiders and GitHub Copilot remain external telemetry producers running 
 | FR-017 | The frontend shall provide a safe trace drill-down path that opens Aspire Dashboard or Grafana Tempo rather than embedding raw trace content by default. |
 | FR-018 | The registry sidecar shall refresh model planning prices every 300 seconds inside Docker Desktop. |
 | FR-019 | The Docker Compose stack shall not require macOS LaunchAgents for model price refresh. |
-| FR-020 | The Docker Compose stack shall preserve Prometheus, Tempo, Loki, PostgreSQL, and Grafana data in Docker volumes. |
+| FR-020 | The Docker Compose stack shall preserve Prometheus, Tempo, Loki, and Grafana data in Docker volumes. |
 | FR-021 | The system shall keep VS Code Insiders and GitHub Copilot as external telemetry producers running on the developer machine. |
 | FR-022 | The system shall document which local processes remain outside Docker because they are telemetry producers, not backend runtime services. |
 | FR-023 | The frontend shall show official billing status as unavailable until GitHub billing exports or usage metrics APIs are connected. |
@@ -130,7 +131,7 @@ VS Code Insiders and GitHub Copilot remain external telemetry producers running 
 | NFR-012 | The frontend shall avoid fabricated metrics. Missing data shall be displayed as unavailable, not inferred. |
 | NFR-013 | The frontend shall keep official billing and adoption claims out of local OpenTelemetry-only views. |
 | NFR-014 | The system shall keep local retention aligned with the existing 30-day Prometheus, Tempo, and Loki retention design. |
-| NFR-015 | The Docker Desktop app shall expose only required localhost ports. |
+| NFR-015 | The Docker Desktop app shall expose only required ports, bound to `127.0.0.1`. |
 | NFR-016 | The registry sidecar shall be restartable and idempotent. Re-emitting gauges must not create duplicate logical state. |
 | NFR-017 | The frontend shall use documented APIs: Prometheus `/api/v1/query`, Tempo `/api/search` and `/api/traces`, Loki `/loki/api/v1/query`, and Grafana links or APIs where needed. |
 | NFR-018 | The system shall validate dashboards with `bash .github/scripts/validate-dashboards.sh`. |
@@ -141,9 +142,9 @@ VS Code Insiders and GitHub Copilot remain external telemetry producers running 
 
 | ADR | Decision |
 | --- | --- |
-| ADR-0001 | Docker Desktop is the runtime boundary for Frontier Developer Cockpit backend services. |
+| ADR-0001 | Docker Desktop is the runtime boundary for Frontier Cockpit Local backend services. |
 | ADR-0002 | Prometheus is the primary frontend metric API, with Grafana and Aspire Dashboard as deep-link surfaces. |
-| ADR-0003 | Browser code must not query PostgreSQL, DuckDB files, Aspire Dashboard API keys, or raw Loki content directly. |
+| ADR-0003 | Browser code must not query the Grafana SQLite database, DuckDB files, Aspire Dashboard API keys, or raw Loki content directly. |
 | ADR-0004 | Local USD values are what-if planning estimates, while official AI Credits and spend require GitHub billing or usage exports. |
 | ADR-0005 | Registry refresh for model planning prices runs as a Docker sidecar, not macOS LaunchAgents. |
 
@@ -166,7 +167,7 @@ VS Code Insiders and GitHub Copilot remain external telemetry producers running 
 | ID | Criterion |
 | --- | --- |
 | AC-001 | `docker compose ps` shows the frontend, API, registry sidecar, and observability services running. |
-| AC-002 | Stopping the model price LaunchAgent does not remove price metrics after five minutes. |
+| AC-002 | Price metrics stay fresh from the containerized registry sidecar without any host-side LaunchAgent. |
 | AC-003 | The frontend loads at a localhost URL and shows AIU or AI Credits, token, model cost mix, and USD what-if cards. |
 | AC-004 | The frontend still loads when Tempo or Loki is temporarily unavailable, with visible degraded status. |
 | AC-005 | No raw prompt, response, file content, or tool result appears on the frontend by default. |

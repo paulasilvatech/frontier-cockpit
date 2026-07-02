@@ -2,8 +2,8 @@
 title: "Frontier Cockpit Taxonomy And Platform Layers"
 description: "Final naming, platform taxonomy, L1 to L6 operating layers, and Fleet Overview model for the Frontier Cockpit offer focused on GitHub Copilot."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["frontier-cockpit", "github-copilot", "taxonomy", "platform-layers", "finops", "developer-experience"]
 ---
@@ -18,6 +18,7 @@ This document locks the final naming and platform taxonomy for the GitHub Copilo
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-18 | Frontier Cockpit Team | Initial final taxonomy for Frontier Cockpit. |
 
 ## Table of Contents
@@ -36,8 +37,8 @@ This document locks the final naming and platform taxonomy for the GitHub Copilo
 | Level | Final Name | Meaning |
 | --- | --- | --- |
 | Umbrella platform | **Frontier Cockpit** | The complete local-to-enterprise platform for GitHub Copilot and agentic development observability. |
-| Developer experience | **Frontier Developer Cockpit** | The local, private, developer-focused cockpit for learning and optimizing day-to-day GitHub Copilot usage. |
-| Enterprise and FinOps experience | **Frontier FinOps Cockpit** | The centralized Azure cockpit for cost, ROI, governance, adoption, rollups, and leadership insights. |
+| Developer experience | **Frontier Cockpit Local** | The local, private, developer-focused cockpit for learning and optimizing day-to-day GitHub Copilot usage. |
+| Enterprise and FinOps experience | **Frontier Cockpit Hybrid** | The centralized Azure cockpit for cost, ROI, governance, adoption, rollups, and leadership insights. |
 | Shared platform layer | **Frontier Platform Layers** | The L1 to L6 technical and operational layers that feed both cockpits. |
 | Cross-population view | **Fleet Overview** | The aggregate view across developers, repositories, cost centers, orgs, and enterprise scopes. |
 
@@ -59,9 +60,9 @@ Local learning for developers. Enterprise control for leaders.
 
 ## 3. Two Cockpits, One Platform
 
-### 3.1 Frontier Developer Cockpit
+### 3.1 Frontier Cockpit Local
 
-The **Frontier Developer Cockpit** is local and private. It helps developers learn how to work inside the credits and capabilities included with their GitHub Copilot license. It focuses on:
+The **Frontier Cockpit Local** is local and private. It helps developers learn how to work inside the credits and capabilities included with their GitHub Copilot license. It focuses on:
 
 - prompt quality;
 - model label awareness;
@@ -71,14 +72,14 @@ The **Frontier Developer Cockpit** is local and private. It helps developers lea
 - tool calls and tool loops;
 - workspace attribution;
 - VS Code process memory;
-- content capture for trusted debugging;
+- opt-in content capture for trusted debugging;
 - non-punitive learning and coaching.
 
 This cockpit is for improvement, not surveillance.
 
-### 3.2 Frontier FinOps Cockpit
+### 3.2 Frontier Cockpit Hybrid
 
-The **Frontier FinOps Cockpit** is centralized in Azure. It helps platform, FinOps, engineering leadership, and governance teams understand aggregate behavior. It focuses on:
+The **Frontier Cockpit Hybrid** is centralized in Azure. It helps platform, FinOps, engineering leadership, and governance teams understand aggregate behavior. It focuses on:
 
 - aggregate cost signals;
 - ROI and cost per delivery;
@@ -98,16 +99,16 @@ The same six layers feed both cockpits.
 
 | Layer | Name | Purpose | Feeds |
 | --- | --- | --- | --- |
-| L1 | Developer Signal Capture | Capture GitHub Copilot Chat, agent mode, CLI, VS Code, tool, token, AIU, and content-capture signals locally. | Frontier Developer Cockpit |
-| L2 | Local Observability Runtime | Run Aspire, Prometheus, Grafana, Tempo, Loki, and the local OpenTelemetry Collector. PostgreSQL may support Grafana metadata, while DuckDB or SQLite may support Python-first local insights. | Frontier Developer Cockpit |
+| L1 | Developer Signal Capture | Capture GitHub Copilot Chat, agent mode, CLI, VS Code, tool, token, AIU, and content-capture signals locally. | Frontier Cockpit Local |
+| L2 | Local Observability Runtime | Run Aspire, Prometheus, Grafana, Tempo, Loki, and the local OpenTelemetry Collector. Grafana uses its embedded SQLite database for metadata, while DuckDB or SQLite may support Python-first local insights. | Frontier Cockpit Local |
 | L3 | Session Intelligence | Materialize real sessions, workspace attribution, model labels, AIU, context utilization, hot/warm/cold tokens, tool behavior, and optional DuckDB/SQLite local analytical state. | Both |
-| L4 | Secure Forwarding And Redaction | Separate full-fidelity local data from sanitized enterprise data. Remove raw prompts, tool args, tool outputs, and oversized attributes before Azure. | Frontier FinOps Cockpit |
-| L5 | Azure Consolidation | Store traces, metrics, rollups, and enterprise logs in Application Insights, Log Analytics, Azure Monitor, and Azure Managed Grafana. | Frontier FinOps Cockpit |
-| L6 | GitHub Intelligence Layer | Ingest GitHub Enterprise audit logs, organization Copilot billing/settings, Copilot metrics availability, and future official usage/billing exports. | Frontier FinOps Cockpit |
+| L4 | Secure Forwarding And Redaction | Separate full-fidelity local data from sanitized enterprise data. Remove raw prompts, tool args, tool outputs, and oversized attributes before Azure. | Frontier Cockpit Hybrid |
+| L5 | Azure Consolidation | Store traces, metrics, rollups, and enterprise logs in Application Insights, Log Analytics, Azure Monitor, and Azure Managed Grafana. | Frontier Cockpit Hybrid |
+| L6 | GitHub Intelligence Layer | Ingest GitHub Enterprise audit logs, organization GitHub Copilot billing/settings, GitHub Copilot metrics availability, and future official usage/billing exports. | Frontier Cockpit Hybrid |
 
 ## 5. Fleet Overview
 
-**Fleet Overview** is the cross-population view built from the platform layers. It is not a separate product; it is an operating view inside Frontier FinOps Cockpit.
+**Fleet Overview** is the cross-population view built from the platform layers. It is not a separate product; it is an operating view inside Frontier Cockpit Hybrid.
 
 Fleet Overview aggregates:
 
@@ -146,7 +147,7 @@ Frontier Cockpit is focused on GitHub Copilot and agentic development around Git
 | GitHub Copilot agent mode | Local tool, trace, token, and context visibility. |
 | GitHub Copilot CLI | OTel when enabled by environment variables and supported runtime behavior. |
 | GitHub Copilot Business | Org-level billing/settings API and local developer telemetry. |
-| GitHub Copilot Enterprise | Enterprise audit log, enterprise policy posture, and Copilot metrics when enabled and available. |
+| GitHub Copilot Enterprise | Enterprise audit log, enterprise policy posture, and GitHub Copilot metrics when enabled and available. |
 | GitHub Enterprise Cloud repositories | Stronger repository, organization, audit, and policy attribution when repos and orgs live in GHEC. |
 | Repositories outside GHEC | Local telemetry can still work, but GitHub Enterprise API enrichment is limited or unavailable. |
 
@@ -157,8 +158,8 @@ Use these names consistently:
 | Use Case | Correct Name |
 | --- | --- |
 | Whole offer | Frontier Cockpit |
-| Local developer experience | Frontier Developer Cockpit |
-| Central Azure and leadership view | Frontier FinOps Cockpit |
+| Local developer experience | Frontier Cockpit Local |
+| Central Azure and leadership view | Frontier Cockpit Hybrid |
 | Platform layers | L1 to L6 Frontier Platform Layers |
 | Aggregate view | Fleet Overview |
 | Product being observed | GitHub Copilot |
@@ -166,7 +167,7 @@ Use these names consistently:
 | Local dashboard UI | Grafana OSS |
 | Enterprise dashboard UI | Azure Managed Grafana |
 
-Avoid using **Frontier Developer Cockpit** as the umbrella name. It is only the local developer-side cockpit.
+Avoid using **Frontier Cockpit Local** as the umbrella name. It is only the local developer-side cockpit.
 
 ## References
 

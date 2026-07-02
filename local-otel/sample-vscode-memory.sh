@@ -6,7 +6,7 @@ set -euo pipefail
 # context. The containerized collector cannot see macOS host processes, so this host-side
 # sampler fills that gap.
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 metrics_endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v1/metrics}"
 
 # Collect RSS (KB) and process count grouped by a coarse component name.

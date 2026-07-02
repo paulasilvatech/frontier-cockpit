@@ -2,8 +2,8 @@
 title: "Lab 02, Real Telemetry And Session Insights"
 description: "Hands-on lab for generating real GitHub Copilot telemetry, inspecting Aspire traces, and materializing session insights."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "workshop", "telemetry", "session-insights", "opentelemetry"]
 ---
@@ -13,6 +13,8 @@ tags: ["github-copilot", "workshop", "telemetry", "session-insights", "opentelem
 # Lab 02, Real Telemetry And Session Insights
 
 This lab generates real GitHub Copilot telemetry and turns it into local session insights.
+
+Estimated duration: 30 minutes.
 
 ## Goals
 
@@ -28,7 +30,7 @@ In VS Code Insiders, open a Git repository and ask GitHub Copilot to perform a s
 Example:
 
 ```text
-Explain the architecture of this repository. Use only README files and docs under md/. Do not edit files. After answering, summarize which files you inspected.
+Explain the architecture of this repository. Use only README files and docs under docs/. Do not edit files. After answering, summarize which files you inspected.
 ```
 
 For an edit task, use a low-risk file or a throwaway branch.
@@ -64,13 +66,13 @@ Inspect these spans:
 
 ## Step 3, Materialize Sessions
 
-Run:
+The session materializer runs automatically in the Docker `copilot-otel-jobs` container on macOS, Linux, and Windows. To refresh immediately instead of waiting for the next scheduled run, run from the cloned repository root:
 
 ```bash
-~/.copilot-otel/materialize-copilot-sessions.sh
+local-otel/materialize-copilot-sessions.sh
 ```
 
-This reads real traces from Tempo and emits metrics such as:
+The materializer reads real traces from Tempo and emits metrics such as:
 
 | Metric Family | Purpose |
 | --- | --- |
@@ -110,7 +112,7 @@ VS Code session features can provide local history and sync capabilities when co
 | OTel local stack | Trace, metrics, tools, tokens, AIU, context, and content capture |
 | Azure consolidator | Enterprise-safe history and rollups |
 
-Do not confuse VS Code session sync with the Frontier FinOps Cockpit. They solve different problems.
+Do not confuse VS Code session sync with Frontier Cockpit Hybrid. They solve different problems.
 
 ## Completion Criteria
 
@@ -125,4 +127,4 @@ Do not confuse VS Code session sync with the Frontier FinOps Cockpit. They solve
 - [VS Code Session Insights](https://code.visualstudio.com/docs/agents/sessions/session-insights)
 - [VS Code Session Sync](https://code.visualstudio.com/docs/agents/sessions/session-sync)
 - [Monitoring agents with OpenTelemetry](https://code.visualstudio.com/docs/agents/guides/monitoring-agents)
-- [Frontier Developer Cockpit Developer Local Guide](../docs/FrontierCockpit_DeveloperLocalGuide_v1_0_0_2026-06-17_en.md)
+- [Developer Local Guide](../docs/FrontierCockpit_DeveloperLocalGuide_v1_0_0_2026-06-17_en.md)

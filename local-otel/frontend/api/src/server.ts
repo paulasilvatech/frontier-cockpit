@@ -1,5 +1,4 @@
 import http from "node:http";
-import net from "node:net";
 import { URL } from "node:url";
 
 type ServiceStatus = "ok" | "degraded" | "unavailable";
@@ -54,8 +53,6 @@ const lokiUrl = process.env.LOKI_URL ?? "http://loki:3100";
 const grafanaInternalUrl = process.env.GRAFANA_URL ?? "http://grafana:3000";
 const aspireInternalUrl = process.env.ASPIRE_URL ?? "http://aspire-dashboard:18888";
 const collectorMetricsUrl = process.env.COLLECTOR_METRICS_URL ?? "http://otel-collector:9464/metrics";
-const postgresHost = process.env.POSTGRES_HOST ?? "postgres";
-const postgresPort = Number.parseInt(process.env.POSTGRES_PORT ?? "5432", 10);
 const publicGrafanaUrl = process.env.PUBLIC_GRAFANA_URL ?? "http://localhost:3000";
 const publicAspireUrl = process.env.PUBLIC_ASPIRE_URL ?? "http://localhost:18888";
 const publicPrometheusUrl = process.env.PUBLIC_PROMETHEUS_URL ?? "http://localhost:9090";
@@ -148,7 +145,7 @@ function participantIdentity(): ParticipantIdentity {
     email: stringFromEnv("FRONTIER_PARTICIPANT_EMAIL", ""),
     team: stringFromEnv("FRONTIER_PARTICIPANT_TEAM", ""),
     customerName: stringFromEnv("FRONTIER_CUSTOMER_NAME", ""),
-    dashboardTitle: stringFromEnv("FRONTIER_DASHBOARD_TITLE", "Frontier Developer Cockpit")
+    dashboardTitle: stringFromEnv("FRONTIER_DASHBOARD_TITLE", "Frontier Cockpit Local")
   };
 }
 
@@ -342,19 +339,36 @@ async function httpHealth(id: string, name: string, url: string): Promise<Servic
   }
 }
 
-async function tcpHealth(id: string, name: string, host: string, checkPort: number): Promise<ServiceHealth> {
+async function jobsHealth(): Promise<ServiceHealth> {
   const checkedAt = new Date().toISOString();
-  return new Promise((resolve) => {
-    const socket = net.createConnection({ host, port: checkPort });
-    const finish = (status: ServiceStatus, detail: string): void => {
-      socket.destroy();
-      resolve({ id, name, status, detail, checkedAt });
+  try {
+    const fresh = await queryPrometheus('count(present_over_time(copilot_real_session_input_tokens_ratio[30m]))');
+    const freshCount = fresh.length > 0 ? numericValue(fresh[0]) ?? 0 : 0;
+    if (freshCount > 0) {
+      return {
+        id: "copilot-otel-jobs",
+        name: "Session materializer jobs",
+        status: "ok",
+        detail: `${freshCount} materialized session series were refreshed in the last 30 minutes.`,
+        checkedAt
+      };
+    }
+    return {
+      id: "copilot-otel-jobs",
+      name: "Session materializer jobs",
+      status: "degraded",
+      detail: "No materialized session metrics in the last 30 minutes. Run a GitHub Copilot Chat or agent request, then wait one materializer interval.",
+      checkedAt
     };
-    socket.setTimeout(2500);
-    socket.once("connect", () => finish("ok", `TCP ${host}:${checkPort} reachable`));
-    socket.once("timeout", () => finish("unavailable", `TCP ${host}:${checkPort} timed out`));
-    socket.once("error", (error) => finish("unavailable", error.message));
-  });
+  } catch (error) {
+    return {
+      id: "copilot-otel-jobs",
+      name: "Session materializer jobs",
+      status: "unavailable",
+      detail: error instanceof Error ? error.message : "Materializer job metrics could not be checked.",
+      checkedAt
+    };
+  }
 }
 
 async function registryHealth(): Promise<ServiceHealth> {
@@ -396,8 +410,8 @@ async function stackHealth(): Promise<ServiceHealth[]> {
     httpHealth("grafana", "Grafana", `${grafanaInternalUrl}/api/health`),
     httpHealth("tempo", "Tempo", `${tempoUrl}/ready`),
     httpHealth("loki", "Loki", `${lokiUrl}/ready`),
-    tcpHealth("postgres", "PostgreSQL", postgresHost, postgresPort),
     httpHealth("aspire-dashboard", "Aspire Dashboard", aspireInternalUrl),
+    jobsHealth(),
     registryHealth(),
     Promise.resolve({
       id: "frontier-dashboard-api",

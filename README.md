@@ -1,20 +1,23 @@
 ---
-title: "Frontier Developer Cockpit"
-description: "Client-ready local GitHub Copilot observability cockpit with OpenTelemetry, Aspire, Prometheus, Grafana, Tempo, Loki, and a local dashboard."
+title: "Frontier Cockpit"
+description: "Client-ready GitHub Copilot observability: Frontier Cockpit Local (private, on-machine) and Frontier Cockpit Hybrid (sanitized Azure forwarding), built on OpenTelemetry, Aspire, Prometheus, Grafana, Tempo, and Loki."
 author: "Frontier Cockpit Team"
 date: "2026-07-02"
-version: "1.1.0"
+version: "2.0.0"
 status: "approved"
-tags: ["frontier-developer-cockpit", "github-copilot", "opentelemetry", "docker", "grafana", "aspire"]
+tags: ["frontier-cockpit", "github-copilot", "opentelemetry", "docker", "grafana", "aspire", "finops"]
 ---
 
 <!-- markdownlint-disable MD025 -->
 
-# Frontier Developer Cockpit
+# Frontier Cockpit
 
-Frontier Developer Cockpit is a client-run observability cockpit for GitHub Copilot Chat and agent activity. The default mode is fully local: it configures VS Code or VS Code Insiders to send GitHub Copilot OpenTelemetry signals to a local Docker stack, then shows local traces, metrics, model labels, token behavior, AIU, AI Credits estimates, cache behavior, workspace attribution, and developer coaching. An optional Azure hybrid mode can forward sanitized telemetry to client-owned Azure resources when enterprise history or Azure Managed Grafana is required.
+Frontier Cockpit is a client-run observability product for GitHub Copilot Chat and agent activity, delivered in two editions:
 
-This repository is prepared for client installation. The committed defaults are generic, no customer or personal data is required, and local secret/configuration files are ignored by git.
+- **Frontier Cockpit Local (Developer Edition):** fully local and privacy first. It configures VS Code or VS Code Insiders to send GitHub Copilot OpenTelemetry signals to a local Docker stack, then shows local traces, metrics, model labels, token behavior, AIU, AI Credits estimates, cache behavior, workspace attribution, and developer coaching. Raw telemetry never leaves the machine.
+- **Frontier Cockpit Hybrid (Enterprise Edition):** everything in Local, plus sanitized telemetry forwarding to client-owned Azure resources for governed history, FinOps rollups, and Azure Managed Grafana.
+
+This repository is prepared for client installation. The committed defaults are generic, no customer or personal data is required, content capture is off by default, and local secret/configuration files are ignored by git.
 
 ## What You Get
 
@@ -25,7 +28,9 @@ This repository is prepared for client installation. The committed defaults are 
 | Prometheus | Local metrics store for the dashboard and Grafana. |
 | Tempo | Local trace history backend. |
 | Loki | Local logs and content-capture metadata backend. |
-| Grafana OSS | Historical dashboards and local exploration. |
+| Grafana OSS | Historical dashboards and local exploration (embedded SQLite, generated admin password). |
+| Jobs container | Runs the session materializer and daily rollup on a schedule inside Docker, identically on macOS, Linux, and Windows. |
+| Registry sidecar | Keeps local model price and planning series fresh for AI Credits estimates. |
 | Frontier dashboard | Local mini app at `http://localhost:3300` for the client-facing cockpit. |
 
 ## Run Modes
@@ -54,11 +59,11 @@ Default endpoints:
 
 | Platform | Supported path | Entry point |
 | --- | --- | --- |
-| macOS | Docker Desktop plus optional scheduled automation. | `bash local-otel/client-bootstrap.sh` |
+| macOS | Docker Desktop. | `bash local-otel/client-bootstrap.sh` |
 | Linux | Docker Desktop or Docker Engine with Compose. | `bash local-otel/client-bootstrap.sh` |
 | Windows | Docker Desktop with WSL2 backend, run from PowerShell. | `pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1` |
 
-Scheduled automation under `local-otel/launchagents/` is macOS-only and optional. Linux users can schedule equivalent scripts with `cron` or systemd timers. Windows users can use Task Scheduler when scheduled refresh is needed. The Docker stack itself does not depend on scheduled automation.
+The session materializer and daily rollup run automatically inside the `copilot-otel-jobs` Docker container, so scheduled processing works the same on all three platforms with no launchd, cron, or Task Scheduler setup. Optional host-side automation under `local-otel/launchagents/` (GitHub Enterprise ingestion, audit stream renewal, VS Code memory sampling) remains macOS-only; Linux users can schedule the same scripts with cron or systemd timers and Windows users can use Task Scheduler.
 
 ## Prerequisites
 
@@ -81,7 +86,7 @@ Optional Azure hybrid prerequisites:
 1. Clone the repository.
 
    ```bash
-   git clone https://github.com/your-org/frontier-cockpit.git
+   git clone https://github.com/paulasilvatech/frontier-cockpit.git
    cd frontier-cockpit
    ```
 
@@ -113,7 +118,7 @@ Optional Azure hybrid prerequisites:
    | `FRONTIER_AI_CREDITS_USE_PROMO` | `true` only if the client wants to model a promotional credit pool. |
    | `FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE` | Optional override for the monthly local credit pool. |
    | `FRONTIER_VSCODE_CHANNELS` | `stable`, `insiders`, or `stable,insiders`. |
-   | `FRONTIER_ENABLE_CONTENT_CAPTURE` | `true` for trusted local workshops, `false` for stricter privacy. |
+   | `FRONTIER_ENABLE_CONTENT_CAPTURE` | Defaults to `false` (privacy first). Set `true` only for trusted local workshops or explicitly approved demos. |
 
 4. Start the local cockpit. The bootstrap configures OpenTelemetry first, then starts Docker Compose.
 
@@ -197,8 +202,9 @@ The client bootstrap performs the setup needed before the Docker stack can show 
 - exports local `OTEL_*` and `COPILOT_OTEL_*` variables;
 - updates VS Code user settings for GitHub Copilot OpenTelemetry;
 - enables OTLP/HTTP at `http://localhost:4318`;
-- optionally enables local content capture based on `FRONTIER_ENABLE_CONTENT_CAPTURE`;
-- starts the Docker Compose stack under `local-otel/stack/`;
+- generates a random Grafana admin password (`local-otel/stack/grafana-admin.env`, local-only) and a random Aspire API key;
+- keeps local content capture off unless `FRONTIER_ENABLE_CONTENT_CAPTURE=true`;
+- starts the Docker Compose stack under `local-otel/stack/`, including the scheduled jobs container;
 - registers the current Git workspace so telemetry can be attributed to the repository;
 - sends a synthetic validation span;
 - validates the local endpoints.
@@ -210,13 +216,13 @@ The most important VS Code settings are:
   "github.copilot.chat.otel.enabled": true,
   "github.copilot.chat.otel.exporterType": "otlp-http",
   "github.copilot.chat.otel.otlpEndpoint": "http://localhost:4318",
-  "github.copilot.chat.otel.captureContent": true,
+  "github.copilot.chat.otel.captureContent": false,
   "github.copilot.chat.otel.maxAttributeSizeChars": 0,
   "github.copilot.chat.otel.dbSpanExporter.enabled": true
 }
 ```
 
-If `FRONTIER_ENABLE_CONTENT_CAPTURE=false`, the bootstrap sets content-capture values to `false` where supported.
+`captureContent` follows `FRONTIER_ENABLE_CONTENT_CAPTURE` and stays `false` unless the client explicitly opts in. GitHub Copilot OpenTelemetry in VS Code is an experimental feature; behavior can change between VS Code releases.
 
 ## Generate Real Telemetry
 
@@ -246,7 +252,7 @@ local-otel/check-workshop-local.sh --strict-data
 Expected result:
 
 - Docker is running.
-- The ten local containers are running.
+- The ten local containers are running, including the `copilot-otel-jobs` scheduler.
 - Frontier dashboard, Grafana, Aspire, Prometheus, Tempo, and Loki respond.
 - The current Git workspace is registered.
 - Real workspace-attributed GitHub Copilot telemetry is present after strict mode.
@@ -261,15 +267,14 @@ Expected result:
 | Validate setup | `local-otel/check-workshop-local.sh` |
 | Validate real telemetry | `local-otel/check-workshop-local.sh --strict-data` |
 | Open local cockpit | `http://localhost:3300` |
-| Open Grafana | `http://localhost:3000` |
+| Open Grafana | `http://localhost:3000` (user `admin`, password in `local-otel/stack/grafana-admin.env`) |
 | Open Aspire Dashboard | `http://localhost:18888` |
 | Stop local stack | `local-otel/stop-full-stack.sh` |
 
 ## Data Boundary
 
 - Local content capture can include prompts, file paths, source snippets, tool arguments, and tool results.
-- Keep `FRONTIER_ENABLE_CONTENT_CAPTURE=true` only for trusted local workshops or explicitly approved client use.
-- Use `FRONTIER_ENABLE_CONTENT_CAPTURE=false` for stricter privacy.
+- Content capture is **off by default**. Enable `FRONTIER_ENABLE_CONTENT_CAPTURE=true` only for trusted local workshops or explicitly approved client use, and turn it back off afterwards.
 - Local AIU and AI Credits estimates are operational telemetry, not official billing.
 - Official GitHub Copilot billing, AI Credits, and adoption totals require GitHub billing exports, the GitHub usage dashboard, or the Copilot usage metrics API.
 - Real local files such as `local-otel/client.env`, `local-otel/stack/.env`, runtime logs, DuckDB files, and Azure `.env` files are ignored by git.
@@ -284,15 +289,24 @@ Expected result:
 | VS Code settings did not change | Confirm `FRONTIER_VSCODE_CHANNELS` includes the installed channel. |
 | Privacy needs stricter defaults | Set `FRONTIER_ENABLE_CONTENT_CAPTURE=false` in `local-otel/client.env` and rerun the bootstrap. |
 
+## Uninstall
+
+1. Stop the stack: `local-otel/stop-full-stack.sh`.
+2. Remove containers, network, and volumes: `docker compose -f local-otel/stack/docker-compose.yml down -v` from the repository root.
+3. Optional macOS host automation: `local-otel/uninstall-launchagents.sh`.
+4. Revert VS Code settings: remove the `github.copilot.chat.otel.*` keys from your user `settings.json` (timestamped backups were written next to it by the bootstrap).
+5. Remove local state: delete `~/.frontier-cockpit/` and the gitignored files under `local-otel/` (`client.env`, `stack/aspire-api-key.env`, `stack/grafana-admin.env`, DuckDB exports).
+
 ## Repository Branches
 
 | Branch | Purpose |
 | --- | --- |
-| `main` | Client-ready branch. Use this branch for installation and customer delivery. |
-| `develop` | Development branch for future changes before promotion to `main`. |
+| `develop` | Active development branch. All changes land here first and are validated by CI. |
+| `main` | Client-ready branch, promoted from `develop`. Use this branch for installation and customer delivery. |
 
 ## References
 
+- [Functional and non-functional requirements](docs/FrontierCockpit_Requirements_v1_0_0_2026-07-02_en.md)
 - [Local OpenTelemetry kit](local-otel/README.md)
 - [Workshop guide](workshop/README.md)
 - [Local links guide](docs/FrontierCockpit_LocalLinksGuide_v1_0_0_2026-06-19_en.md)

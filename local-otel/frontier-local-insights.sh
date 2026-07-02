@@ -1,16 +1,17 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-# Frontier Developer Cockpit local insight store.
+# Frontier Cockpit Local local insight store.
 # Persists developer-local rollups to DuckDB (preferred) and SQLite-compatible tables can be added later.
 # This does not replace Prometheus or Grafana. It stores derived local insights for trend analysis and reports.
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 prometheus_url="${PROMETHEUS_URL:-http://localhost:9090}"
 period="${FRONTIER_INSIGHTS_RANGE:-24h}"
-db_path="${FRONTIER_INSIGHTS_DB:-$HOME/frontier-cockpit/local-otel/frontier-insights.duckdb}"
-python_bin="${FRONTIER_PYTHON:-$HOME/frontier-cockpit/local-otel/.venv/bin/python}"
+script_dir="${0:A:h}"
+db_path="${FRONTIER_INSIGHTS_DB:-$script_dir/frontier-insights.duckdb}"
+python_bin="${FRONTIER_PYTHON:-$script_dir/.venv/bin/python}"
 
 if [[ ! -x "$python_bin" ]]; then
   python_bin="$(command -v python3)"

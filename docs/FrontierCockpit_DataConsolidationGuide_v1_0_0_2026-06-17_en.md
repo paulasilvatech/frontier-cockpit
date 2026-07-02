@@ -1,23 +1,24 @@
 ---
-title: "Frontier FinOps Cockpit Data Consolidation Guide"
-description: "Guide for consolidating local OpenTelemetry rollups with GitHub usage, billing, repository, team, audit, and workflow data in Frontier FinOps Cockpit on Azure."
+title: "Frontier Cockpit Hybrid Data Consolidation Guide"
+description: "Guide for consolidating local OpenTelemetry rollups with GitHub usage, billing, repository, team, audit, and workflow data in Frontier Cockpit Hybrid on Azure."
 author: "Frontier Cockpit Team"
-date: "2026-06-17"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "github-api", "azure-monitor", "log-analytics", "billing", "data-consolidation"]
 ---
 
 <!-- markdownlint-disable MD025 -->
 
-# Frontier FinOps Cockpit Data Consolidation Guide
+# Frontier Cockpit Hybrid Data Consolidation Guide
 
-This guide defines how Frontier FinOps Cockpit consolidates local GitHub Copilot OpenTelemetry data with GitHub APIs and billing exports in Azure. The goal is to create an enterprise view that combines operational agent telemetry, official adoption metrics, repository context, cost allocation, ROI, and billing data.
+This guide defines how Frontier Cockpit Hybrid consolidates local GitHub Copilot OpenTelemetry data with GitHub APIs and billing exports in Azure. The goal is to create an enterprise view that combines operational agent telemetry, official adoption metrics, repository context, cost allocation, ROI, and billing data.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-17 | Frontier Cockpit Team | Initial data consolidation guide. |
 
 ## Table of Contents
@@ -160,7 +161,7 @@ Recommended reconciliation:
 
 | Table | Purpose |
 | --- | --- |
-| `GitHubCopilotUsage_CL` | Copilot usage metrics API results |
+| `GitHubCopilotUsage_CL` | GitHub Copilot usage metrics API results |
 | `GitHubCopilotBilling_CL` | Billing and AI Credits exports |
 | `GitHubRepoMetadata_CL` | Repo owner, topic, team, business unit |
 | `GitHubTeamMetadata_CL` | Team and org hierarchy |

@@ -18,7 +18,7 @@ Security review applies to:
 
 ## Reporting
 
-Report suspected vulnerabilities privately to the repository owner. Do not open a public issue for secrets, credential exposure, unsafe workflow permissions, prompt injection paths, or malicious imported content.
+Report suspected vulnerabilities privately through GitHub private vulnerability reporting on this repository (Security tab, Report a vulnerability). If private reporting is unavailable, contact the repository owner directly. Do not open a public issue for secrets, credential exposure, unsafe workflow permissions, prompt injection paths, or malicious imported content. Initial response target is five business days.
 
 Include:
 

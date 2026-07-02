@@ -1,9 +1,9 @@
 ---
 title: "Lab 04, Azure Enterprise Sync"
-description: "Hands-on lab for connecting the Frontier Developer Cockpit to the Frontier FinOps Cockpit and validating sanitized telemetry."
+description: "Hands-on lab for connecting Frontier Cockpit Local to Frontier Cockpit Hybrid and validating sanitized telemetry."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "workshop", "azure", "log-analytics", "managed-grafana"]
 ---
@@ -12,7 +12,9 @@ tags: ["github-copilot", "workshop", "azure", "log-analytics", "managed-grafana"
 
 # Lab 04, Azure Enterprise Sync
 
-This lab connects the Frontier Developer Cockpit to Azure and validates enterprise consolidation.
+This lab connects Frontier Cockpit Local to Azure and validates enterprise consolidation in Frontier Cockpit Hybrid.
+
+Estimated duration: 45 minutes (optional).
 
 ## Goals
 
@@ -52,17 +54,21 @@ Expected resources:
 
 ## Step 3, Start Hybrid Mode
 
+Run from the cloned repository root:
+
 ```bash
-~/.copilot-otel/start-full-stack.sh --hybrid
+local-otel/start-full-stack.sh --hybrid
 ```
 
 The local Collector sends full data locally and sanitized data to Azure.
 
 ## Step 4, Generate Fresh Rollup
 
+The session materializer and daily rollup run automatically in the Docker `copilot-otel-jobs` container. To generate a fresh rollup immediately, run from the cloned repository root:
+
 ```bash
-~/.copilot-otel/materialize-copilot-sessions.sh
-~/.copilot-otel/daily-rollup.sh
+local-otel/materialize-copilot-sessions.sh
+local-otel/daily-rollup.sh
 ```
 
 ## Step 5, Validate Azure Tables

@@ -7,13 +7,13 @@ set -euo pipefail
 # Raw content is materialized to local Loki by default. Azure forwarding still redacts raw
 # content through the hybrid Collector overlay before enterprise ingestion.
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 metrics_endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v1/metrics}"
 logs_endpoint="${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://localhost:4318/v1/logs}"
 tempo_url="${TEMPO_URL:-http://localhost:3200}"
-show_content="${COPILOT_MATERIALIZE_CONTENT:-true}"
+show_content="${COPILOT_MATERIALIZE_CONTENT:-false}"
 limit="${COPILOT_MATERIALIZE_TRACE_LIMIT:-1000}"
-state_file="$HOME/frontier-cockpit/local-otel/materialized-traces.json"
+state_file="${COPILOT_MATERIALIZE_STATE_FILE:-${0:A:h}/materialized-traces.json}"
 
 python3 - "$tempo_url" "$metrics_endpoint" "$logs_endpoint" "$state_file" "$show_content" "$limit" <<'PY'
 import base64

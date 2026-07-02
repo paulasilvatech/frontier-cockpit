@@ -18,8 +18,7 @@ local-otel/workshop.env
 local-otel/.venv/
 local-otel/**/*.log
 local-otel/**/*-log.txt
-local-otel/*.out
-local-otel/*.err
+local-otel/**/*.out
 local-otel/**/*.err
 local-otel/materialized-traces.json
 local-otel/frontier-insights.duckdb
@@ -39,6 +38,7 @@ local-otel/github-orgs/*.json
 
 # Docker/generated runtime files
 local-otel/stack/aspire-api-key.env
+local-otel/stack/grafana-admin.env
 local-otel/stack/**/*.db
 local-otel/stack/**/data/
 

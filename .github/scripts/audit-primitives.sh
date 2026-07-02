@@ -26,6 +26,7 @@ fail=0
 err() { echo "  FAIL [$1] $2"; fail=1; }
 
 check_common() {  # check_common <file> <kind>
+  # shellcheck disable=SC2034
   local f="$1" kind="$2" base; base="$(basename "$f")"
 
   # Frontmatter on line 1.

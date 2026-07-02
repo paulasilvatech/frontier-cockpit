@@ -1,23 +1,24 @@
 ---
-title: "Frontier Developer Cockpit Developer Local Guide"
-description: "Developer guide for running and using Frontier Developer Cockpit with Aspire, Grafana, Prometheus, Tempo, Loki, and local automation."
+title: "Frontier Cockpit Local Developer Guide"
+description: "Developer guide for running and using Frontier Cockpit Local with Aspire, Grafana, Prometheus, Tempo, Loki, and local automation."
 author: "Frontier Cockpit Team"
-date: "2026-06-17"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "developer", "local", "aspire", "grafana", "opentelemetry"]
 ---
 
 <!-- markdownlint-disable MD025 -->
 
-# Frontier Developer Cockpit Developer Local Guide
+# Frontier Cockpit Local Developer Guide
 
-This guide explains how a developer uses the local Frontier Developer Cockpit observability cockpit to improve prompts, reduce waste, pick better model strategies, understand context-window use, and diagnose agent behavior.
+This guide explains how a developer uses the Frontier Cockpit Local observability stack to improve prompts, reduce waste, pick better model strategies, understand context-window use, and diagnose agent behavior.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-17 | Frontier Cockpit Team | Initial developer guide for local observability. |
 
 ## Table of Contents
@@ -36,7 +37,7 @@ This guide explains how a developer uses the local Frontier Developer Cockpit ob
 
 ## 1. What The Local Cockpit Is For
 
-The Frontier Developer Cockpit is for developer learning and day-to-day optimization. It answers questions that help a developer use GitHub Copilot more deliberately:
+Frontier Cockpit Local is for developer learning and day-to-day optimization. It answers questions that help a developer use GitHub Copilot more deliberately:
 
 - Did this session use too much context?
 - Did it use the expected model label?
@@ -47,11 +48,11 @@ The Frontier Developer Cockpit is for developer learning and day-to-day optimiza
 - Was the session attached to the expected repository and branch?
 - Did content capture include large prompts, outputs, or tool schemas?
 
-The Frontier Developer Cockpit is not the official billing system. Official billing and AI Credits reconciliation require GitHub billing exports or GitHub usage metrics.
+Frontier Cockpit Local is not the official billing system. Official billing and AI Credits reconciliation require GitHub billing exports or GitHub usage metrics.
 
 ## 2. What Runs Locally
 
-Prometheus and Grafana are mandatory for the complete Frontier Developer Cockpit. Aspire is the live trace and GenAI visualization surface. Prometheus and Grafana provide the metrics and dashboard UX required for day-to-day developer insight.
+Prometheus and Grafana are mandatory for the complete Frontier Cockpit Local experience. Aspire is the live trace and GenAI visualization surface. Prometheus and Grafana provide the metrics and dashboard UX required for day-to-day developer insight.
 
 | Component | Endpoint | Developer Use |
 | --- | --- | --- |
@@ -61,24 +62,26 @@ Prometheus and Grafana are mandatory for the complete Frontier Developer Cockpit
 | Tempo | `http://localhost:3200` | Local trace store |
 | Loki | `http://localhost:3100` | Local logs and content-capture records |
 | OpenTelemetry Collector | `localhost:4318`, `localhost:4317` | Local telemetry ingress and fan-out |
-| PostgreSQL | Docker volume | Grafana metadata |
+| Grafana embedded SQLite | Docker volume | Grafana metadata |
 | DuckDB or SQLite | Local file | Optional Python-first derived insight store |
+
+All stack ports bind to `127.0.0.1` only. Grafana requires a login: user `admin` with the generated password stored in `local-otel/stack/grafana-admin.env`.
 
 For the Python-first local architecture, see [FrontierCockpit_PythonAspireLocalArchitecture_v1_0_0_2026-06-18_en.md](FrontierCockpit_PythonAspireLocalArchitecture_v1_0_0_2026-06-18_en.md).
 
 ## 3. Daily Developer Workflow
 
 1. Open the target Git repository in VS Code Insiders.
-2. Confirm the local stack is ready:
+2. Confirm the local stack is ready, running from the root of the cloned repository:
 
    ```bash
-   ~/.copilot-otel/check-otel-local.sh
+   local-otel/check-workshop-local.sh
    ```
 
 3. Register the workspace if needed:
 
    ```bash
-   ~/.copilot-otel/register-workspace.sh
+   local-otel/register-workspace.sh
    ```
 
 4. Work normally with GitHub Copilot Chat, agent mode, plan mode, or GitHub Copilot CLI.
@@ -119,9 +122,9 @@ Telemetry question:
 
 ```text
 Objective: fix the failing validation for the Azure Collector dashboard.
-Scope: only files under ~/.copilot-otel/stack and ~/.copilot-otel/azure.
+Scope: only files under local-otel/stack and local-otel/azure.
 Non-goals: do not change unrelated repository files.
-Validation: run check-otel-local.sh and query AppTraces/AppMetrics.
+Validation: run check-workshop-local.sh and query AppTraces/AppMetrics.
 Stop condition: if the same error repeats twice, stop and summarize the blocker.
 Telemetry question: report whether tool calls, input tokens, AIU, or context utilization looked high.
 ```
@@ -171,18 +174,18 @@ Use Aspire traces to inspect the actual tool sequence.
 
 ## 7. Content Capture
 
-Content capture is enabled locally for trusted debugging. It can include prompts, responses, tool schemas, tool arguments, and tool results.
+Content capture is disabled by default (`FRONTIER_ENABLE_CONTENT_CAPTURE=false`) to keep the setup privacy first. Opt in only for trusted local debugging. When enabled, it can include prompts, responses, tool schemas, tool arguments, and tool results.
 
 Safe inspection:
 
 ```bash
-~/.copilot-otel/show-trace-content.sh
+local-otel/show-trace-content.sh
 ```
 
 Raw inspection, local trusted environment only:
 
 ```bash
-~/.copilot-otel/show-trace-content.sh --show-content
+local-otel/show-trace-content.sh --show-content
 ```
 
 Do not use raw content capture in customer or shared environments unless explicitly approved.
@@ -201,7 +204,7 @@ Telemetry without these values can still be real, but it should not be assigned 
 
 | Symptom | Check | Fix |
 | --- | --- | --- |
-| No local data | `~/.copilot-otel/check-otel-local.sh` | Restart full stack |
+| No local data | `local-otel/check-workshop-local.sh` | Restart full stack |
 | Aspire login prompt | Docker logs for Aspire token | Use login URL or anonymous mode |
 | Grafana has no workspace | `register-workspace.sh` | Reopen workspace and register |
 | Azure is missing raw content | Expected behavior | Raw content is redacted before Azure |

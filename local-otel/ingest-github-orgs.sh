@@ -5,12 +5,12 @@ set -euo pipefail
 # Uses only GitHub APIs visible to the authenticated gh user.
 # Sends status and available records to local Collector, and to Azure when hybrid forwarding is enabled.
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
-gh_bin="${GH_BIN:-/opt/homebrew/bin/gh}"
+gh_bin="${GH_BIN:-gh}"
 logs_endpoint="${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://localhost:4318/v1/logs}"
 metrics_endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v1/metrics}"
-out_dir="$HOME/frontier-cockpit/local-otel/github-orgs"
+out_dir="${0:A:h}/github-orgs"
 mkdir -p "$out_dir"
 
 if ! command -v "$gh_bin" >/dev/null 2>&1; then

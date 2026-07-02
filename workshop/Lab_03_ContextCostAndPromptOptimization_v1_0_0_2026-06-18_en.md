@@ -2,8 +2,8 @@
 title: "Lab 03, Context Cost And Prompt Optimization"
 description: "Hands-on lab for using real context, cache, AIU, tool, and prompt signals to improve GitHub Copilot agent work."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "workshop", "context", "aiu", "prompt-engineering"]
 ---
@@ -13,6 +13,8 @@ tags: ["github-copilot", "workshop", "context", "aiu", "prompt-engineering"]
 # Lab 03, Context Cost And Prompt Optimization
 
 This lab uses real telemetry to improve prompt shape, context discipline, model routing, and tool behavior.
+
+Estimated duration: 40 minutes.
 
 ## Goals
 
@@ -131,7 +133,7 @@ The budget panel shows local AI Credits observed this cycle against the configur
 | Scope prompts tightly | Smaller prompts and fewer irrelevant files reduce input tokens and model work. |
 | Reuse warm context | Cache reuse reduces unnecessary processing compared with repeatedly sending cold context. |
 | Avoid retrying large prompts | Fix the root cause first, then retry with a smaller prompt to avoid repeating expensive token use. |
-| Monitor usage regularly | Check the mini app for local patterns and use GitHub billing exports, the usage dashboard, or the Copilot usage metrics API for official totals. |
+| Monitor usage regularly | Check the mini app for local patterns and use GitHub billing exports, the usage dashboard, or the GitHub Copilot usage metrics API for official totals. |
 
 Official AI Credits totals, model prices, and budget behavior are defined by GitHub and can change. Confirm current values in the GitHub Copilot billing documentation.
 
@@ -151,4 +153,4 @@ Official AI Credits totals, model prices, and budget behavior are defined by Git
 - [GitHub Copilot budget controls](https://docs.github.com/en/copilot/tutorials/budgets/getting-started-with-budget-controls)
 - [OpenTelemetry GenAI semantic conventions](https://github.com/open-telemetry/semantic-conventions-genai/tree/main/docs/gen-ai/)
 - [Developer Local Guide](../docs/FrontierCockpit_DeveloperLocalGuide_v1_0_0_2026-06-17_en.md)
-- [Lab 06, Frontier Developer Cockpit Mini App](Lab_06_FrontierDeveloperCockpitMiniApp_v1_0_0_2026-06-30_en.md)
+- [Lab 06, Frontier Cockpit Local Mini App](Lab_06_FrontierDeveloperCockpitMiniApp_v1_0_0_2026-06-30_en.md)

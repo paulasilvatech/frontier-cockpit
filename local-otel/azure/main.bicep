@@ -25,6 +25,12 @@ param collectorMinReplicas int = 1
 @description('Maximum replicas for the cloud Collector.')
 param collectorMaxReplicas int = 3
 
+@description('Cost center tag value for chargeback and showback.')
+param costCenter string = 'unassigned'
+
+@description('Data classification tag value for the sanitized telemetry.')
+param dataClassification string = 'internal'
+
 var suffix = '${workload}-${environmentName}-${regionAbbr}-${instance}'
 var resourceGroupName = 'rg-${suffix}'
 var tags = {
@@ -32,7 +38,9 @@ var tags = {
   environment: environmentName
   region: location
   owner: 'frontier-cockpit'
-  purpose: 'copilot-agent-observability-workshop'
+  purpose: 'copilot-agent-observability'
+  costCenter: costCenter
+  dataClassification: dataClassification
   managedBy: 'bicep'
 }
 

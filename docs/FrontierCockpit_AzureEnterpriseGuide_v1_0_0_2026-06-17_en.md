@@ -1,23 +1,24 @@
 ---
-title: "Frontier FinOps Cockpit Azure Enterprise Guide"
-description: "Implementation guide for Frontier FinOps Cockpit, the Azure enterprise experience for sanitized GitHub Copilot telemetry, daily workspace rollups, GitHub Enterprise signals, cost, governance, and leadership dashboards."
+title: "Frontier Cockpit Hybrid Azure Enterprise Guide"
+description: "Implementation guide for Frontier Cockpit Hybrid, the Azure enterprise experience for sanitized GitHub Copilot telemetry, daily workspace rollups, GitHub Enterprise signals, cost, governance, and leadership dashboards."
 author: "Frontier Cockpit Team"
-date: "2026-06-17"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "azure", "application-insights", "log-analytics", "managed-grafana", "opentelemetry"]
 ---
 
 <!-- markdownlint-disable MD025 -->
 
-# Frontier FinOps Cockpit Azure Enterprise Guide
+# Frontier Cockpit Hybrid Azure Enterprise Guide
 
-This guide explains how **Frontier FinOps Cockpit** is implemented, validated, and operated as the centralized Azure side of Frontier Cockpit.
+This guide explains how **Frontier Cockpit Hybrid** is implemented, validated, and operated as the centralized Azure side of Frontier Cockpit.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-17 | Frontier Cockpit Team | Initial Azure enterprise implementation guide. |
 
 ## Table of Contents
@@ -37,7 +38,7 @@ This guide explains how **Frontier FinOps Cockpit** is implemented, validated, a
 
 ## 1. Purpose
 
-Frontier FinOps Cockpit receives sanitized GitHub Copilot telemetry and daily rollups from developer machines. It provides central history, team and platform dashboards, cost and ROI views, governance views, Fleet Overview, and GitHub API enrichment.
+Frontier Cockpit Hybrid receives sanitized GitHub Copilot telemetry and daily rollups from developer machines. It provides central history, team and platform dashboards, cost and ROI views, governance views, Fleet Overview, and GitHub API enrichment.
 
 ## 2. Deployed Resources
 
@@ -88,8 +89,10 @@ The Azure Collector receives OTLP/HTTP over HTTPS with bearer token authenticati
 
 ### 4.1 Validate
 
+Run all commands in this guide from the root of the cloned repository.
+
 ```bash
-~/.copilot-otel/azure/validate.sh
+local-otel/azure/validate.sh
 ```
 
 For customer environments, override deployment parameters before validation:
@@ -100,22 +103,22 @@ export AZURE_WORKLOAD=agentobs
 export AZURE_ENVIRONMENT_NAME=dev
 export AZURE_REGION_ABBR=eus
 export AZURE_INSTANCE=001
-~/.copilot-otel/azure/validate.sh
+local-otel/azure/validate.sh
 ```
 
 ### 4.2 Deploy
 
 ```bash
 az account set --subscription "your-subscription-name"
-~/.copilot-otel/azure/deploy.sh
+local-otel/azure/deploy.sh
 ```
 
-`deploy.sh` preserves the dev defaults, but accepts the same `AZURE_LOCATION`, `AZURE_WORKLOAD`, `AZURE_ENVIRONMENT_NAME`, `AZURE_REGION_ABBR`, `AZURE_INSTANCE`, `AZURE_COLLECTOR_MIN_REPLICAS`, and `AZURE_COLLECTOR_MAX_REPLICAS` overrides. It writes those values plus the generated collector endpoint and token to `~/.copilot-otel/azure/.env`.
+`deploy.sh` preserves the dev defaults, but accepts the same `AZURE_LOCATION`, `AZURE_WORKLOAD`, `AZURE_ENVIRONMENT_NAME`, `AZURE_REGION_ABBR`, `AZURE_INSTANCE`, `AZURE_COLLECTOR_MIN_REPLICAS`, and `AZURE_COLLECTOR_MAX_REPLICAS` overrides. It writes those values plus the generated collector endpoint and token to `local-otel/azure/.env`.
 
 ### 4.3 Destroy
 
 ```bash
-~/.copilot-otel/azure/destroy.sh
+local-otel/azure/destroy.sh
 ```
 
 The destroy script deletes `rg-agentobs-dev-eus-001` and stops the Azure cost for this environment.
@@ -125,20 +128,20 @@ The destroy script deletes `rg-agentobs-dev-eus-001` and stops the Azure cost fo
 The local hybrid file is:
 
 ```text
-~/.copilot-otel/azure/.env
+local-otel/azure/.env
 ```
 
 It contains:
 
 ```text
-AZURE_OTLP_ENDPOINT=https://ca-otelcol-dev-eus-001.wonderfulpebble-a02374a7.eastus.azurecontainerapps.io
+AZURE_OTLP_ENDPOINT=https://ca-otelcol-dev-eus-001.<generated-suffix>.eastus.azurecontainerapps.io
 AZURE_OTLP_TOKEN=<redacted>
 ```
 
 Start hybrid forwarding:
 
 ```bash
-~/.copilot-otel/start-full-stack.sh --hybrid
+local-otel/start-full-stack.sh --hybrid
 ```
 
 ## 6. Customer Deployment Parameters
@@ -189,7 +192,7 @@ az grafana dashboard import \
   -g rg-agentobs-dev-eus-001 \
   -n amg-agentobs-dev-eus01 \
   --folder "GitHub Copilot" \
-  --definition ~/.copilot-otel/azure/agentobs-azure-grafana-dashboard.json \
+  --definition local-otel/azure/agentobs-azure-grafana-dashboard.json \
   --overwrite true
 ```
 
@@ -232,7 +235,7 @@ az monitor log-analytics query \
 Run the read-only Azure runtime gate after deployment or before a customer demo:
 
 ```bash
-~/.copilot-otel/azure/check-azure-runtime.sh
+local-otel/azure/check-azure-runtime.sh
 ```
 
 The script checks the resource group, Container App running state, Log Analytics workspace queries, and Azure Managed Grafana readability. It does not deploy, delete, or rotate secrets.
@@ -264,7 +267,7 @@ Local Aspire, Tempo, and Loki retain full fidelity for trusted debugging.
 Azure resources incur cost while deployed. Delete the resource group when the environment is not needed:
 
 ```bash
-~/.copilot-otel/azure/destroy.sh
+local-otel/azure/destroy.sh
 ```
 
 Do not rely on local telemetry for official billing reconciliation. Official cost and AI Credits require GitHub billing or usage exports.

@@ -1,9 +1,9 @@
 ---
 title: "Lab 05, GitHub Enterprise Signals"
-description: "Hands-on lab for GitHub Enterprise audit log streaming, organization Copilot policy status, and Copilot metrics availability."
+description: "Hands-on lab for GitHub Enterprise audit log streaming, organization GitHub Copilot policy status, and GitHub Copilot metrics availability."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github", "enterprise", "audit-log", "copilot", "workshop"]
 ---
@@ -12,14 +12,16 @@ tags: ["github", "enterprise", "audit-log", "copilot", "workshop"]
 
 # Lab 05, GitHub Enterprise Signals
 
-This lab adds GitHub Enterprise and organization API signals to the Control Tower.
+This lab adds GitHub Enterprise and organization API signals to Frontier Cockpit Hybrid.
+
+Estimated duration: 45 minutes (optional).
 
 ## Goals
 
 - Understand which GitHub Enterprise data is available.
 - Ingest enterprise audit log data.
-- Ingest organization Copilot billing/settings status.
-- Understand why Copilot Metrics API can return 404.
+- Ingest organization GitHub Copilot billing/settings status.
+- Understand why the GitHub Copilot Metrics API can return 404.
 - Validate audit log streaming to Azure Blob Storage.
 
 ## Step 1, Confirm GitHub CLI Scopes
@@ -50,9 +52,13 @@ gh auth refresh -h github.com \
 
 ## Step 2, Ingest Enterprise Audit Log
 
+Run from the cloned repository root:
+
 ```bash
-~/.copilot-otel/ingest-github-enterprise.sh
+local-otel/ingest-github-enterprise.sh
 ```
+
+On macOS you can optionally schedule this ingestion as a host-side agent with `local-otel/install-launchagents.sh`, which installs only optional agents for GitHub Enterprise ingestion, audit stream renewal, VS Code memory sampling, and workspace registration.
 
 Current enterprise:
 
@@ -66,10 +72,12 @@ Expected status:
 audit_log_status: available
 ```
 
-## Step 3, Ingest Organization Copilot Settings
+## Step 3, Ingest Organization GitHub Copilot Settings
+
+Run from the cloned repository root:
 
 ```bash
-~/.copilot-otel/ingest-github-orgs.sh
+local-otel/ingest-github-orgs.sh
 ```
 
 This collects:
@@ -111,19 +119,19 @@ gh api \
 Current expected stream:
 
 ```text
-stream_id: 7222
+stream_id: <your-stream-id>
 stream_type: Azure Blob Storage
 enabled: true
 container: github-audit-log
 ```
 
-## Step 6, Explain Copilot Metrics Availability
+## Step 6, Explain GitHub Copilot Metrics Availability
 
-The Copilot Metrics API can return 404 even when Copilot billing/settings are available. This is recorded as real availability status.
+The GitHub Copilot Metrics API can return 404 even when GitHub Copilot billing/settings are available. This is recorded as real availability status.
 
 Typical causes:
 
-- Copilot Metrics policy is not enabled.
+- The GitHub Copilot Metrics policy is not enabled.
 - The org does not have at least five active licensed users for the day.
 - Metrics are delayed or unavailable for the selected org.
 - The current plan or enterprise policy does not expose metrics through the API.
@@ -132,7 +140,7 @@ Do not create synthetic usage when metrics are unavailable.
 
 ## Completion Criteria
 
-- [ ] Participant can explain enterprise audit log vs Copilot metrics.
+- [ ] Participant can explain enterprise audit log vs GitHub Copilot metrics.
 - [ ] Participant can run enterprise ingestion.
 - [ ] Participant can run org ingestion.
 - [ ] Participant can open the GitHub API ingestion dashboard in Azure.

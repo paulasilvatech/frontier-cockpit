@@ -1,9 +1,9 @@
 ---
 title: "Frontier Cockpit Architecture Diagrams"
-description: "C4 and flow diagrams for Frontier Developer Cockpit, Frontier FinOps Cockpit, telemetry flow, and GitHub Enterprise ingestion."
+description: "C4 and flow diagrams for Frontier Cockpit Local, Frontier Cockpit Hybrid, telemetry flow, and GitHub Enterprise ingestion."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "architecture", "c4", "drawio", "azure", "opentelemetry"]
 ---
@@ -12,12 +12,13 @@ tags: ["github-copilot", "architecture", "c4", "drawio", "azure", "opentelemetry
 
 # Frontier Cockpit Architecture Diagrams
 
-This document indexes the editable and rendered architecture diagrams for the Frontier Developer Cockpit.
+This document indexes the editable and rendered architecture diagrams for Frontier Cockpit Local.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-18 | Frontier Cockpit Team | Initial architecture diagram set. |
 
 ## Table of Contents
@@ -41,7 +42,7 @@ The `.drawio` file contains five pages:
 
 | Page | Purpose |
 | --- | --- |
-| C4 Context | Executive context for Frontier Developer Cockpit and Frontier FinOps Cockpit |
+| C4 Context | Executive context for Frontier Cockpit Local and Frontier Cockpit Hybrid |
 | C4 Container | Local and Azure component map |
 | Azure Deployment | Azure resources and boundaries |
 | Telemetry Flow | Full-fidelity local path and sanitized Azure path |
@@ -51,7 +52,7 @@ The diagrams use draw.io Azure and GitHub stencil references where product icons
 
 ## 2. C4 Context
 
-This diagram shows the main actors, the Frontier Developer Cockpit, the Frontier FinOps Cockpit, and the GitHub Enterprise API/audit-log source.
+This diagram shows the main actors, Frontier Cockpit Local, Frontier Cockpit Hybrid, and the GitHub Enterprise API/audit-log source.
 
 ![C4 context diagram](../diagrams/FrontierCockpit_c4-context_v1_0_0_2026-06-18.svg)
 
@@ -75,7 +76,7 @@ This diagram shows how local telemetry remains full fidelity while Azure receive
 
 ## 6. GitHub Enterprise Flow
 
-This diagram shows how GitHub Enterprise audit log APIs, audit log streaming, organization policy checks, and Copilot metrics availability flow into Azure.
+This diagram shows how GitHub Enterprise audit log APIs, audit log streaming, organization policy checks, and GitHub Copilot metrics availability flow into Azure.
 
 ![GitHub Enterprise flow diagram](../diagrams/FrontierCockpit_github-enterprise-flow_v1_0_0_2026-06-18.svg)
 

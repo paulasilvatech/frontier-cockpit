@@ -1,16 +1,16 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
-# One-command local workshop setup for Frontier Developer Cockpit.
+# One-command local workshop setup for Frontier Cockpit Local.
 # Run from the participant Git repository. This is local-only and never enables
 # Azure forwarding or hybrid mode.
 
 script_dir="${0:A:h}"
-export PATH="/Applications/Docker.app/Contents/Resources/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export PATH="/Applications/Docker.app/Contents/Resources/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 print_step() { print "\n==> $1"; }
 
-print "Frontier Developer Cockpit workshop setup"
+print "Frontier Cockpit Local workshop setup"
 print "local_only=true"
 print "azure_forwarding=disabled"
 print ""
@@ -55,7 +55,7 @@ export FRONTIER_PARTICIPANT_EMAIL="${FRONTIER_PARTICIPANT_EMAIL:-$(git config us
 export FRONTIER_PARTICIPANT_ROLE="${FRONTIER_PARTICIPANT_ROLE:-Developer}"
 export FRONTIER_PARTICIPANT_TEAM="${FRONTIER_PARTICIPANT_TEAM:-}"
 export FRONTIER_CUSTOMER_NAME="${FRONTIER_CUSTOMER_NAME:-}"
-export FRONTIER_DASHBOARD_TITLE="${FRONTIER_DASHBOARD_TITLE:-Frontier Developer Cockpit}"
+export FRONTIER_DASHBOARD_TITLE="${FRONTIER_DASHBOARD_TITLE:-Frontier Cockpit Local}"
 
 # These exported variables are inherited by start-full-stack.sh and docker
 # compose, which substitutes them into the frontier-dashboard-api service.

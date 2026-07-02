@@ -26,7 +26,7 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
-# The standalone Aspire container (start-aspire-dashboard.sh) publishes host ports 4317/4318.
+# A leftover standalone Aspire container from older setups can publish host ports 4317/4318.
 # In full-stack mode the OTel Collector owns those ports, so stop the standalone one first.
 if docker ps --format '{{.Names}}' | grep -qx 'aspire-dashboard'; then
   standalone_owns_otlp="$(docker port aspire-dashboard 18890/tcp 2>/dev/null || true)"
@@ -45,6 +45,16 @@ if [[ ! -f "$aspire_key_file" ]]; then
 import secrets
 print(f"ASPIRE_DASHBOARD_API_KEY={secrets.token_urlsafe(32)}")
 PY
+fi
+
+grafana_admin_file="$stack_dir/grafana-admin.env"
+if [[ ! -f "$grafana_admin_file" ]]; then
+  umask 077
+  python3 - <<'PY' > "$grafana_admin_file"
+import secrets
+print(f"GF_SECURITY_ADMIN_PASSWORD={secrets.token_urlsafe(24)}")
+PY
+  print "Created Grafana admin credentials (user admin, password in $grafana_admin_file)."
 fi
 
 set -a
@@ -74,7 +84,7 @@ print ""
 print "Endpoints:"
 print "  OTLP ingest (Collector):  http://localhost:4318  (HTTP)   http://localhost:4317  (gRPC)"
 print "  Aspire Dashboard (live):  http://localhost:18888"
-print "  Grafana (history):        http://localhost:3000  (anonymous viewer; admin/admin to edit)"
+print "  Grafana (history):        http://localhost:3000  (user admin, password in stack/grafana-admin.env)"
 print "  Prometheus:               http://localhost:9090"
 print "  Tempo:                    http://localhost:3200"
 print "  Loki:                     http://localhost:3100"

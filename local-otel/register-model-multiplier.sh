@@ -5,7 +5,7 @@ set -euo pipefail
 # Source the value from the official GitHub Copilot pricing docs, do not invent it:
 #   https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/model-multipliers-for-annual-plans
 #
-# This is a LOCAL planning aid for the Frontier Developer Cockpit. It does not
+# This is a LOCAL planning aid for the Frontier Cockpit Local. It does not
 # replace GitHub billing. The official premium-request count and invoice still
 # come from GitHub billing exports or the Copilot usage metrics API.
 #
@@ -23,7 +23,7 @@ if [[ "$#" -lt 2 || "$#" -gt 4 ]]; then
 fi
 
 if [[ "${FRONTIER_SKIP_ENV_ZSH:-false}" != "true" ]]; then
-  env_file="${FRONTIER_ENV_ZSH:-$HOME/frontier-cockpit/local-otel/env.zsh}"
+  env_file="${FRONTIER_ENV_ZSH:-${0:A:h}/env.zsh}"
   if [[ ! -f "$env_file" ]]; then
     print -u2 "Environment file not found: $env_file"
     print -u2 "Set FRONTIER_SKIP_ENV_ZSH=true when running in a container with explicit OTLP endpoint variables."

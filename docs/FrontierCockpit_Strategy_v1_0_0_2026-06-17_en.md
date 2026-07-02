@@ -2,8 +2,8 @@
 title: "Frontier Cockpit Strategy"
 description: "Offer, architecture, operating model, and documentation strategy for Frontier Cockpit."
 author: "Frontier Cockpit Team"
-date: "2026-06-17"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "opentelemetry", "aspire", "grafana", "azure-monitor", "developer-productivity"]
 ---
@@ -18,6 +18,7 @@ This document defines the offer, architecture, documentation model, and operatin
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-17 | Frontier Cockpit Team | Initial approved strategy based on the implemented local and Azure hybrid stack. |
 
 ## Table of Contents
@@ -26,7 +27,7 @@ This document defines the offer, architecture, documentation model, and operatin
 - [2. Offer Definition](#2-offer-definition)
 - [3. Implemented Architecture](#3-implemented-architecture)
 - [4. Developer Local Cockpit](#4-developer-local-cockpit)
-- [5. Frontier FinOps Cockpit](#5-frontier-finops-cockpit)
+- [5. Frontier Cockpit Hybrid](#5-frontier-cockpit-hybrid)
 - [6. Data Classification](#6-data-classification)
 - [7. Daily Sync And Enterprise History](#7-daily-sync-and-enterprise-history)
 - [8. GitHub API Integration Strategy](#8-github-api-integration-strategy)
@@ -40,9 +41,9 @@ This document defines the offer, architecture, documentation model, and operatin
 
 ## 1. Executive Summary
 
-Frontier Cockpit combines **Frontier Developer Cockpit**, a local and private developer experience, with **Frontier FinOps Cockpit**, a centralized Azure experience for cost, ROI, governance, adoption, and executive insight. The platform is focused on GitHub Copilot and agentic development.
+Frontier Cockpit combines **Frontier Cockpit Local**, a local and private developer experience, with **Frontier Cockpit Hybrid**, a centralized Azure experience for cost, ROI, governance, adoption, and executive insight. The platform is focused on GitHub Copilot and agentic development.
 
-Frontier Developer Cockpit gives developers a local, private, high-fidelity observability cockpit for GitHub Copilot Chat, agent mode, tool calls, context use, token behavior, AIU signals, content capture, and VS Code process memory. Frontier FinOps Cockpit receives sanitized traces, metrics, daily rollups, GitHub Enterprise audit signals, and organization policy data in Azure for enterprise history, governance, executive dashboards, and cross-workspace analysis.
+Frontier Cockpit Local gives developers a local, private, high-fidelity observability cockpit for GitHub Copilot Chat, agent mode, tool calls, context use, token behavior, AIU signals, opt-in content capture, and VS Code process memory. Frontier Cockpit Hybrid receives sanitized traces, metrics, daily rollups, GitHub Enterprise audit signals, and organization policy data in Azure for enterprise history, governance, executive dashboards, and cross-workspace analysis.
 
 The local layer is intentionally richer than the cloud layer. Local views can include full content capture for trusted debugging. Azure receives governed telemetry, rollups, and sanitized attributes to avoid leaking prompts, source code, tool results, or oversized payloads into enterprise stores.
 
@@ -59,8 +60,8 @@ The OpenTelemetry GenAI ecosystem is evolving through vendor-agnostic semantic c
 | Product | Role |
 | --- | --- |
 | **Frontier Cockpit** | Umbrella platform. |
-| **Frontier Developer Cockpit** | Local developer cockpit, private and non-punitive. |
-| **Frontier FinOps Cockpit** | Centralized Azure cockpit for leadership, cost, ROI, governance, and Fleet Overview. |
+| **Frontier Cockpit Local** | Local developer cockpit, private and non-punitive. |
+| **Frontier Cockpit Hybrid** | Centralized Azure cockpit for leadership, cost, ROI, governance, and Fleet Overview. |
 | **L1-L6 Frontier Platform Layers** | Shared technical and operating layers feeding both cockpits. |
 | **Fleet Overview** | Aggregated view across developers, repositories, cost centers, organizations, and enterprise scopes. |
 
@@ -111,9 +112,9 @@ Local OpenTelemetry Collector, localhost:4318 HTTP and 4317 gRPC
 
 ### 3.2 Local Stack
 
-The local stack lives under `~/.copilot-otel` and runs with Docker Desktop.
+The local stack lives under the repository `local-otel/` directory and runs with Docker Desktop. All commands run from the root of the cloned repository.
 
-Prometheus and Grafana are required for the complete Frontier Developer Cockpit local experience. Aspire remains the live GenAI trace and resource viewer. DuckDB or SQLite can be added for Python-first local insight storage, but they do not replace Prometheus or Grafana.
+Prometheus and Grafana are required for the complete Frontier Cockpit Local local experience. Aspire remains the live GenAI trace and resource viewer. DuckDB or SQLite can be added for Python-first local insight storage, but they do not replace Prometheus or Grafana.
 
 | Component | Purpose | Local endpoint |
 | --- | --- | --- |
@@ -123,8 +124,10 @@ Prometheus and Grafana are required for the complete Frontier Developer Cockpit 
 | Prometheus | Local metrics history | `http://localhost:9090` |
 | Loki | Local logs and content-capture records | `http://localhost:3100` |
 | Grafana OSS | Local dashboards | `http://localhost:3000` |
-| PostgreSQL | Grafana local metadata | Docker volume |
+| Grafana embedded SQLite | Grafana local metadata | Docker volume |
 | DuckDB or SQLite | Python-first local insight storage, optional implementation detail | Local file |
+
+All local stack ports bind to `127.0.0.1` only. Grafana login is user `admin` with a generated password stored in `local-otel/stack/grafana-admin.env`; there is no anonymous access.
 
 ### 3.3 Azure Stack
 
@@ -143,7 +146,7 @@ The Azure deployment is in subscription `your-subscription-name`, resource group
 
 ## 4. Developer Local Cockpit
 
-The Frontier Developer Cockpit is valid for developers who want to improve usability, prompt discipline, model selection behavior, and cost awareness.
+The Frontier Cockpit Local is valid for developers who want to improve usability, prompt discipline, model selection behavior, and cost awareness.
 
 ### 4.1 Local Dashboards
 
@@ -191,7 +194,7 @@ Stop if you need to read more than five files or repeat the same tool twice, the
 After completion, tell me whether token use, tool calls, or context utilization looked high.
 ```
 
-## 5. Frontier FinOps Cockpit
+## 5. Frontier Cockpit Hybrid
 
 The Azure layer consolidates daily and continuous telemetry for history, governance, and enterprise insight. It is not intended to store raw prompts or full tool outputs by default.
 
@@ -236,11 +239,7 @@ A separate `AppGenAIContent` table was checked and was not available in this env
 
 ## 7. Daily Sync And Enterprise History
 
-The daily rollup is implemented by `~/.copilot-otel/daily-rollup.sh` and scheduled with this user LaunchAgent:
-
-```text
-~/Library/LaunchAgents/com.frontier.copilot-otel-daily-rollup.plist
-```
+The daily rollup is implemented by `local-otel/daily-rollup.sh` and runs automatically inside the Docker `copilot-otel-jobs` container on every platform (macOS, Linux, Windows).
 
 The rollup summarizes real workspace-attributed telemetry for the last 24 hours and emits it back through OTLP. When the hybrid stack is active, the Collector forwards those rollups to Azure.
 
@@ -262,7 +261,7 @@ The rollup summarizes real workspace-attributed telemetry for the last 24 hours 
 
 ## 8. GitHub API Integration Strategy
 
-Frontier FinOps Cockpit should also ingest GitHub APIs and exports. This complements local OTel rather than replacing it.
+Frontier Cockpit Hybrid should also ingest GitHub APIs and exports. This complements local OTel rather than replacing it.
 
 ### 8.1 Data Sources
 
@@ -358,7 +357,7 @@ Azure dashboards should:
 
 ### 10.2 Documentation Placement
 
-Repository strategy, guide, runbook, and architecture index documents live under `docs/`. Hands-on lab material lives under `workshop/`, editable diagrams and SVG exports live under `diagrams/`, and the local runtime source lives under `local-otel/`. The user-level compatibility path remains `~/.copilot-otel/` because it configures the local machine and can be reused across workspaces.
+Repository strategy, guide, runbook, and architecture index documents live under `docs/`. Hands-on lab material lives under `workshop/`, editable diagrams and SVG exports live under `diagrams/`, and the local runtime source lives under `local-otel/`. The product runs directly from the cloned repository; no user-level global install path is used.
 
 ### 10.3 Documentation Standards
 
@@ -381,7 +380,7 @@ Repository strategy, guide, runbook, and architecture index documents live under
 
 ### 11.2 Platform Flow
 
-1. Maintain the user-level kit and dashboard templates.
+1. Maintain the repository `local-otel/` kit and dashboard templates.
 2. Maintain the Azure Bicep deployment.
 3. Monitor Log Analytics ingestion.
 4. Add GitHub API ingestion jobs.
@@ -392,7 +391,7 @@ Repository strategy, guide, runbook, and architecture index documents live under
 
 ### 12.1 Local Privacy
 
-Local content capture is enabled for trusted development and workshop validation. It can include prompts, code snippets, tool schemas, tool arguments, and tool results.
+Local content capture is disabled by default (`FRONTIER_ENABLE_CONTENT_CAPTURE=false`) so the setup is privacy first. When a developer opts in for trusted development and workshop validation, it can include prompts, code snippets, tool schemas, tool arguments, and tool results.
 
 ### 12.2 Azure Privacy
 
@@ -408,9 +407,9 @@ Azure Monitor and Application Insights can reject or truncate attributes that ex
 
 - Local OTel Collector.
 - Aspire Dashboard with GenAI visualization support.
-- Tempo, Prometheus, Loki, Grafana, and PostgreSQL local stack.
+- Tempo, Prometheus, Loki, and Grafana local stack, with Grafana on its embedded SQLite database.
 - User-level VS Code Insiders OTel settings.
-- Content capture enabled locally.
+- Opt-in content capture available locally, disabled by default.
 - Workspace registry.
 - Session materialization.
 - Context and AIU dashboards.
@@ -426,7 +425,7 @@ Azure Monitor and Application Insights can reject or truncate attributes that ex
 - GitHub billing and AI Credits export ingestion from official sources.
 - GitHub organization, repository, team, and branch reference tables.
 - Azure Managed Grafana enterprise dashboard suite.
-- Frontier Developer Cockpit Home dashboard with card-based UX.
+- Frontier Cockpit Local Home dashboard with card-based UX.
 - Python materializer using DuckDB for local analytical state.
 - Data retention and cost policy.
 - Role-based views for developer, team lead, platform, and FinOps.
@@ -445,7 +444,7 @@ Azure Monitor and Application Insights can reject or truncate attributes that ex
 | --- | --- |
 | Local OTel stack is ready | Implemented |
 | Aspire Dashboard uses latest image | Implemented |
-| GenAI content capture is enabled locally | Implemented |
+| GenAI content capture is available locally as an opt-in, disabled by default | Implemented |
 | Local dashboards are provisioned | Implemented |
 | Workspace-attributed sessions are materialized | Implemented |
 | Hot/warm/cold context is calculated from real cache attributes | Implemented |

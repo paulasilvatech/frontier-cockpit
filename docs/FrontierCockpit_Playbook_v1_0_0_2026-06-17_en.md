@@ -1,9 +1,9 @@
 ---
 title: "Frontier Cockpit Playbook"
-description: "Implementation playbook for Frontier Cockpit, including Frontier Developer Cockpit, Frontier FinOps Cockpit, GitHub API ingestion, governance, and workshop rollout."
+description: "Implementation playbook for Frontier Cockpit, including Frontier Cockpit Local, Frontier Cockpit Hybrid, GitHub API ingestion, governance, and workshop rollout."
 author: "Frontier Cockpit Team"
-date: "2026-06-17"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "opentelemetry", "aspire", "grafana", "azure", "playbook"]
 ---
@@ -12,12 +12,13 @@ tags: ["github-copilot", "opentelemetry", "aspire", "grafana", "azure", "playboo
 
 # Frontier Cockpit Playbook
 
-This playbook explains how to implement and operate **Frontier Cockpit**, the umbrella platform for GitHub Copilot and agentic development observability. It covers **Frontier Developer Cockpit** for the local developer experience, **Frontier FinOps Cockpit** for centralized Azure leadership and cost views, daily synchronization, GitHub API enrichment, governance, dashboards, operations, and workshop delivery.
+This playbook explains how to implement and operate **Frontier Cockpit**, the umbrella platform for GitHub Copilot and agentic development observability. It covers **Frontier Cockpit Local** for the local developer experience, **Frontier Cockpit Hybrid** for centralized Azure leadership and cost views, daily synchronization, GitHub API enrichment, governance, dashboards, operations, and workshop delivery.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-17 | Frontier Cockpit Team | Initial implementation playbook for local and Azure observability. |
 
 ## Table of Contents
@@ -37,14 +38,14 @@ This playbook explains how to implement and operate **Frontier Cockpit**, the um
 
 ## 1. Purpose
 
-The purpose of this playbook is to help teams deploy **Frontier Cockpit**, a complete observability model for GitHub Copilot Chat and agent work. The model gives developers a private Frontier Developer Cockpit for learning and optimization, while Azure receives sanitized and aggregated telemetry for enterprise history, FinOps, governance, and leadership insights.
+The purpose of this playbook is to help teams deploy **Frontier Cockpit**, a complete observability model for GitHub Copilot Chat and agent work. The model gives developers a private Frontier Cockpit Local for learning and optimization, while Azure receives sanitized and aggregated telemetry for enterprise history, FinOps, governance, and leadership insights.
 
 The product architecture is intentionally split into two cockpit experiences on top of one platform:
 
 | Cockpit | Purpose | Data Detail |
 | --- | --- | --- |
-| **Frontier Developer Cockpit** | Help developers understand and improve their own GitHub Copilot usage | Full fidelity, including content capture in trusted local environments |
-| **Frontier FinOps Cockpit** | Provide central cost, ROI, governance, executive rollups, cost-center allocation, and adoption analytics | Sanitized traces, metrics, rollups, and GitHub API data |
+| **Frontier Cockpit Local** | Help developers understand and improve their own GitHub Copilot usage | Full fidelity, including opt-in content capture in trusted local environments |
+| **Frontier Cockpit Hybrid** | Provide central cost, ROI, governance, executive rollups, cost-center allocation, and adoption analytics | Sanitized traces, metrics, rollups, and GitHub API data |
 
 The shared platform layers are L1 to L6, and **Fleet Overview** is the aggregate operating view that feeds leadership, FinOps, and governance workflows.
 
@@ -57,10 +58,9 @@ The shared platform layers are L1 to L6, and **Fleet Overview** is the aggregate
 | [End-to-End Implementation Manual](FrontierCockpit_EndToEndImplementationManual_v1_0_0_2026-06-18_en.md) | Step-by-step implementation record for everything built so far. |
 | [Python And Aspire Local Architecture](FrontierCockpit_PythonAspireLocalArchitecture_v1_0_0_2026-06-18_en.md) | Python-first local runtime guidance with Aspire, DuckDB or SQLite, Prometheus, and Grafana. |
 | [Local Links Guide](FrontierCockpit_LocalLinksGuide_v1_0_0_2026-06-19_en.md) | Localhost links and explanations for Aspire, Grafana dashboards, Prometheus, Tempo, and Loki. |
-| [Developer Local Guide](FrontierCockpit_DeveloperLocalGuide_v1_0_0_2026-06-17_en.md) | Install, run, and use the Frontier Developer Cockpit. |
-| [Azure Enterprise Guide](FrontierCockpit_AzureEnterpriseGuide_v1_0_0_2026-06-17_en.md) | Deploy and validate Frontier FinOps Cockpit in Azure. |
+| [Developer Local Guide](FrontierCockpit_DeveloperLocalGuide_v1_0_0_2026-06-17_en.md) | Install, run, and use the Frontier Cockpit Local. |
+| [Azure Enterprise Guide](FrontierCockpit_AzureEnterpriseGuide_v1_0_0_2026-06-17_en.md) | Deploy and validate Frontier Cockpit Hybrid in Azure. |
 | [Data Consolidation Guide](FrontierCockpit_DataConsolidationGuide_v1_0_0_2026-06-17_en.md) | Combine OTel data with GitHub APIs, usage metrics, and billing exports. |
-| [Firecrawl MCP Guide](FrontierCockpit_FirecrawlMCPGuide_v1_0_0_2026-06-18_en.md) | Use Firecrawl MCP for official documentation research and validation. |
 | [Operations Runbook](FrontierCockpit_OperationsRunbook_v1_0_0_2026-06-17_en.md) | Operate, validate, troubleshoot, and tear down the stack. |
 | [Workshop Guide](FrontierCockpit_WorkshopGuide_v1_0_0_2026-06-17_en.md) | Run a customer or internal developer workshop. |
 | [Strategy](FrontierCockpit_Strategy_v1_0_0_2026-06-17_en.md) | Explain offer, architecture, value proposition, and roadmap. |
@@ -71,14 +71,14 @@ Frontier Cockpit uses six platform layers that feed both cockpit experiences.
 
 | Layer | Name | Feeds |
 | --- | --- | --- |
-| L1 | Developer Signal Capture | Frontier Developer Cockpit |
-| L2 | Local Observability Runtime | Frontier Developer Cockpit |
+| L1 | Developer Signal Capture | Frontier Cockpit Local |
+| L2 | Local Observability Runtime | Frontier Cockpit Local |
 | L3 | Session Intelligence | Both cockpits |
-| L4 | Secure Forwarding And Redaction | Frontier FinOps Cockpit |
-| L5 | Azure Consolidation | Frontier FinOps Cockpit |
-| L6 | GitHub Intelligence Layer | Frontier FinOps Cockpit |
+| L4 | Secure Forwarding And Redaction | Frontier Cockpit Hybrid |
+| L5 | Azure Consolidation | Frontier Cockpit Hybrid |
+| L6 | GitHub Intelligence Layer | Frontier Cockpit Hybrid |
 
-**Fleet Overview** is the aggregate operating view across developers, repositories, organizations, cost centers, and enterprise scopes. It is part of Frontier FinOps Cockpit and is fed by all six platform layers.
+**Fleet Overview** is the aggregate operating view across developers, repositories, organizations, cost centers, and enterprise scopes. It is part of Frontier Cockpit Hybrid and is fed by all six platform layers.
 
 For the locked taxonomy, see [FrontierCockpit_TaxonomyAndPlatformLayers_v1_0_0_2026-06-18_en.md](FrontierCockpit_TaxonomyAndPlatformLayers_v1_0_0_2026-06-18_en.md).
 
@@ -108,17 +108,17 @@ The local Collector is the stable local contract. Development tools send OTLP to
 
 ## 5. Implementation Phases
 
-### 5.1 Phase 1, Frontier Developer Cockpit
+### 5.1 Phase 1, Frontier Cockpit Local
 
 1. Configure user-level VS Code Insiders OTel settings.
-2. Configure user-level shell and macOS LaunchAgents.
-3. Run the full local stack in Docker Desktop.
+2. Configure the user-level shell environment. Optional macOS LaunchAgents cover host-side automation only.
+3. Run the full local stack in Docker Desktop with `local-otel/client-bootstrap.sh` or `local-otel/start-full-stack.sh` from the repository root.
 4. Validate Aspire live GenAI traces.
 5. Validate Prometheus and local Grafana dashboards.
 6. Validate workspace attribution and data quality.
-7. Enable daily local materialization and rollups.
+7. Confirm materialization and rollups run in the Docker `copilot-otel-jobs` container.
 
-### 5.2 Phase 2, Frontier FinOps Cockpit
+### 5.2 Phase 2, Frontier Cockpit Hybrid
 
 1. Deploy Azure resources with Bicep.
 2. Configure local hybrid forwarding with bearer token authentication.
@@ -146,7 +146,7 @@ The local Collector is the stable local contract. Development tools send OTLP to
 
 | Role | Responsibilities |
 | --- | --- |
-| Developer | Use Frontier Developer Cockpit, improve prompts, inspect sessions, validate changes. |
+| Developer | Use Frontier Cockpit Local, improve prompts, inspect sessions, validate changes. |
 | Team lead | Coach developers, review usage patterns, identify enablement opportunities. |
 | Platform engineer | Maintain local kit, Collector config, Azure deployment, dashboards, and automation. |
 | Security or compliance | Review content capture, redaction, retention, and access policies. |
@@ -157,7 +157,7 @@ The local Collector is the stable local contract. Development tools send OTLP to
 
 | Area | Success Criteria |
 | --- | --- |
-| Local setup | `~/.copilot-otel/check-otel-local.sh` reports ready. |
+| Local setup | `local-otel/check-workshop-local.sh` reports ready. |
 | Aspire | `copilot-chat` traces appear and GenAI visualizer can inspect content capture. |
 | Prometheus and Grafana local | Required local metrics and dashboard layer showing real workspace usage, context, AIU, and data quality. |
 | Daily rollup | `copilot_daily_workspace_*` metrics exist in Prometheus and arrive in Azure. |
@@ -180,10 +180,10 @@ The local Collector is the stable local contract. Development tools send OTLP to
 ## 9. Daily Operating Rhythm
 
 1. Developer works normally in VS Code Insiders.
-2. Local OTel stack starts automatically through user LaunchAgents.
-3. Real GitHub Copilot sessions are materialized every five minutes.
-4. VS Code process memory is sampled every minute.
-5. Daily rollup runs at 18:00 local time.
+2. The local OTel stack restarts automatically through the Docker Compose `restart: unless-stopped` policy.
+3. Real GitHub Copilot sessions are materialized every five minutes by the Docker `copilot-otel-jobs` container.
+4. VS Code process memory is sampled every minute when the optional macOS LaunchAgent is installed.
+5. The rolling 24-hour rollup refreshes hourly inside the Docker `copilot-otel-jobs` container.
 6. When hybrid mode is enabled, daily rollups and sanitized telemetry are forwarded to Azure.
 7. Platform team reviews Azure dashboards for trends and anomalies.
 
@@ -205,10 +205,10 @@ The local Collector is the stable local contract. Development tools send OTLP to
 ### 11.1 Local Validation
 
 ```bash
-~/.copilot-otel/check-otel-local.sh
-~/.copilot-otel/audit-coverage.sh
-~/.copilot-otel/materialize-copilot-sessions.sh
-~/.copilot-otel/daily-rollup.sh
+local-otel/check-workshop-local.sh
+local-otel/audit-coverage.sh
+local-otel/materialize-copilot-sessions.sh
+local-otel/daily-rollup.sh
 ```
 
 ### 11.2 Azure Validation

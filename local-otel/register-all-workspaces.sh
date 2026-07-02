@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 # register-all-workspaces.sh
 #
-# Register every local Git repository in the Frontier Developer Cockpit workspace
+# Register every local Git repository in the Frontier Cockpit Local workspace
 # registry so the materializer can attribute GitHub Copilot sessions to the correct
 # workspace for ALL workspaces at once.
 #
@@ -21,7 +21,7 @@
 #   it: a run updates the repositories it can see and preserves the rest. The publish
 #   phase only reads that cache (never the repositories), so the LaunchAgent can keep
 #   every workspace registered even when it cannot reach the repositories directly.
-#   Populate the full cache once from an interactive shell or demo-ready.sh (which have
+#   Populate the full cache once from an interactive shell (which has
 #   Full Disk Access): ./register-all-workspaces.sh --rescan
 #
 # Configuration (environment variables):

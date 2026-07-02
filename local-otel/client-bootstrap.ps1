@@ -60,13 +60,13 @@ function Set-OtelEnv {
     Default-Env "FRONTIER_PARTICIPANT_EMAIL" ""
     Default-Env "FRONTIER_PARTICIPANT_TEAM" ""
     Default-Env "FRONTIER_CUSTOMER_NAME" "Client Organization"
-    Default-Env "FRONTIER_DASHBOARD_TITLE" "Frontier Developer Cockpit"
+    Default-Env "FRONTIER_DASHBOARD_TITLE" "Frontier Cockpit Local"
     Default-Env "FRONTIER_COPILOT_PLAN" "business"
     Default-Env "FRONTIER_COPILOT_SEATS" "1"
     Default-Env "FRONTIER_AI_CREDITS_USE_PROMO" "false"
     Default-Env "FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE" ""
     Default-Env "FRONTIER_VSCODE_CHANNELS" "stable,insiders"
-    Default-Env "FRONTIER_ENABLE_CONTENT_CAPTURE" "true"
+    Default-Env "FRONTIER_ENABLE_CONTENT_CAPTURE" "false"
 
     $capture = $env:FRONTIER_ENABLE_CONTENT_CAPTURE
     $customer = ($env:FRONTIER_CUSTOMER_NAME -replace ',', ' ')
@@ -161,6 +161,15 @@ function Ensure-AspireKey {
     $token = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
     Set-Content -Encoding ASCII -Path $keyFile -Value "ASPIRE_DASHBOARD_API_KEY=$token"
     Write-Pass "Created local Aspire API key file."
+}
+
+function Ensure-GrafanaAdmin {
+    $adminFile = Join-Path $StackDir "grafana-admin.env"
+    if (Test-Path $adminFile) { return }
+    $bytes = [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(24)
+    $token = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+    Set-Content -Encoding ASCII -Path $adminFile -Value "GF_SECURITY_ADMIN_PASSWORD=$token"
+    Write-Pass "Created local Grafana admin credentials. Username admin, password stored in $adminFile."
 }
 
 function Ensure-Docker {
@@ -306,7 +315,7 @@ function Validate-Endpoints {
     Wait-Url "http://localhost:9090/-/ready" "Prometheus"
     Wait-Url "http://localhost:3200/ready" "Tempo"
     Wait-Url "http://localhost:3100/ready" "Loki"
-    Wait-Url "http://localhost:3300" "Frontier Developer Cockpit mini app"
+    Wait-Url "http://localhost:3300" "Frontier Cockpit Local mini app"
 }
 
 Write-Step "Resolve client configuration"
@@ -322,6 +331,7 @@ Apply-VSCodeSettings
 Write-Step "Start Docker Compose stack"
 Ensure-Docker
 Ensure-AspireKey
+Ensure-GrafanaAdmin
 Start-Stack
 
 Write-Step "Emit local validation telemetry"
@@ -332,7 +342,7 @@ Write-Step "Validate local endpoints"
 Validate-Endpoints
 
 Write-Host ""
-Write-Host "Frontier Developer Cockpit is configured."
+Write-Host "Frontier Cockpit Local is configured."
 Write-Host ""
 Write-Host "Open:"
 Write-Host "  Mini app:    http://localhost:3300"

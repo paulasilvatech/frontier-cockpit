@@ -12,7 +12,7 @@
 
   <!-- TITLE BLOCK -->
   <text x="60" y="36" font-size="22" font-weight="700" fill="#2C2C2A">Telemetry Flow</text>
-  <text x="60" y="57" font-size="13" fill="#888780">Full local fidelity · sanitized Azure forwarding · daily rollups · Frontier Developer Cockpit</text>
+  <text x="60" y="57" font-size="13" fill="#888780">Full local fidelity · sanitized Azure forwarding · daily rollups · Frontier Cockpit Local</text>
   <rect x="60"  y="66" width="55" height="3" rx="1.5" fill="#0078D4"/>
   <rect x="119" y="66" width="55" height="3" rx="1.5" fill="#7FBA00"/>
   <rect x="178" y="66" width="55" height="3" rx="1.5" fill="#FFB900"/>
@@ -49,7 +49,7 @@
   <text x="667" y="173" text-anchor="middle" font-size="10" fill="#888780">Tempo  (traces 30d)</text>
   <text x="667" y="189" text-anchor="middle" font-size="10" fill="#888780">Prometheus  (metrics 30d)</text>
   <text x="667" y="205" text-anchor="middle" font-size="10" fill="#888780">Loki  (logs 30d)</text>
-  <text x="667" y="221" text-anchor="middle" font-size="10" fill="#888780">Grafana · PostgreSQL</text>
+  <text x="667" y="221" text-anchor="middle" font-size="10" fill="#888780">Grafana · SQLite</text>
   <text x="667" y="238" text-anchor="middle" font-size="10" fill="#5F5E5A">DuckDB insights</text>
 
   <!-- NODE 4: Materializers -->

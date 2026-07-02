@@ -1,9 +1,9 @@
 ---
 title: "Lab 00, Facilitator Setup"
-description: "Preparation checklist for running the Frontier Developer Cockpit hands-on workshop."
+description: "Preparation checklist for running the Frontier Cockpit Local hands-on workshop."
 author: "Frontier Cockpit Team"
-date: "2026-06-18"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "workshop", "setup", "facilitator"]
 ---
@@ -13,6 +13,8 @@ tags: ["github-copilot", "workshop", "setup", "facilitator"]
 # Lab 00, Facilitator Setup
 
 This lab prepares the facilitator environment and defines safety boundaries for the hands-on workshop.
+
+Estimated duration: 45 minutes.
 
 ## Goals
 
@@ -33,16 +35,14 @@ This lab prepares the facilitator environment and defines safety boundaries for 
 | GitHub CLI | `gh auth status -h github.com` |
 | Node.js and npm | `node --version && npm --version` |
 | Python 3 | `python3 --version` |
-| Prometheus and Grafana | Required for complete local dashboard experience |
-| DuckDB or SQLite | Optional for Python-first local insight storage |
-| Draw.io CLI, optional | `drawio --version` |
+| Prometheus and Grafana | Provided by the Docker stack, required for the complete local dashboard experience |
 
 ## Setup Validation
 
-Run:
+Run from the cloned repository root:
 
 ```bash
-~/.copilot-otel/check-otel-local.sh
+local-otel/check-workshop-local.sh
 ```
 
 Expected result:
@@ -54,14 +54,16 @@ Local OTel setup is ready.
 If not ready, start the local stack:
 
 ```bash
-~/.copilot-otel/start-full-stack.sh
+local-otel/start-full-stack.sh
 ```
 
 For Azure demos, start hybrid mode:
 
 ```bash
-~/.copilot-otel/start-full-stack.sh --hybrid
+local-otel/start-full-stack.sh --hybrid
 ```
+
+The session materializer and daily rollup run automatically in the Docker `copilot-otel-jobs` container on macOS, Linux, and Windows, so no scheduler setup is required on any platform. On macOS, `local-otel/install-launchagents.sh` installs only optional host-side agents for GitHub Enterprise ingestion, audit stream renewal, VS Code memory sampling, and workspace registration.
 
 ## Accounts
 
@@ -101,7 +103,8 @@ az resource list -g rg-agentobs-dev-eus-001 -o table
 
 Before a workshop, state these rules:
 
-- Local content capture can include prompts, source code, tool arguments, and tool results.
+- Content capture is disabled by default. Participants opt in per workshop by setting `FRONTIER_ENABLE_CONTENT_CAPTURE=true` only when the facilitator approves.
+- When enabled, local content capture can include prompts, source code, tool arguments, and tool results.
 - Raw content should stay local unless the customer explicitly approves sharing.
 - Azure receives sanitized telemetry and rollups.
 - Local AIU is an operational signal, not official billing.
@@ -110,14 +113,13 @@ Before a workshop, state these rules:
 
 ## Instructor Checklist
 
-- [ ] Local stack starts.
+- [ ] Local stack starts and all 10 containers, including `copilot-otel-jobs`, are running.
 - [ ] Aspire opens at `http://localhost:18888`.
-- [ ] Local Grafana opens at `http://localhost:3000`.
+- [ ] Local Grafana opens at `http://localhost:3000` and the `admin` login works with the generated password from `local-otel/stack/grafana-admin.env`. Anonymous access is disabled.
 - [ ] Azure Managed Grafana opens if hybrid demo is planned.
-- [ ] `~/.copilot-otel/audit-coverage.sh` runs.
+- [ ] `local-otel/audit-coverage.sh` runs.
 - [ ] GitHub CLI is authenticated.
 - [ ] Azure CLI is on the expected subscription.
-- [ ] Firecrawl MCP uses a secure API-key input, not a hardcoded secret.
 
 ## References
 

@@ -2,17 +2,19 @@
 set -euo pipefail
 
 # Ingest GitHub Enterprise data into the local OTel pipeline.
-# Currently collects enterprise audit log when permitted and attempts Copilot metrics.
-# If Copilot metrics are not available, emits an availability/status metric and log.
+# Collects the enterprise audit log when permitted and the GitHub Copilot usage
+# metrics report (GA since 2026-02-27, replaces the legacy metrics API that was
+# sunset on 2026-04-02). If a signal is not available, emits an availability
+# status metric and log instead of failing.
 # Data flows local -> Collector -> local stores and, in hybrid mode, Azure.
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 enterprise="${GITHUB_ENTERPRISE_SLUG:-your-enterprise-slug}"
-gh_bin="${GH_BIN:-/opt/homebrew/bin/gh}"
+gh_bin="${GH_BIN:-gh}"
 logs_endpoint="${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://localhost:4318/v1/logs}"
 metrics_endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v1/metrics}"
-out_dir="$HOME/frontier-cockpit/local-otel/github-enterprise"
+out_dir="${0:A:h}/github-enterprise"
 mkdir -p "$out_dir"
 
 audit_file="$out_dir/${enterprise}-audit-log.json"
@@ -39,7 +41,7 @@ done
 
 now_iso="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
-# Audit log is enterprise-admin protected. Keep a bounded page for local control tower ingestion.
+# Audit log is enterprise-admin protected. Keep a bounded page for local ingestion.
 audit_status="unavailable"
 if "$gh_bin" api \
   -H 'Accept: application/vnd.github+json' \
@@ -50,11 +52,20 @@ else
   audit_status="failed"
 fi
 
+# GitHub Copilot usage metrics report (enterprise-1-day). The response contains
+# report_day plus signed NDJSON download links. Requires at least five active
+# GitHub Copilot licenses and read access to Copilot metrics.
 metrics_status="unavailable"
+report_yesterday="$(date -u -d '-1 day' '+%Y-%m-%d' 2>/dev/null || date -u -v-1d '+%Y-%m-%d')"
 if "$gh_bin" api \
   -H 'Accept: application/vnd.github+json' \
   -H 'X-GitHub-Api-Version: 2026-03-10' \
-  "/enterprises/${enterprise}/copilot/metrics?per_page=100" > "$metrics_file" 2> "$out_dir/copilot-metrics.err"; then
+  "/enterprises/${enterprise}/copilot/metrics/reports/enterprise-1-day?day=${report_yesterday}" > "$metrics_file" 2> "$out_dir/copilot-metrics.err"; then
+  metrics_status="available"
+elif "$gh_bin" api \
+  -H 'Accept: application/vnd.github+json' \
+  -H 'X-GitHub-Api-Version: 2026-03-10' \
+  "/enterprises/${enterprise}/copilot/metrics/reports/enterprise-1-day" > "$metrics_file" 2>> "$out_dir/copilot-metrics.err"; then
   metrics_status="available"
 else
   metrics_status="failed"
@@ -92,11 +103,13 @@ def load_json(path, fallback):
         return fallback
 
 audit_data = load_json(audit_file, []) if audit_status == "available" else []
-metrics_data = load_json(metrics_file, []) if metrics_status == "available" else []
+metrics_report = load_json(metrics_file, {}) if metrics_status == "available" else {}
 if not isinstance(audit_data, list):
     audit_data = []
-if not isinstance(metrics_data, list):
-    metrics_data = []
+if not isinstance(metrics_report, dict):
+    metrics_report = {}
+report_day = metrics_report.get("report_day", "")
+download_links = metrics_report.get("download_links", []) or []
 
 log_records = []
 base_attrs = [attr("enterprise", enterprise), attr("source", "github-api"), attr("ingested_at", now_iso)]
@@ -106,7 +119,8 @@ status_body = {
     "audit_log_status": audit_status,
     "audit_log_records": len(audit_data),
     "copilot_metrics_status": metrics_status,
-    "copilot_metric_days": len(metrics_data),
+    "copilot_report_day": report_day,
+    "copilot_report_download_links": len(download_links),
     "ingested_at": now_iso,
 }
 log_records.append({
@@ -128,12 +142,12 @@ for event in audit_data[:100]:
         ],
     })
 
-for day in metrics_data:
-    selected = {k: day.get(k) for k in ["date", "total_active_users", "total_engaged_users"] if k in day}
+if metrics_status == "available":
+    selected = {"report_day": report_day, "download_links": len(download_links)}
     log_records.append({
         "timeUnixNano": now_ns,
         "body": {"stringValue": json.dumps(selected, separators=(",", ":"), sort_keys=True)},
-        "attributes": base_attrs + [attr("record_type", "copilot_metrics"), attr("date", day.get("date", "unknown"))],
+        "attributes": base_attrs + [attr("record_type", "copilot_metrics"), attr("date", report_day or "unknown")],
     })
 
 post(logs_endpoint, {
@@ -146,7 +160,7 @@ post(logs_endpoint, {
 metric_points = []
 for name, value, status in [
     ("github_enterprise_audit_log_records", len(audit_data), audit_status),
-    ("github_enterprise_copilot_metric_days", len(metrics_data), metrics_status),
+    ("github_enterprise_copilot_report_links", len(download_links), metrics_status),
     ("github_enterprise_api_available", 1 if audit_status == "available" else 0, audit_status),
     ("github_enterprise_copilot_metrics_available", 1 if metrics_status == "available" else 0, metrics_status),
 ]:

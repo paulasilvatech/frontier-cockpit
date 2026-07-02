@@ -1,5 +1,5 @@
 {
-  "github.copilot.chat.otel.captureContent": true,
+  "github.copilot.chat.otel.captureContent": false,
   "github.copilot.chat.otel.dbSpanExporter.enabled": true,
   "github.copilot.chat.otel.enabled": true,
   "chat.mcp.discovery.enabled": {

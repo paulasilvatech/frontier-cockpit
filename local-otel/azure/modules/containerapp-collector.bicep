@@ -9,7 +9,7 @@ param collectorBearerToken string
 param applicationInsightsConnectionString string
 @secure()
 param collectorConfig string
-param image string = 'otel/opentelemetry-collector-contrib:0.154.0'
+param image string = 'otel/opentelemetry-collector-contrib:0.155.0'
 param minReplicas int = 1
 param maxReplicas int = 3
 

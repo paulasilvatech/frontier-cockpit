@@ -14,7 +14,7 @@ if [[ "$#" -lt 3 || "$#" -gt 4 ]]; then
 fi
 
 if [[ "${FRONTIER_SKIP_ENV_ZSH:-false}" != "true" ]]; then
-  env_file="${FRONTIER_ENV_ZSH:-$HOME/frontier-cockpit/local-otel/env.zsh}"
+  env_file="${FRONTIER_ENV_ZSH:-${0:A:h}/env.zsh}"
   if [[ ! -f "$env_file" ]]; then
     print -u2 "Environment file not found: $env_file"
     print -u2 "Set FRONTIER_SKIP_ENV_ZSH=true when running in a container with explicit OTLP endpoint variables."

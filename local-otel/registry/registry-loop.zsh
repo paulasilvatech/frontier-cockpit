@@ -12,7 +12,7 @@ if (( refresh_seconds < 30 )); then
   exit 2
 fi
 
-print "Starting Frontier Developer Cockpit model and price registry sidecar."
+print "Starting Frontier Cockpit Local model and price registry sidecar."
 print "OTLP metrics endpoint: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-unset}"
 print "Refresh interval: ${refresh_seconds}s"
 

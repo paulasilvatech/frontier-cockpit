@@ -6,28 +6,29 @@ set -euo pipefail
 # Sends the rollup back through OTLP as metrics and logs. If the hybrid Azure stack is enabled,
 # the local Collector forwards these rollups to Azure too.
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
+script_dir="${0:A:h}"
 prometheus_url="${PROMETHEUS_URL:-http://localhost:9090}"
 metrics_endpoint="${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://localhost:4318/v1/metrics}"
 logs_endpoint="${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://localhost:4318/v1/logs}"
 period="${COPILOT_DAILY_ROLLUP_RANGE:-24h}"
 
 # Make sure the latest real traces are summarized before calculating the daily rollup.
-if [[ -x "$HOME/frontier-cockpit/local-otel/materialize-copilot-sessions.sh" ]]; then
-  "$HOME/frontier-cockpit/local-otel/materialize-copilot-sessions.sh" >/dev/null || true
+if [[ -x "$script_dir/materialize-copilot-sessions.sh" ]]; then
+  "$script_dir/materialize-copilot-sessions.sh" >/dev/null || true
 fi
 
-# Persist a lightweight local analytical history for Frontier Developer Cockpit.
+# Persist a lightweight local analytical history for the local cockpit.
 # This complements Prometheus/Grafana. It does not replace the mandatory dashboard stack.
-if [[ -x "$HOME/frontier-cockpit/local-otel/frontier-local-insights.sh" ]]; then
-    FRONTIER_INSIGHTS_RANGE="$period" "$HOME/frontier-cockpit/local-otel/frontier-local-insights.sh" >/dev/null || true
+if [[ -x "$script_dir/frontier-local-insights.sh" ]]; then
+    FRONTIER_INSIGHTS_RANGE="$period" "$script_dir/frontier-local-insights.sh" >/dev/null || true
 fi
 
 # Snapshot recent local OTel backend data into DuckDB for offline analysis and export.
 # This keeps raw content local and complements Tempo, Prometheus, Loki, and Grafana.
-if [[ -x "$HOME/frontier-cockpit/local-otel/export-otel-duckdb.sh" ]]; then
-    FRONTIER_OTEL_EXPORT_RANGE="${FRONTIER_OTEL_EXPORT_RANGE:-1h}" "$HOME/frontier-cockpit/local-otel/export-otel-duckdb.sh" >/dev/null || true
+if [[ -x "$script_dir/export-otel-duckdb.sh" ]]; then
+    FRONTIER_OTEL_EXPORT_RANGE="${FRONTIER_OTEL_EXPORT_RANGE:-1h}" "$script_dir/export-otel-duckdb.sh" >/dev/null || true
 fi
 
 python3 - "$prometheus_url" "$metrics_endpoint" "$logs_endpoint" "$period" <<'PY'

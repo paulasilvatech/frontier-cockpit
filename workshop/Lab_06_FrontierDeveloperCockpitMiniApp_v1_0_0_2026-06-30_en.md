@@ -1,23 +1,26 @@
 ---
-title: "Lab 06 Frontier Developer Cockpit Mini App"
-description: "Hands-on lab where each participant runs the local Frontier Developer Cockpit mini app from the template, sets their own identity, and reads token efficiency and AI credit signals."
+title: "Lab 06 Frontier Cockpit Local Mini App"
+description: "Hands-on lab where each participant runs the Frontier Cockpit Local mini app from the template, sets their own identity, and reads token efficiency and AI credit signals."
 author: "Frontier Cockpit Team"
-date: "2026-06-30"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["github-copilot", "workshop", "cockpit", "tokens", "ai-credits", "local"]
 ---
 
 <!-- markdownlint-disable MD025 -->
 
-# Lab 06 Frontier Developer Cockpit Mini App
+# Lab 06 Frontier Cockpit Local Mini App
 
-In this lab each participant runs the local Frontier Developer Cockpit mini app from the template, sets their own name and role, generates real GitHub Copilot telemetry, and uses the dashboard to understand token usage, cache behavior, AI credits, and token efficiency.
+In this lab each participant runs the Frontier Cockpit Local mini app from the template, sets their own name and role, generates real GitHub Copilot telemetry, and uses the dashboard to understand token usage, cache behavior, AI credits, and token efficiency.
+
+Estimated duration: 60 minutes.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local, repository-relative paths, containerized jobs, privacy-first defaults, per-lab durations. |
 | 1.0.0 | 2026-06-30 | Frontier Cockpit Team | Initial mini app lab with per-participant identity, token efficiency, the Credits view with AI Credits budget and model cost mix, and a trilingual UI. |
 
 ## Table of Contents
@@ -77,11 +80,7 @@ local-otel/workshop-ready.sh
 
 This enables the local OpenTelemetry environment, starts the full Docker Desktop stack, resolves your identity, registers your Git workspace, materializes recent sessions, and runs the workshop validation gate.
 
-Open the cockpit:
-
-```bash
-open http://localhost:3300
-```
+Open `http://localhost:3300` in your browser. On macOS you can use `open http://localhost:3300`, on Linux `xdg-open http://localhost:3300`, and on Windows `start http://localhost:3300`.
 
 Confirm your name and role appear in the sidebar and in the top bar.
 
@@ -142,7 +141,7 @@ The budget panel estimates local AI Credits observed this billing cycle against 
 - Cost depends on model choice and token consumption: input, output, and cached tokens.
 - Agentic features can consume more AI Credits because they may process more context and perform more model work.
 - Code completions and next edit suggestions are not billed in AI Credits for paid plans.
-- The local estimate uses OpenTelemetry AIU signals. Official totals require GitHub billing exports, the usage dashboard, or the Copilot usage metrics API.
+- The local estimate uses OpenTelemetry AIU signals. Official totals require GitHub billing exports, the usage dashboard, or the GitHub Copilot usage metrics API.
 
 Read the utilization percentage and the projected month end. The warning and critical marks on the bar default to 75 percent and 90 percent, which follow the budget alert points recommended by GitHub. If you are pacing above these marks, the Coach view suggests how to slow the burn.
 
@@ -185,7 +184,7 @@ After changing `workshop.env`, run `local-otel/workshop-ready.sh` again to apply
 
 ## 10. How This Connects To A Customer Backend
 
-The local cockpit is phase one. It is full fidelity for the developer and stays on the machine. Phase two is optional and governed: a customer can synchronize sanitized rollups and metrics to a central backend, for example Azure Monitor, Azure Managed Grafana, or an existing observability stack. Raw prompts and tool results stay local by default, and official billing and AI Credit totals require GitHub billing exports or the Copilot usage metrics API.
+The local cockpit is phase one. It is full fidelity for the developer and stays on the machine. Phase two is optional and governed: a customer can synchronize sanitized rollups and metrics to a central backend, for example Azure Monitor, Azure Managed Grafana, or an existing observability stack. Raw prompts and tool results stay local by default, and official billing and AI Credit totals require GitHub billing exports or the GitHub Copilot usage metrics API.
 
 ## 11. Checklist
 
@@ -200,7 +199,7 @@ The local cockpit is phase one. It is full fidelity for the developer and stays 
 
 ## References
 
-- [Frontier Developer Cockpit Local OpenTelemetry Kit](../local-otel/README.md)
+- [Frontier Cockpit Local OpenTelemetry Kit](../local-otel/README.md)
 - [Frontier Cockpit Local Links Guide](../docs/FrontierCockpit_LocalLinksGuide_v1_0_0_2026-06-19_en.md)
 - [GitHub Copilot documentation](https://docs.github.com/en/copilot)
 - [Usage-based billing for organizations and enterprises](https://docs.github.com/en/copilot/concepts/billing/usage-based-billing-for-organizations-and-enterprises)

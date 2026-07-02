@@ -1,9 +1,9 @@
 ---
 title: "Frontier Cockpit Local Links Guide"
-description: "Local endpoint and dashboard guide for Frontier Developer Cockpit, including Aspire, Grafana, Prometheus, Tempo, Loki, and developer insight dashboards."
+description: "Local endpoint and dashboard guide for Frontier Cockpit Local, including Aspire, Grafana, Prometheus, Tempo, Loki, and developer insight dashboards."
 author: "Frontier Cockpit Team"
-date: "2026-06-19"
-version: "1.0.0"
+date: "2026-07-02"
+version: "1.1.0"
 status: "approved"
 tags: ["frontier-cockpit", "github-copilot", "local", "links", "aspire", "grafana", "prometheus", "tempo", "loki"]
 ---
@@ -12,12 +12,13 @@ tags: ["frontier-cockpit", "github-copilot", "local", "links", "aspire", "grafan
 
 # Frontier Cockpit Local Links Guide
 
-This guide lists the local links used by **Frontier Developer Cockpit** and explains what each endpoint or dashboard shows.
+This guide lists the local links used by **Frontier Cockpit Local** and explains what each endpoint or dashboard shows. All endpoints bind to `127.0.0.1` only. Grafana requires a login: user `admin` with the generated password stored in `local-otel/stack/grafana-admin.env`.
 
 ## Change Log
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Rebrand to Frontier Cockpit Local and Hybrid, repository-relative paths, containerized jobs, privacy-first defaults. |
 | 1.0.0 | 2026-06-19 | Frontier Cockpit Team | Initial local endpoint and dashboard guide. |
 
 ## Table of Contents
@@ -34,17 +35,17 @@ This guide lists the local links used by **Frontier Developer Cockpit** and expl
 
 | Link | What It Is | Use It For |
 | --- | --- | --- |
-| [Frontier Developer Cockpit Home](http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-home-local) | Local Grafana home dashboard | Start here for local GitHub Copilot telemetry and links to deeper dashboards. |
+| [Frontier Cockpit Local Home](http://localhost:3000/d/copilot-agent-local/frontier-cockpit-local-home) | Local Grafana home dashboard | Start here for local GitHub Copilot telemetry and links to deeper dashboards. |
 | [Aspire Dashboard](http://localhost:18888) | Live local GenAI trace viewer | Inspect live traces, spans, tool calls, logs, metrics, and GenAI visualization. |
 | [Grafana Home](http://localhost:3000) | Local dashboard portal | Browse all local dashboards under the GitHub Copilot folder. |
 
 ## 2. Primary Developer Views
 
-### 2.1 Frontier Developer Cockpit Home
+### 2.1 Frontier Cockpit Local Home
 
-[http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-home-local](http://localhost:3000/d/copilot-agent-local/frontier-developer-cockpit-home-local)
+[http://localhost:3000/d/copilot-agent-local/frontier-cockpit-local-home](http://localhost:3000/d/copilot-agent-local/frontier-cockpit-local-home)
 
-This is the local entry point for Frontier Developer Cockpit. It is the friendly landing page for developers. Use it to orient yourself before opening deeper dashboards.
+This is the local entry point for Frontier Cockpit Local. It is the friendly landing page for developers. Use it to orient yourself before opening deeper dashboards.
 
 It should answer:
 
@@ -200,36 +201,36 @@ This is not model context memory.
 
 ## 4. Recommended Daily Flow
 
-1. Start the local stack:
+1. Start the local stack from the root of the cloned repository:
 
    ```bash
-   ~/.copilot-otel/start-full-stack.sh
+   local-otel/start-full-stack.sh
    ```
 
 2. Validate the local stack:
 
    ```bash
-   ~/.copilot-otel/check-otel-local.sh
+   local-otel/check-workshop-local.sh
    ```
 
 3. Reload VS Code Insiders.
 4. Run a real GitHub Copilot Chat or agent session.
 5. Open Aspire to inspect the live trace.
-6. Run materialization when needed:
+6. Materialization runs automatically inside the Docker `copilot-otel-jobs` container. Run it manually when needed:
 
    ```bash
-   ~/.copilot-otel/materialize-copilot-sessions.sh
+   local-otel/materialize-copilot-sessions.sh
    ```
 
-7. Open the Frontier Developer Cockpit Home dashboard.
+7. Open the Frontier Cockpit Local Home dashboard.
 8. Use Context and Cost, Real Workspace Usage, and Developer Coach to improve the next prompt.
-9. Run the daily rollup when needed:
+9. The daily rollup also runs automatically inside the Docker `copilot-otel-jobs` container. Run it manually when needed:
 
    ```bash
-   ~/.copilot-otel/daily-rollup.sh
+   local-otel/daily-rollup.sh
    ```
 
-The daily rollup also updates the local DuckDB insight store when `~/.copilot-otel/frontier-local-insights.sh` is available.
+The daily rollup also updates the local DuckDB insight store when `local-otel/frontier-local-insights.sh` is available.
 
 ## 5. Troubleshooting Links
 
@@ -240,23 +241,23 @@ The daily rollup also updates the local DuckDB insight store when `~/.copilot-ot
 | No historical traces | [Tempo](http://localhost:3200) | Confirm the Collector exports traces to Tempo. |
 | No logs | [Loki](http://localhost:3100) | Confirm the Collector exports logs to Loki. |
 | Dashboard empty | [Data Quality](http://localhost:3000/d/copilot-data-quality-local/github-copilot-data-quality-local) | Confirm data is real and workspace-attributed. |
-| Local stack status unknown | `~/.copilot-otel/check-otel-local.sh` | Confirm all containers and settings are ready. |
-| DuckDB insight store missing | `~/.copilot-otel/frontier-local-insights.sh` | Run the local insight store manually. |
+| Local stack status unknown | `local-otel/check-workshop-local.sh` | Confirm all containers and settings are ready. |
+| DuckDB insight store missing | `local-otel/frontier-local-insights.sh` | Run the local insight store manually. |
 
 ## 6. Data And Privacy Notes
 
-- Frontier Developer Cockpit is local-first and private to the developer machine.
-- Aspire can display sensitive data when local content capture is enabled.
+- Frontier Cockpit Local is local-first and private to the developer machine.
+- Content capture is disabled by default (`FRONTIER_ENABLE_CONTENT_CAPTURE=false`); Aspire can display sensitive data only when a developer opts in.
 - Raw prompts, tool arguments, and tool results stay local by default.
-- Frontier FinOps Cockpit receives sanitized rollups and telemetry.
+- Frontier Cockpit Hybrid receives sanitized rollups and telemetry.
 - Prometheus and Grafana are required for the complete local dashboard experience.
 - DuckDB or SQLite can store derived local insights, but they do not replace Prometheus or Grafana.
 - Official billing and GitHub Copilot usage metrics require GitHub-provided usage or billing sources.
 
 ## References
 
-- [Frontier Developer Cockpit Developer Local Guide](FrontierCockpit_DeveloperLocalGuide_v1_0_0_2026-06-17_en.md)
-- [Frontier Developer Cockpit Python And Aspire Local Architecture](FrontierCockpit_PythonAspireLocalArchitecture_v1_0_0_2026-06-18_en.md)
+- [Frontier Cockpit Local Developer Guide](FrontierCockpit_DeveloperLocalGuide_v1_0_0_2026-06-17_en.md)
+- [Frontier Cockpit Local Python And Aspire Local Architecture](FrontierCockpit_PythonAspireLocalArchitecture_v1_0_0_2026-06-18_en.md)
 - [Frontier Cockpit Operations Runbook](FrontierCockpit_OperationsRunbook_v1_0_0_2026-06-17_en.md)
 - [Aspire Dashboard standalone](https://aspire.dev/dashboard/standalone/)
 - [Aspire Dashboard security considerations](https://aspire.dev/dashboard/security-considerations/)
