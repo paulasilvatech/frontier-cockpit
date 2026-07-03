@@ -127,6 +127,10 @@ jobs:
           npm ci
           npm run build
 
+      - name: Test dashboard API (node --test)
+        working-directory: local-otel/frontend/api
+        run: npm test
+
       - name: Build dashboard web (Vite)
         working-directory: local-otel/frontend/web
         run: |

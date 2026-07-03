@@ -1,0 +1,12 @@
+C4Context
+    title Frontier Cockpit Local - C4 Context
+    Person(dev, "Developer", "Works with GitHub Copilot in VS Code")
+    System(cockpit, "Frontier Cockpit Local", "Local observability cockpit: usage, AI Credits, planning, session inspection")
+    System_Ext(copilot, "GitHub Copilot", "Chat, agents, completions; emits OpenTelemetry")
+    System_Ext(github, "GitHub billing and docs", "Official AI Credits totals, plan reference data")
+    System_Ext(azure, "Frontier Cockpit Hybrid (optional)", "Azure forwarding for governed, sanitized telemetry")
+    Rel(dev, copilot, "Prompts and sessions")
+    Rel(copilot, cockpit, "OTLP telemetry, localhost only")
+    Rel(dev, cockpit, "Reads dashboards, planner, inspector")
+    Rel(cockpit, azure, "Optional sanitized forwarding")
+    Rel(dev, github, "Confirms official billing")

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "tsc -p tsconfig.json && node --test dist/server.test.js"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",

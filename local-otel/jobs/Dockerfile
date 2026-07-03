@@ -1,12 +1,20 @@
-FROM docker.io/library/alpine:3.20
+FROM docker.io/library/python:3.12-slim
 
-RUN apk add --no-cache curl python3 zsh
+# zsh runs the job scripts; curl serves healthchecks and OTLP posts; duckdb
+# powers the local analytics store (developer_daily_rollup) and the long-term
+# history snapshot the dashboard API reads.
+RUN apt-get update -q \
+  && apt-get install -y -q --no-install-recommends zsh curl \
+  && rm -rf /var/lib/apt/lists/* \
+  && pip install --no-cache-dir duckdb
 
 WORKDIR /app/local-otel
 
 COPY materialize-copilot-sessions.sh \
   daily-rollup.sh \
   audit-coverage.sh \
+  frontier-local-insights.sh \
+  export-otel-duckdb.sh \
   ./
 COPY jobs/jobs-loop.zsh /app/jobs-loop.zsh
 
@@ -14,7 +22,9 @@ RUN chmod +x \
   /app/jobs-loop.zsh \
   /app/local-otel/materialize-copilot-sessions.sh \
   /app/local-otel/daily-rollup.sh \
-  /app/local-otel/audit-coverage.sh
+  /app/local-otel/audit-coverage.sh \
+  /app/local-otel/frontier-local-insights.sh \
+  /app/local-otel/export-otel-duckdb.sh
 
 ENV FRONTIER_SKIP_ENV_ZSH=true
 ENV TEMPO_URL=http://tempo:3200
@@ -27,5 +37,9 @@ ENV JOBS_ROLLUP_INTERVAL_SECONDS=86400
 ENV JOBS_COVERAGE_INTERVAL_SECONDS=3600
 ENV LOKI_URL=http://loki:3100
 ENV FRONTIER_COVERAGE_SKIP_SETTINGS=true
+ENV FRONTIER_PYTHON=/usr/local/bin/python3
+ENV FRONTIER_INSIGHTS_DB=/analytics/frontier-insights.duckdb
+ENV FRONTIER_OTEL_EXPORT_DB=/analytics/frontier-otel-export.duckdb
+ENV FRONTIER_INSIGHTS_SNAPSHOT=/analytics/long-term-history.json
 
 CMD ["zsh", "/app/jobs-loop.zsh"]

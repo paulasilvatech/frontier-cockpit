@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    actor Dev as Developer
+    participant Web as Mini app (3300)
+    participant API as Dashboard API
+    participant Prom as Prometheus
+    participant Tempo as Tempo
+    participant Vol as Analytics volume
+    Dev->>Web: Open a view (range, workspace)
+    Web->>API: GET /api/summary, /api/sessions, /api/coach
+    API->>Prom: PromQL (sessions, tokens, credits, prices)
+    Prom-->>API: Series
+    API-->>Web: KPIs, alerts, coach cards, budget, plans
+    Dev->>Web: Open Inspector for a session
+    Web->>API: GET /api/inspector?traceId=...
+    API->>Tempo: GET /api/traces/{id}
+    Tempo-->>API: Raw spans
+    API-->>Web: Event log + cache timeline + summary
+    Dev->>Web: Open History (long term)
+    Web->>API: GET /api/history/long-term
+    API->>Vol: Read long-term-history.json
+    API-->>Web: Per-day aggregates beyond 30d

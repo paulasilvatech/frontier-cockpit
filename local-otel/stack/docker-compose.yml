@@ -146,8 +146,12 @@ services:
       JOBS_COVERAGE_INTERVAL_SECONDS: "3600"
       LOKI_URL: "http://loki:3100"
       FRONTIER_COVERAGE_SKIP_SETTINGS: "true"
+      FRONTIER_INSIGHTS_DB: "/analytics/frontier-insights.duckdb"
+      FRONTIER_OTEL_EXPORT_DB: "/analytics/frontier-otel-export.duckdb"
+      FRONTIER_INSIGHTS_SNAPSHOT: "/analytics/long-term-history.json"
     volumes:
       - jobs-state:/state
+      - analytics-data:/analytics
     depends_on:
       otel-collector:
         condition: service_started
@@ -252,6 +256,9 @@ services:
       COACH_ERROR_SAVINGS_FACTOR: "${COACH_ERROR_SAVINGS_FACTOR:-}"
       PLANNER_FRONTIER_OUTPUT_PRICE_MIN: "${PLANNER_FRONTIER_OUTPUT_PRICE_MIN:-}"
       PLANNER_COMPLEX_SESSION_MIN_TOOL_CALLS: "${PLANNER_COMPLEX_SESSION_MIN_TOOL_CALLS:-}"
+      LONG_TERM_HISTORY_FILE: "/analytics/long-term-history.json"
+    volumes:
+      - analytics-data:/analytics:ro
     expose:
       - "8080"
     depends_on:
@@ -301,6 +308,7 @@ networks:
     name: copilot-otel-local
 
 volumes:
+  analytics-data:
   grafana-data:
   jobs-state:
   loki-data:

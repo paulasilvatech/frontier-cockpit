@@ -1,4 +1,5 @@
 import http from "node:http";
+import { readFile } from "node:fs/promises";
 import { URL } from "node:url";
 
 type ServiceStatus = "ok" | "degraded" | "unavailable";
@@ -72,7 +73,7 @@ function numberFromEnv(name: string, fallback: number): number {
 // Local warning thresholds. These are local planning guardrails, not official
 // GitHub limits or AI Credit allowances. Override any of them with environment
 // variables when you want stricter or looser local alerts.
-const thresholds = {
+export const thresholds = {
   aiCreditsWarn: numberFromEnv("THRESHOLD_AI_CREDITS_WARN", 250),
   aiCreditsCrit: numberFromEnv("THRESHOLD_AI_CREDITS_CRIT", 500),
   inputTokensWarn: numberFromEnv("THRESHOLD_INPUT_TOKENS_WARN", 3_000_000),
@@ -91,7 +92,7 @@ const thresholds = {
 // savings estimates, and the workspace planner classify and weigh local
 // telemetry. They are heuristics for local coaching, not official billing
 // math, and every one of them is overridable with an environment variable.
-const coachTuning = {
+export const coachTuning = {
   scoreBase: numberFromEnv("COACH_SCORE_BASE", 55),
   scoreCacheWeight: numberFromEnv("COACH_SCORE_CACHE_WEIGHT", 45),
   scoreColdPenalty: numberFromEnv("COACH_SCORE_COLD_PENALTY", 30),
@@ -140,7 +141,7 @@ interface CopilotPlanFacts {
   modelAccess: PlanModelAccess;
 }
 
-const copilotPlanCatalog: CopilotPlanFacts[] = [
+export const copilotPlanCatalog: CopilotPlanFacts[] = [
   { id: "free", audience: "individual", priceUsdMonth: 0, perSeat: false, baseCredits: null, flexCredits: 0, includedCredits: null, promoCredits: null, modelAccess: "auto-only" },
   { id: "pro", audience: "individual", priceUsdMonth: 10, perSeat: false, baseCredits: 1000, flexCredits: 500, includedCredits: 1500, promoCredits: null, modelAccess: "full" },
   { id: "pro+", audience: "individual", priceUsdMonth: 39, perSeat: false, baseCredits: 3900, flexCredits: 3100, includedCredits: 7000, promoCredits: null, modelAccess: "full" },
@@ -154,11 +155,11 @@ const copilotSeats = numberFromEnv("FRONTIER_COPILOT_SEATS", 1);
 const usePromotionalAllowance = lowerFromEnv("FRONTIER_AI_CREDITS_USE_PROMO", "false") === "true";
 const allowanceOverride = numberFromEnv("FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE", Number.NaN);
 
-function planFactsFor(planId: string): CopilotPlanFacts {
+export function planFactsFor(planId: string): CopilotPlanFacts {
   return copilotPlanCatalog.find((plan) => plan.id === planId) ?? copilotPlanCatalog.find((plan) => plan.id === "business")!;
 }
 
-function promoWindowActive(now: Date): boolean {
+export function promoWindowActive(now: Date): boolean {
   const iso = now.toISOString().slice(0, 10);
   return iso >= promoWindowStart && iso < promoWindowEnd;
 }
@@ -176,7 +177,7 @@ interface AllowanceResolution {
 // only when explicitly enabled, and only while the promotional window is
 // open — after it closes the cockpit falls back to the standard allowance
 // automatically so the dashboard never overstates included credits.
-function resolveAllowance(now = new Date()): AllowanceResolution {
+export function resolveAllowance(now = new Date()): AllowanceResolution {
   const plan = planFactsFor(copilotPlan);
   const promoActive = usePromotionalAllowance && plan.promoCredits !== null && promoWindowActive(now);
   if (Number.isFinite(allowanceOverride)) {
@@ -902,7 +903,7 @@ interface EconomySummary {
 // coaching, not official GitHub billing. The efficiency score rewards cache
 // reuse and penalizes cold context, context pressure, and error loops. The
 // weights and savings factors live in coachTuning and are env-overridable.
-function computeEconomy(input: {
+export function computeEconomy(input: {
   aiCredits: number;
   sessions: number;
   errors: number;
@@ -991,9 +992,39 @@ interface AiCreditsBudgetInsight {
   projectedMonthEndCredits: number | null;
   projectedUtilizationPct: number | null;
   dailyRateCredits: number | null;
+  daysToExhaustion: number | null;
+  projectedExhaustionDate: string | null;
   status: MetricStatus;
   alertLevel: "ok" | "warning" | "critical" | "over";
   message?: string;
+}
+
+// At the observed daily rate, when does the included pool run out? Returns
+// null when there is no meaningful rate or the pool would outlive the cycle.
+export function exhaustionForecast(
+  observedCredits: number | null,
+  allowanceCredits: number,
+  dailyRate: number | null,
+  now = new Date()
+): { daysToExhaustion: number | null; projectedExhaustionDate: string | null } {
+  if (observedCredits === null || allowanceCredits <= 0 || dailyRate === null || dailyRate <= 0) {
+    return { daysToExhaustion: null, projectedExhaustionDate: null };
+  }
+  if (observedCredits >= allowanceCredits) {
+    return { daysToExhaustion: 0, projectedExhaustionDate: now.toISOString().slice(0, 10) };
+  }
+  const days = (allowanceCredits - observedCredits) / dailyRate;
+  const date = new Date(now.getTime());
+  date.setUTCDate(date.getUTCDate() + Math.floor(days));
+  const cycleEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  if (date >= cycleEnd) {
+    // The allowance resets before it runs out at the current rate.
+    return { daysToExhaustion: null, projectedExhaustionDate: null };
+  }
+  return {
+    daysToExhaustion: Math.round(days * 10) / 10,
+    projectedExhaustionDate: date.toISOString().slice(0, 10)
+  };
 }
 
 interface ModelMixEntry {
@@ -1031,7 +1062,7 @@ interface OutcomeMetrics {
 // AI Credits budgets are tracked per billing cycle. The local cockpit uses a
 // month-to-date approximation and clearly separates it from official GitHub
 // billing exports and Copilot usage APIs.
-function billingCycle(now = new Date()): { daysInCycle: number; daysElapsed: number; daysLeft: number } {
+export function billingCycle(now = new Date()): { daysInCycle: number; daysElapsed: number; daysLeft: number } {
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth();
   const daysInCycle = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
@@ -1040,7 +1071,7 @@ function billingCycle(now = new Date()): { daysInCycle: number; daysElapsed: num
   return { daysInCycle, daysElapsed, daysLeft };
 }
 
-function budgetAlertLevel(utilizationPct: number | null): AiCreditsBudgetInsight["alertLevel"] {
+export function budgetAlertLevel(utilizationPct: number | null): AiCreditsBudgetInsight["alertLevel"] {
   if (utilizationPct === null) {
     return "ok";
   }
@@ -1080,6 +1111,9 @@ async function aiCreditsBudgetInsight(): Promise<AiCreditsBudgetInsight> {
     projectedMonthEnd !== null && allowanceCredits > 0
       ? (projectedMonthEnd / allowanceCredits) * 100
       : null;
+  const exhaustion = canProject
+    ? exhaustionForecast(observedCredits, allowanceCredits, dailyRate)
+    : { daysToExhaustion: null, projectedExhaustionDate: null };
   return {
     plan: copilotPlan,
     seats: copilotSeats,
@@ -1095,6 +1129,8 @@ async function aiCreditsBudgetInsight(): Promise<AiCreditsBudgetInsight> {
     projectedMonthEndCredits: projectedMonthEnd,
     projectedUtilizationPct,
     dailyRateCredits: dailyRate,
+    daysToExhaustion: exhaustion.daysToExhaustion,
+    projectedExhaustionDate: exhaustion.projectedExhaustionDate,
     status,
     alertLevel: budgetAlertLevel(utilizationPct),
     message: observed.message
@@ -1666,7 +1702,7 @@ function attributeNumber(value: TempoAttribute["value"]): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function classifyInspectorEvent(operation: string, name: string): InspectorEventType {
+export function classifyInspectorEvent(operation: string, name: string): InspectorEventType {
   const key = `${operation} ${name}`.toLowerCase();
   if (key.includes("execute_tool") || key.includes("tool")) {
     return "tool_call";
@@ -1893,9 +1929,118 @@ async function inspectorTrace(url: URL): Promise<InspectorResponse> {
   return { status: "ok", summary, events: events.slice(0, 500), cacheTimeline };
 }
 
+// Long-term history: the jobs container's daily rollup persists per-day,
+// per-repo aggregates to DuckDB (developer_daily_rollup) and rebuilds a JSON
+// snapshot in the shared analytics volume. This endpoint serves that snapshot
+// so the dashboard keeps history beyond the 30-day Prometheus retention.
+const longTermHistoryFile = stringFromEnv("LONG_TERM_HISTORY_FILE", "");
+
+interface LongTermEntry {
+  day: string;
+  repo: string;
+  sessions: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  coldInputTokens: number;
+  aiCredits: number;
+  maxContextPct: number;
+  toolCalls: number;
+  errors: number;
+}
+
+interface LongTermDay {
+  day: string;
+  sessions: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  coldInputTokens: number;
+  aiCredits: number;
+  errors: number;
+  repos: number;
+}
+
+async function longTermHistory(url: URL): Promise<{
+  status: MetricStatus;
+  message?: string;
+  generatedAt: string | null;
+  source: string | null;
+  repo: string;
+  entries: LongTermEntry[];
+  days: LongTermDay[];
+}> {
+  const repo = repoFromUrl(url);
+  const empty = { generatedAt: null, source: null, repo: repo ?? "all", entries: [], days: [] };
+  if (!longTermHistoryFile) {
+    return {
+      status: "unavailable",
+      message: "Long-term history is not configured (LONG_TERM_HISTORY_FILE is unset).",
+      ...empty
+    };
+  }
+  let raw: string;
+  try {
+    raw = await readFile(longTermHistoryFile, "utf-8");
+  } catch {
+    return {
+      status: "unavailable",
+      message: "The long-term snapshot does not exist yet. It is created by the first daily rollup in the jobs container.",
+      ...empty
+    };
+  }
+  let snapshot: { generatedAt?: string; source?: string; entries?: LongTermEntry[] };
+  try {
+    snapshot = JSON.parse(raw) as typeof snapshot;
+  } catch {
+    return { status: "unavailable", message: "The long-term snapshot could not be parsed.", ...empty };
+  }
+  const all = Array.isArray(snapshot.entries) ? snapshot.entries : [];
+  const entries = (repo ? all.filter((entry) => entry.repo === repo) : all).slice(-2000);
+  const byDay = new Map<string, LongTermDay>();
+  for (const entry of entries) {
+    let day = byDay.get(entry.day);
+    if (!day) {
+      day = {
+        day: entry.day,
+        sessions: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        coldInputTokens: 0,
+        aiCredits: 0,
+        errors: 0,
+        repos: 0
+      };
+      byDay.set(entry.day, day);
+    }
+    day.sessions += entry.sessions;
+    day.inputTokens += entry.inputTokens;
+    day.outputTokens += entry.outputTokens;
+    day.cacheReadTokens += entry.cacheReadTokens;
+    day.coldInputTokens += entry.coldInputTokens;
+    day.aiCredits += entry.aiCredits;
+    day.errors += entry.errors;
+    day.repos += 1;
+  }
+  const days = [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
+  return {
+    status: days.length > 0 ? "ok" : "unavailable",
+    message:
+      days.length > 0
+        ? undefined
+        : "No long-term rollups match this scope yet. History accumulates one entry per day per workspace.",
+    generatedAt: snapshot.generatedAt ?? null,
+    source: snapshot.source ?? null,
+    repo: repo ?? "all",
+    entries,
+    days
+  };
+}
+
 type ModelTier = "frontier" | "standard" | "unknown";
 
-interface ModelPrice {
+export interface ModelPrice {
   inputUsdPerMillion: number | null;
   outputUsdPerMillion: number | null;
   tier: ModelTier;
@@ -1936,7 +2081,7 @@ async function modelPriceMap(): Promise<Map<string, ModelPrice>> {
   return byModel;
 }
 
-function modelTierOf(model: string, prices: Map<string, ModelPrice>): ModelTier {
+export function modelTierOf(model: string, prices: Map<string, ModelPrice>): ModelTier {
   return prices.get(model)?.tier ?? "unknown";
 }
 
@@ -2002,13 +2147,13 @@ interface PlannerInsight {
 
 const plannerLookbackDays: Record<string, number> = { "24h": 1, "7d": 7, "14d": 14, "30d": 30 };
 
-function plannerLookbackFromUrl(url: URL): { literal: string; days: number } {
+export function plannerLookbackFromUrl(url: URL): { literal: string; days: number } {
   const requested = url.searchParams.get("lookback") ?? "7d";
   const days = plannerLookbackDays[requested];
   return days ? { literal: requested, days } : { literal: "7d", days: 7 };
 }
 
-function plannerWeeksFromUrl(url: URL): number {
+export function plannerWeeksFromUrl(url: URL): number {
   const parsed = Number.parseInt(url.searchParams.get("weeks") ?? "4", 10);
   if (!Number.isFinite(parsed)) {
     return 4;
@@ -2456,7 +2601,8 @@ const getRoutes: Record<string, RouteHandler> = {
   "/api/coach": async (url, response) => jsonResponse(response, 200, await coach(url)),
   "/api/plans": (_url, response) => jsonResponse(response, 200, billingFacts()),
   "/api/planner": async (url, response) => jsonResponse(response, 200, await planner(url)),
-  "/api/inspector": async (url, response) => jsonResponse(response, 200, await inspectorTrace(url))
+  "/api/inspector": async (url, response) => jsonResponse(response, 200, await inspectorTrace(url)),
+  "/api/history/long-term": async (url, response) => jsonResponse(response, 200, await longTermHistory(url))
 };
 
 const server = http.createServer((request, response) => {
@@ -2480,6 +2626,10 @@ const server = http.createServer((request, response) => {
   });
 });
 
-server.listen(port, "0.0.0.0", () => {
-  console.log(`Frontier Dashboard API listening on port ${port}`);
-});
+// Tests import this module with FRONTIER_API_DISABLE_LISTEN=true to reach the
+// exported pure functions without binding a port.
+if (process.env.FRONTIER_API_DISABLE_LISTEN !== "true") {
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`Frontier Dashboard API listening on port ${port}`);
+  });
+}

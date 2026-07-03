@@ -20,6 +20,7 @@ The repository can be cloned anywhere. All scripts resolve their own location, s
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.5.0 | 2026-07-03 | Frontier Cockpit Team | Completed the local persistence layer: the jobs container now runs the DuckDB analytics rollups (analytics volume), the dashboard serves long-term history beyond the 30-day Prometheus retention from the rollup snapshot, the budget panel projects the credit run-out date, and the API gained a node:test suite wired into CI. |
 | 1.4.0 | 2026-07-03 | Frontier Cockpit Team, @jkjunior | Added Podman container runtime support (runtime and compose-tool auto-detection in the bash bootstrap, fully qualified image references) and Fish shell support for the persistent OTel environment. Contributed by @jkjunior with maintainer corrections to keep the maintained `grafana/grafana:12.4.3` image and Loki 3.3.4. |
 | 1.3.0 | 2026-07-03 | Frontier Cockpit Team | Added the Inspector view (per-session agent debug log with event timeline, cache explorer with cache-break detection, and summary stats) and the import scripts for VS Code Agent Debug Logs OTLP session exports with workspace attribution. |
 | 1.2.1 | 2026-07-03 | Frontier Cockpit Team | Migrated Grafana to the maintained `grafana/grafana` Docker Hub repository (Docker Hub stops updating `grafana/grafana-oss` from 12.4.0) pinned at 12.4.3, updated Loki to 3.3.4, and added native PowerShell orchestration scripts for Windows. |
@@ -393,6 +394,27 @@ In Aspire Dashboard:
 6. Open another workspace or repository and repeat. The same user-level configuration applies, while repository attributes identify the active project when available.
 
 Aspire is the best local live viewer for trace trees, span attributes, and the GenAI conversation visualizer. Grafana is the best local historical dashboard for trends, workspace filtering, context window usage, AIU, and VS Code process memory.
+
+## Local persistence layers
+
+The stack persists data in four layers, all in Docker volumes, all local:
+
+| Layer | Store | Retention | Written by | Read by |
+| --- | --- | --- | --- | --- |
+| Metric time series | Prometheus TSDB (`prometheus-data`) | 30 days | OTel Collector exporter | Dashboard API, Grafana |
+| Traces / logs | Tempo + Loki volumes | 30 days | OTel Collector | Inspector view, Aspire links, Grafana |
+| Grafana metadata | Grafana embedded SQLite (`grafana-data`) | permanent | Grafana | Grafana |
+| Long-term analytics | **DuckDB** in the `analytics-data` volume (`frontier-insights.duckdb`, table `developer_daily_rollup`; plus `frontier-otel-export.duckdb`) | permanent | jobs container daily rollup | Dashboard API (via the JSON snapshot), offline analysis |
+
+How the long-term layer works, end to end:
+
+1. Once a day (and on the first start) the jobs container runs `daily-rollup.sh`, which calls `frontier-local-insights.sh`.
+2. The insights script queries Prometheus for the day's per-repo aggregates and inserts them into `developer_daily_rollup` in `/analytics/frontier-insights.duckdb`.
+3. The same run rebuilds `/analytics/long-term-history.json`, one entry per day per workspace, from the full DuckDB table.
+4. The dashboard API serves that snapshot at `/api/history/long-term`, and the History view shows it as "Long-term history" — so trends keep working after the 30-day Prometheus retention expires and across container restarts.
+5. The budget panel additionally projects the **credit run-out date** from the observed daily burn rate against the included allowance.
+
+DuckDB was chosen over SQLite for this layer on purpose: it is a local, embedded, zero-server file database like SQLite, but columnar and built for analytical aggregation, and it exports Parquet for offline analysis. SQLite remains where it fits best (Grafana metadata). Back up the `analytics-data` volume to keep the permanent history; deleting it only loses history older than 30 days, which the next rollups cannot rebuild.
 
 ## Inspect a session (agent debug log)
 

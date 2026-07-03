@@ -6,6 +6,7 @@ import type {
   CopilotPlanFacts,
   HistoryPoint,
   InspectorResponse,
+  LongTermHistoryResponse,
   PlannerInsight,
   RangeOption,
   SessionRecord,
@@ -499,6 +500,14 @@ function BudgetPanel({ summary, compact }: Readonly<{ summary: SummaryResponse |
           <div>
             <span className="stat-label">{t("budget.projected")}</span>
             <span className="stat-value">{projected === null ? "—" : `${formatNumber(projected, 0)}%`}</span>
+          </div>
+          <div>
+            <span className="stat-label">{t("budget.exhaustion")}</span>
+            <span className="stat-value">
+              {budget?.projectedExhaustionDate
+                ? t("budget.exhaustionValue", { date: budget.projectedExhaustionDate, days: formatNumber(budget.daysToExhaustion, 0) })
+                : t("budget.exhaustionNone")}
+            </span>
           </div>
         </div>
       </div>
@@ -1570,12 +1579,88 @@ function CoachView({ coach, summary }: Readonly<{ coach: CoachResponse | null; s
   );
 }
 
-function HistoryView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
+function useLongTermHistory(repo: string) {
+  const [history, setHistory] = useState<LongTermHistoryResponse | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/history/long-term?repo=${encodeURIComponent(repo)}`, { cache: "no-store" })
+      .then(async (response) => {
+        const payload = (await response.json()) as LongTermHistoryResponse;
+        if (!cancelled) {
+          setHistory(payload);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHistory(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [repo]);
+
+  return history;
+}
+
+function LongTermPanel({ repo }: Readonly<{ repo: string }>) {
+  const t = useT();
+  const history = useLongTermHistory(repo);
+  const days = history?.days ?? [];
+  return (
+    <Panel
+      title={t("longterm.title")}
+      status={history?.status}
+      aside={<span className="muted">{t("longterm.aside")}</span>}
+    >
+      <p className="muted">{t("longterm.blurb")}</p>
+      {days.length > 0 ? (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{t("longterm.col.day")}</th>
+                <th className="numeric">{t("ws.col.aiCredits")}</th>
+                <th className="numeric">{t("ws.col.sessions")}</th>
+                <th className="numeric">{t("ws.col.input")}</th>
+                <th className="numeric">{t("ws.col.cached")}</th>
+                <th className="numeric">{t("ws.col.cold")}</th>
+                <th className="numeric">{t("longterm.col.errors")}</th>
+                <th className="numeric">{t("longterm.col.repos")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {days.slice(-60).map((day) => (
+                <tr key={day.day}>
+                  <td>{day.day}</td>
+                  <td className="numeric strong">{formatNumber(day.aiCredits, 1)}</td>
+                  <td className="numeric">{formatNumber(day.sessions, 0)}</td>
+                  <td className="numeric">{formatCompact(day.inputTokens)}</td>
+                  <td className="numeric">{formatCompact(day.cacheReadTokens)}</td>
+                  <td className="numeric">{formatCompact(day.coldInputTokens)}</td>
+                  <td className="numeric">{formatNumber(day.errors, 0)}</td>
+                  <td className="numeric">{formatNumber(day.repos, 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="muted">{history?.message ?? t("longterm.empty")}</p>
+      )}
+      <p className="muted">{t("longterm.note")}</p>
+    </Panel>
+  );
+}
+
+function HistoryView({ summary, repo }: Readonly<{ summary: SummaryResponse | null; repo: string }>) {
   const t = useT();
   const points = summary?.history.points ?? [];
   return (
     <>
       <HistoryPanel points={points} message={summary?.history.message} />
+      <LongTermPanel repo={repo} />
       <Panel title={t("history.detail")} aside={<span className="muted">{t("history.buckets", { count: points.length })}</span>}>
         {points.length > 0 ? (
           <div className="table-wrap">
@@ -1824,7 +1909,7 @@ const viewRenderers: Record<ViewId, (props: ViewProps) => ReactNode> = {
   sessions: ({ sessions }) => <SessionsView sessions={sessions} />,
   workspaces: ({ summary }) => <WorkspacesView summary={summary} />,
   coach: ({ coach, summary }) => <CoachView coach={coach} summary={summary} />,
-  history: ({ summary }) => <HistoryView summary={summary} />,
+  history: ({ summary, repo }) => <HistoryView summary={summary} repo={repo} />,
   health: ({ summary }) => <HealthView summary={summary} />,
   settings: ({ summary }) => <SettingsView summary={summary} />
 };

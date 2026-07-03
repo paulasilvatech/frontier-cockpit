@@ -11,13 +11,16 @@ prometheus_url="${PROMETHEUS_URL:-http://localhost:9090}"
 period="${FRONTIER_INSIGHTS_RANGE:-24h}"
 script_dir="${0:A:h}"
 db_path="${FRONTIER_INSIGHTS_DB:-$script_dir/frontier-insights.duckdb}"
+# Long-term JSON snapshot consumed by the dashboard API for history beyond the
+# 30-day Prometheus retention. Rebuilt from the DuckDB rollup on every run.
+snapshot_path="${FRONTIER_INSIGHTS_SNAPSHOT:-$script_dir/long-term-history.json}"
 python_bin="${FRONTIER_PYTHON:-$script_dir/.venv/bin/python}"
 
 if [[ ! -x "$python_bin" ]]; then
   python_bin="$(command -v python3)"
 fi
 
-"$python_bin" - "$prometheus_url" "$period" "$db_path" <<'PY'
+"$python_bin" - "$prometheus_url" "$period" "$db_path" "$snapshot_path" <<'PY'
 import json
 import pathlib
 import sys
@@ -25,7 +28,7 @@ import time
 import urllib.parse
 import urllib.request
 
-prometheus_url, period, db_path = sys.argv[1:]
+prometheus_url, period, db_path, snapshot_path = sys.argv[1:]
 
 try:
     import duckdb
@@ -139,6 +142,63 @@ if records:
         records,
     )
 
+# Rebuild the long-term snapshot from the full rollup so the dashboard can
+# serve history beyond Prometheus retention. One entry per ingestion day and
+# repo, using the latest rollup of each day.
+snapshot_rows = con.execute(
+    """
+    WITH ranked AS (
+      SELECT
+        strftime(ingested_at, '%Y-%m-%d') AS day,
+        repo,
+        branch,
+        sessions, input_tokens, output_tokens, cache_read_tokens,
+        cache_creation_tokens, cold_input_tokens, aiu, max_context_pct,
+        tool_calls, errors,
+        row_number() OVER (
+          PARTITION BY strftime(ingested_at, '%Y-%m-%d'), repo, branch
+          ORDER BY ingested_at DESC
+        ) AS rn
+      FROM developer_daily_rollup
+    )
+    SELECT
+      day,
+      repo,
+      sum(sessions), sum(input_tokens), sum(output_tokens),
+      sum(cache_read_tokens), sum(cold_input_tokens), sum(aiu),
+      max(max_context_pct), sum(tool_calls), sum(errors)
+    FROM ranked
+    WHERE rn = 1
+    GROUP BY day, repo
+    ORDER BY day, repo
+    """
+).fetchall()
+snapshot = {
+    "generatedAt": now,
+    "source": "developer_daily_rollup (DuckDB)",
+    "entries": [
+        {
+            "day": r[0],
+            "repo": r[1],
+            "sessions": float(r[2] or 0),
+            "inputTokens": float(r[3] or 0),
+            "outputTokens": float(r[4] or 0),
+            "cacheReadTokens": float(r[5] or 0),
+            "coldInputTokens": float(r[6] or 0),
+            "aiCredits": float(r[7] or 0),
+            "maxContextPct": float(r[8] or 0),
+            "toolCalls": float(r[9] or 0),
+            "errors": float(r[10] or 0),
+        }
+        for r in snapshot_rows
+    ],
+}
+snapshot_file = pathlib.Path(snapshot_path)
+snapshot_file.parent.mkdir(parents=True, exist_ok=True)
+tmp_file = snapshot_file.with_suffix(".tmp")
+tmp_file.write_text(json.dumps(snapshot, separators=(",", ":")), encoding="utf-8")
+tmp_file.replace(snapshot_file)
+
 summary = con.execute(
     """
     SELECT
@@ -158,6 +218,8 @@ con.close()
 
 print(json.dumps({
     "db_path": db_path,
+    "snapshot_path": snapshot_path,
+    "snapshot_days": len({entry["day"] for entry in snapshot["entries"]}),
     "period": period,
     "repositories": len(rows),
     "rows_inserted": int(summary[0] or 0),

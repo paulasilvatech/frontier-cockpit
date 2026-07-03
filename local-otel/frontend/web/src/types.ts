@@ -285,9 +285,47 @@ export interface BudgetInsight {
     projectedMonthEndCredits: number | null;
     projectedUtilizationPct: number | null;
     dailyRateCredits: number | null;
+    daysToExhaustion: number | null;
+    projectedExhaustionDate: string | null;
     status: MetricStatus;
     alertLevel: BudgetAlertLevel;
     message?: string;
+}
+
+export interface LongTermEntry {
+    day: string;
+    repo: string;
+    sessions: number;
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    coldInputTokens: number;
+    aiCredits: number;
+    maxContextPct: number;
+    toolCalls: number;
+    errors: number;
+}
+
+export interface LongTermDay {
+    day: string;
+    sessions: number;
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    coldInputTokens: number;
+    aiCredits: number;
+    errors: number;
+    repos: number;
+}
+
+export interface LongTermHistoryResponse {
+    status: MetricStatus;
+    message?: string;
+    generatedAt: string | null;
+    source: string | null;
+    repo: string;
+    entries: LongTermEntry[];
+    days: LongTermDay[];
 }
 
 export interface ModelMixEntry {

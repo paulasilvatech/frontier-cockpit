@@ -448,7 +448,20 @@ const en: Dict = {
     "inspector.practice.late.body": "Place content that changes often, such as file attachments or terminal output, later in the conversation so the stable prefix stays cached.",
     "inspector.practice.fresh.title": "Start fresh after a break",
     "inspector.practice.fresh.body": "Caches expire after inactivity. Start a new session or compact the conversation to rebuild from a short summary instead of the full history.",
-    "inspector.importNote": "Sessions exported from the VS Code Agent Debug Logs panel (OTLP JSON) can be imported with local-otel/import-agent-debug-session.sh (macOS/Linux) or .ps1 (Windows); they are attributed to the current Git workspace and become inspectable here."
+    "inspector.importNote": "Sessions exported from the VS Code Agent Debug Logs panel (OTLP JSON) can be imported with local-otel/import-agent-debug-session.sh (macOS/Linux) or .ps1 (Windows); they are attributed to the current Git workspace and become inspectable here.",
+
+    "budget.exhaustion": "Projected run-out",
+    "budget.exhaustionValue": "{date} (~{days} d)",
+    "budget.exhaustionNone": "not this cycle",
+
+    "longterm.title": "Long-term history",
+    "longterm.aside": "Beyond the 30-day local retention",
+    "longterm.blurb": "Daily rollups persisted to the local DuckDB analytics store by the jobs container. This history survives the 30-day Prometheus retention window and container restarts.",
+    "longterm.col.day": "Day",
+    "longterm.col.errors": "Errors",
+    "longterm.col.repos": "Workspaces",
+    "longterm.empty": "The long-term store has no rollups yet. The first entry appears after the first daily rollup in the jobs container.",
+    "longterm.note": "One entry per day per workspace, aggregated from developer_daily_rollup in DuckDB (analytics volume). The last 60 days are shown; the DuckDB file keeps everything."
 };
 
 const ptBR: Dict = {
@@ -886,7 +899,20 @@ const ptBR: Dict = {
     "inspector.practice.late.body": "Coloque conteúdo que muda com frequência, como anexos de arquivos ou saída de terminal, mais tarde na conversa para que o prefixo estável continue em cache.",
     "inspector.practice.fresh.title": "Comece do zero após uma pausa",
     "inspector.practice.fresh.body": "Caches expiram após inatividade. Inicie uma nova sessão ou compacte a conversa para reconstruir a partir de um resumo curto em vez do histórico completo.",
-    "inspector.importNote": "Sessões exportadas do painel Agent Debug Logs do VS Code (OTLP JSON) podem ser importadas com local-otel/import-agent-debug-session.sh (macOS/Linux) ou .ps1 (Windows); elas são atribuídas ao workspace Git atual e ficam inspecionáveis aqui."
+    "inspector.importNote": "Sessões exportadas do painel Agent Debug Logs do VS Code (OTLP JSON) podem ser importadas com local-otel/import-agent-debug-session.sh (macOS/Linux) ou .ps1 (Windows); elas são atribuídas ao workspace Git atual e ficam inspecionáveis aqui.",
+
+    "budget.exhaustion": "Esgotamento projetado",
+    "budget.exhaustionValue": "{date} (~{days} d)",
+    "budget.exhaustionNone": "não neste ciclo",
+
+    "longterm.title": "Histórico de longo prazo",
+    "longterm.aside": "Além da retenção local de 30 dias",
+    "longterm.blurb": "Rollups diários persistidos no armazenamento analítico DuckDB local pelo container de jobs. Este histórico sobrevive à janela de retenção de 30 dias do Prometheus e a restarts dos containers.",
+    "longterm.col.day": "Dia",
+    "longterm.col.errors": "Erros",
+    "longterm.col.repos": "Workspaces",
+    "longterm.empty": "O armazenamento de longo prazo ainda não tem rollups. A primeira entrada aparece após o primeiro rollup diário no container de jobs.",
+    "longterm.note": "Uma entrada por dia por workspace, agregada de developer_daily_rollup no DuckDB (volume analytics). Os últimos 60 dias são mostrados; o arquivo DuckDB guarda tudo."
 };
 
 const es: Dict = {
@@ -1324,7 +1350,20 @@ const es: Dict = {
     "inspector.practice.late.body": "Coloca el contenido que cambia con frecuencia, como adjuntos de archivos o salida de terminal, más tarde en la conversación para que el prefijo estable siga en caché.",
     "inspector.practice.fresh.title": "Empieza de cero tras una pausa",
     "inspector.practice.fresh.body": "Las cachés expiran tras la inactividad. Inicia una sesión nueva o compacta la conversación para reconstruir desde un resumen corto en lugar del historial completo.",
-    "inspector.importNote": "Las sesiones exportadas del panel Agent Debug Logs de VS Code (OTLP JSON) pueden importarse con local-otel/import-agent-debug-session.sh (macOS/Linux) o .ps1 (Windows); se atribuyen al workspace Git actual y quedan inspeccionables aquí."
+    "inspector.importNote": "Las sesiones exportadas del panel Agent Debug Logs de VS Code (OTLP JSON) pueden importarse con local-otel/import-agent-debug-session.sh (macOS/Linux) o .ps1 (Windows); se atribuyen al workspace Git actual y quedan inspeccionables aquí.",
+
+    "budget.exhaustion": "Agotamiento proyectado",
+    "budget.exhaustionValue": "{date} (~{days} d)",
+    "budget.exhaustionNone": "no en este ciclo",
+
+    "longterm.title": "Historial de largo plazo",
+    "longterm.aside": "Más allá de la retención local de 30 días",
+    "longterm.blurb": "Rollups diarios persistidos en el almacén analítico DuckDB local por el contenedor de jobs. Este historial sobrevive a la ventana de retención de 30 días de Prometheus y a los reinicios de contenedores.",
+    "longterm.col.day": "Día",
+    "longterm.col.errors": "Errores",
+    "longterm.col.repos": "Workspaces",
+    "longterm.empty": "El almacén de largo plazo aún no tiene rollups. La primera entrada aparece tras el primer rollup diario en el contenedor de jobs.",
+    "longterm.note": "Una entrada por día por workspace, agregada desde developer_daily_rollup en DuckDB (volumen analytics). Se muestran los últimos 60 días; el archivo DuckDB lo conserva todo."
 };
 
 const dictionaries: Record<Lang, Dict> = { en, "pt-BR": ptBR, es };

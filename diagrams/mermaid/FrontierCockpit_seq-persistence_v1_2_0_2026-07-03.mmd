@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    participant Runner as Jobs runner (zsh)
+    participant Mat as materialize-copilot-sessions
+    participant Tempo as Tempo
+    participant Col as OTel Collector
+    participant Roll as daily-rollup
+    participant Ins as frontier-local-insights
+    participant Prom as Prometheus
+    participant Duck as DuckDB (analytics volume)
+    loop every 5 minutes
+        Runner->>Mat: run
+        Mat->>Tempo: search + read Copilot traces
+        Mat->>Col: emit copilot_real_session_* metrics
+    end
+    loop daily (and on first start)
+        Runner->>Roll: run
+        Roll->>Ins: run
+        Ins->>Prom: per-repo daily aggregates
+        Ins->>Duck: INSERT developer_daily_rollup
+        Ins->>Duck: rebuild long-term-history.json
+    end
+    loop hourly
+        Runner->>Col: coverage audit metrics
+    end

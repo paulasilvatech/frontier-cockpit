@@ -1,0 +1,34 @@
+flowchart LR
+    subgraph editor["VS Code"]
+        copilot["GitHub Copilot Chat + agent hosts<br/>emit OTLP telemetry"]
+    end
+    subgraph stack["Docker/Podman stack (127.0.0.1 only)"]
+        collector["OTel Collector<br/>ingest 4317/4318, fan-out,<br/>Prometheus exporter 9464"]
+        aspire["Aspire Dashboard 18888<br/>live traces, GenAI visualizer"]
+        tempo["Tempo 3200<br/>traces, 30d"]
+        loki["Loki 3100<br/>logs, 30d"]
+        prom["Prometheus 9090<br/>metrics, 30d"]
+        registry["Registry sidecar<br/>model prices every 5 min"]
+        jobs["Jobs container<br/>materializer 5 min, daily rollup,<br/>coverage audit hourly"]
+        analytics[("analytics volume<br/>DuckDB rollup + JSON snapshot<br/>permanent")]
+        api["Dashboard API 8080<br/>summary, planner, inspector,<br/>plans, long-term history"]
+        web["Mini app 3300<br/>10 views, EN/PT/ES"]
+        grafana["Grafana 3000<br/>8 dashboards, SQLite"]
+    end
+    copilot -- "OTLP HTTP" --> collector
+    collector --> aspire
+    collector -- traces --> tempo
+    collector -- logs --> loki
+    prom -- scrape --> collector
+    registry -- prices --> collector
+    jobs -- "read traces" --> tempo
+    jobs -- "session metrics" --> collector
+    jobs -- "read metrics" --> prom
+    jobs -- "daily rollup" --> analytics
+    api -- PromQL --> prom
+    api -- "trace lookup" --> tempo
+    api -- "snapshot (ro)" --> analytics
+    web -- "/api" --> api
+    grafana -- datasources --> prom
+    grafana -.-> tempo
+    grafana -.-> loki
