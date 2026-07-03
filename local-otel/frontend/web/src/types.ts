@@ -434,6 +434,7 @@ export interface CoachCard {
     title: string;
     insight: string;
     action: string;
+    params?: Record<string, string | number>;
 }
 
 export interface CoachResponse {

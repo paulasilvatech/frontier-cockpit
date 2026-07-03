@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import type {
   Alert,
   AlertSeverity,
+  CoachCard,
   CoachResponse,
   CopilotPlanFacts,
   HistoryPoint,
@@ -25,6 +26,7 @@ import {
   formatCurrency,
   formatNumber,
   formatPercent,
+  setNumberLocale,
   statusClass,
   sumSeries,
   type HistoryField
@@ -541,11 +543,14 @@ function ModelMixPanel({ summary }: Readonly<{ summary: SummaryResponse | null }
           <svg className="mix-split-bar" viewBox="0 0 100 8" preserveAspectRatio="none" role="img" aria-label={t("mix.title")}>
             {entries.map((entry, index) => {
               const previous = entries.slice(0, index).reduce((sum, item) => sum + ((item.share ?? 0) * 100), 0);
-              return <rect key={entry.model} className="seg-mix-cost" x={previous} y="0" width={(entry.share ?? 0) * 100} height="8" />;
+              return <rect key={entry.model} className={`seg-cat-${index % 6}`} x={previous} y="0" width={(entry.share ?? 0) * 100} height="8" />;
             })}
           </svg>
           <div className="mix-split-legend">
-            <span><i className="dot-mix-cost" /> {t("mix.total", { value: formatNumber(mix.totalEstimatedAiCredits, 1) })}</span>
+            {entries.slice(0, 6).map((entry, index) => (
+              <span key={entry.model}><i className={`dot-cat-${index % 6}`} />{entry.model} {formatPercent(entry.share)}</span>
+            ))}
+            <span className="muted">{t("mix.total", { value: formatNumber(mix.totalEstimatedAiCredits, 1) })}</span>
           </div>
         </div>
       ) : null}
@@ -1457,9 +1462,40 @@ function efficiencyTone(score: number | null): string {
   return "bad";
 }
 
+const localizedCoachIds = new Set([
+  "cache-reuse",
+  "cold-context",
+  "context-pressure",
+  "errors",
+  "attribution",
+  "budget-pacing",
+  "model-cost-concentration",
+  "auto-model-adoption",
+  "prompt-io",
+  "credit-budget",
+  "top-sessions",
+  "healthy"
+]);
+
+function localizeCoachCard(card: CoachCard, t: TranslateFn): CoachCard {
+  if (!localizedCoachIds.has(card.id)) {
+    return card;
+  }
+  const params = card.params ?? {};
+  const title = t(`coachCard.${card.id}.title`, params);
+  const insight = t(`coachCard.${card.id}.insight`, params);
+  const action = t(`coachCard.${card.id}.action`, params);
+  return {
+    ...card,
+    title: title.startsWith("coachCard.") ? card.title : title,
+    insight: insight.startsWith("coachCard.") ? card.insight : insight,
+    action: action.startsWith("coachCard.") ? card.action : action
+  };
+}
+
 function CoachView({ coach, summary }: Readonly<{ coach: CoachResponse | null; summary: SummaryResponse | null }>) {
   const t = useT();
-  const cards = coach?.cards ?? [];
+  const cards = (coach?.cards ?? []).map((card) => localizeCoachCard(card, t));
   const topSessions = coach?.topSessions ?? [];
   const economy = summary?.economy;
   const score = economy?.efficiencyScore ?? null;
@@ -1958,7 +1994,7 @@ function AppShell({ lang, setLang }: Readonly<{ lang: Lang; setLang: (lang: Lang
           </span>
           <div className="brand__text">
             <strong>{dashboardTitle}</strong>
-            <span>{participantLine}</span>
+            <span>{participantName}</span>
           </div>
         </div>
         <nav className="nav">
@@ -2064,6 +2100,7 @@ export default function App() {
   useEffect(() => {
     const entry = languages.find((item) => item.id === lang);
     document.documentElement.lang = entry?.htmlLang ?? "en";
+    setNumberLocale(entry?.htmlLang ?? "en");
   }, [lang]);
 
   return (

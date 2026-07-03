@@ -8,18 +8,24 @@ import type {
     ServiceStatus
 } from "./types";
 
+// Formatters follow the active UI language; App calls setNumberLocale on switch.
+let numberLocale = "en-US";
+export function setNumberLocale(locale: string): void {
+    numberLocale = locale;
+}
+
 export function formatNumber(value: number | null, digits = 2): string {
     if (value === null || Number.isNaN(value)) {
         return "Unavailable";
     }
-    return new Intl.NumberFormat("en-US", { maximumFractionDigits: digits }).format(value);
+    return new Intl.NumberFormat(numberLocale, { maximumFractionDigits: digits }).format(value);
 }
 
 export function formatCompact(value: number | null): string {
     if (value === null || Number.isNaN(value)) {
         return "—";
     }
-    return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+    return new Intl.NumberFormat(numberLocale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 export function formatPercent(value: number | null, digits = 0): string {
@@ -33,7 +39,7 @@ export function formatCurrency(value: number | null): string {
     if (value === null || Number.isNaN(value)) {
         return "Unavailable";
     }
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat(numberLocale, {
         style: "currency",
         currency: "USD",
         maximumFractionDigits: 4

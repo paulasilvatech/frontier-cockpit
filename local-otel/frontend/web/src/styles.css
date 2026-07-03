@@ -73,8 +73,11 @@ dd {
 /* App shell */
 .app-shell {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: 264px minmax(0, 1fr);
   min-height: 100vh;
+  width: min(100%, 1840px);
+  margin-inline: auto;
+  border-inline: 1px solid var(--rule);
 }
 
 .sidebar {
@@ -209,11 +212,14 @@ dd {
 }
 
 .nav-blurb {
+  display: -webkit-box;
   overflow: hidden;
   color: var(--ink-3);
   font-size: 0.74rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  white-space: normal;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .nav-badge {
@@ -1856,3 +1862,27 @@ ul {
   margin: 16px 0 8px;
   font-size: 0.9rem;
 }
+
+
+/* Categorical series palette (model mix and other per-series charts) */
+.seg-cat-0 { fill: #0078d4; }
+.seg-cat-1 { fill: #7fba00; }
+.seg-cat-2 { fill: #ffb900; }
+.seg-cat-3 { fill: #f25022; }
+.seg-cat-4 { fill: #5c2d91; }
+.seg-cat-5 { fill: #737373; }
+.dot-cat-0, .dot-cat-1, .dot-cat-2, .dot-cat-3, .dot-cat-4, .dot-cat-5 {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: baseline;
+}
+.dot-cat-0 { background: #0078d4; }
+.dot-cat-1 { background: #7fba00; }
+.dot-cat-2 { background: #ffb900; }
+.dot-cat-3 { background: #f25022; }
+.dot-cat-4 { background: #5c2d91; }
+.dot-cat-5 { background: #737373; }
+.mix-split-legend span { margin-right: 14px; }

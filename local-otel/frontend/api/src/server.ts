@@ -2380,6 +2380,7 @@ interface CoachCard {
   title: string;
   insight: string;
   action: string;
+  params?: Record<string, string | number>;
 }
 
 type SummaryResult = Awaited<ReturnType<typeof summary>>;
@@ -2407,6 +2408,7 @@ const coachRules: CoachRule[] = [
       ? {
         id: "cache-reuse",
         severity: "warning",
+        params: { value: (tokens.cacheEfficiency * 100).toFixed(0) },
         title: "Improve cache reuse",
         insight: `Only ${(tokens.cacheEfficiency * 100).toFixed(0)}% of your prompt tokens came from cache reads. Low reuse spends more AI credits on the same context.`,
         action: "Keep the conversation focused, avoid reopening or re-pasting large files, and let the agent build on prior turns instead of restating context."
@@ -2417,6 +2419,7 @@ const coachRules: CoachRule[] = [
       ? {
         id: "cold-context",
         severity: "warning",
+        params: { value: (tokens.coldRatio * 100).toFixed(0) },
         title: "Reduce cold context",
         insight: `${(tokens.coldRatio * 100).toFixed(0)}% of prompt tokens were uncached cold input. Cold context is the most expensive token class.`,
         action: "Work in shorter, related steps within one session so context stays warm, and attach only the files the task needs."
@@ -2427,6 +2430,7 @@ const coachRules: CoachRule[] = [
       ? {
         id: "context-pressure",
         severity: contextPeak >= thresholds.contextCritPct ? "critical" : "warning",
+        params: { value: contextPeak.toFixed(0) },
         title: "Manage context window pressure",
         insight: `Peak context utilization reached ${contextPeak.toFixed(0)}%. Near-full context raises cost and can degrade answer quality.`,
         action: "Split large tasks into smaller prompts, start a fresh session for unrelated work, and remove stale attachments."
@@ -2437,6 +2441,7 @@ const coachRules: CoachRule[] = [
       ? {
         id: "errors",
         severity: "warning",
+        params: { value: Math.round(errors) },
         title: "Investigate failing operations",
         insight: `${Math.round(errors)} error signals were recorded in this range. Failed tool calls waste credits and slow you down.`,
         action: "Open the failing traces in Aspire or Tempo, fix the root cause, then retry the task."
@@ -2447,6 +2452,7 @@ const coachRules: CoachRule[] = [
       ? {
         id: "attribution",
         severity: "info",
+        params: { value: Math.round(nonWorkspace) },
         title: "Attribute sessions to a workspace",
         insight: `${Math.round(nonWorkspace)} real sessions had no Git workspace attribution, so they are missing from per-project analysis.`,
         action: "Open your project as a Git repository in VS Code so usage is grouped by repo and branch."
@@ -2457,6 +2463,12 @@ const coachRules: CoachRule[] = [
       ? {
         id: "budget-pacing",
         severity: budget.projectedUtilizationPct >= 100 ? "critical" : "warning",
+        params: {
+          projected: budget.projectedMonthEndCredits === null ? "?" : budget.projectedMonthEndCredits.toFixed(0),
+          pct: budget.projectedUtilizationPct.toFixed(0),
+          allowance: budget.monthlyAllowanceCredits,
+          plan: budget.plan
+        },
         title: "Pace your AI Credits pool",
         insight: `At the current daily rate, local AI Credits would reach about ${budget.projectedMonthEndCredits === null ? "?" : budget.projectedMonthEndCredits.toFixed(0)} by the end of the cycle, roughly ${budget.projectedUtilizationPct.toFixed(0)}% of the configured ${budget.monthlyAllowanceCredits} credit pool for the ${budget.plan} plan. This is a local estimate, not official billing.`,
         action: "Reduce cold context, prefer Auto model selection or an included model for routine work, and avoid retrying large prompts before fixing the root cause. If the overshoot is sustained, open the Planner view to draft an overage request with real numbers."
@@ -2467,6 +2479,7 @@ const coachRules: CoachRule[] = [
       ? {
         id: "model-cost-concentration",
         severity: "info",
+        params: { model: mix.entries[0].model, share: ((mix.entries[0].share ?? 0) * 100).toFixed(0) },
         title: "Watch model cost concentration",
         insight: `${mix.entries[0].model} accounts for ${((mix.entries[0].share ?? 0) * 100).toFixed(0)}% of estimated model AI Credits in this range. All billed model interactions consume AI Credits based on model and tokens.`,
         action: "Use a less expensive capable model for routine work and reserve higher-cost models for tasks that genuinely need stronger reasoning."
@@ -2496,6 +2509,7 @@ const coachRules: CoachRule[] = [
     return {
       id: "auto-model-adoption",
       severity: "info",
+      params: { count: simpleFrontier.length, credits: movableCredits.toFixed(1), discount: (autoModelDiscount * 100).toFixed(0) },
       title: "Try Auto model selection for routine work",
       insight: `${simpleFrontier.length} low-complexity session(s) used frontier-tier models and spent ${movableCredits.toFixed(1)} AI Credits. Auto model selection routes each prompt to a capable model and is billed with a ${(autoModelDiscount * 100).toFixed(0)}% discount on model costs on paid plans.`,
       action: "Set the model picker to Auto for everyday edits, boilerplate, and questions. Pick a specific frontier model only for complex refactoring, architecture, or multi-step debugging, and keep one model per session so the prompt cache stays valid."
@@ -2510,6 +2524,7 @@ const coachRules: CoachRule[] = [
     return {
       id: "prompt-io",
       severity: "info",
+      params: { ratio: (input / output).toFixed(0) },
       title: "Trim oversized prompts",
       insight: `You sent about ${(input / output).toFixed(0)}x more input tokens than output tokens. A very high input-to-output ratio usually means too much context is attached for the size of the answer.`,
       action: "Attach only the files and instructions the task needs, ask focused questions, and remove stale attachments so input stays lean relative to the output."
@@ -2520,6 +2535,7 @@ const coachRules: CoachRule[] = [
       ? {
         id: "credit-budget",
         severity: "critical",
+        params: { value: aiCredits.toFixed(1), threshold: thresholds.aiCreditsCrit },
         title: "AI credit consumption is high",
         insight: `Local AI credits reached ${aiCredits.toFixed(1)} in this range, above the critical guardrail of ${thresholds.aiCreditsCrit}.`,
         action: "Batch related questions, reuse context, and reserve frontier models for complex work to control credit burn."
@@ -2533,6 +2549,7 @@ const coachRules: CoachRule[] = [
     return {
       id: "top-sessions",
       severity: "info",
+      params: { credits: lead.aiCredits.toFixed(2), model: lead.model, repo: lead.repoShort },
       title: "Watch your most expensive sessions",
       insight: `Your highest-cost session used ${lead.aiCredits.toFixed(2)} AI credits with model ${lead.model} in ${lead.repoShort}.`,
       action: "Review whether these sessions needed a frontier model. Lighter tasks can use a smaller model to save credits."
@@ -2561,6 +2578,7 @@ function buildCoachCards(data: SummaryResult, sessions: SessionRecord[], modelPr
     cards.push({
       id: "healthy",
       severity: "good",
+      params: {},
       title: "Usage looks healthy",
       insight: "Cache reuse, cold context, context pressure, and AI credits are all within the local guardrails for this range.",
       action: "Keep working as you are. Revisit this view after larger agent sessions to stay efficient."
