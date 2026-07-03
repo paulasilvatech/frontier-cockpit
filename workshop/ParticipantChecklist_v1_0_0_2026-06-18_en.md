@@ -47,7 +47,7 @@ Use this checklist to confirm each participant leaves the workshop with a workin
 - [ ] `local-otel/client.env` contains participant name, customer name, role, plan, seat count, and AI Credits configuration.
 - [ ] Bootstrap completed from the repository root with `bash local-otel/client-bootstrap.sh` on macOS or Linux, or `pwsh -ExecutionPolicy Bypass -File local-otel/client-bootstrap.ps1` on Windows. The bootstrap starts the Docker compose stack, and Docker `restart: unless-stopped` brings it back automatically.
 - [ ] VS Code or VS Code Insiders was restarted after the bootstrap.
-- [ ] `local-otel/check-workshop-local.sh` reports ready. The facilitator can also run `local-otel/workshop-ready.sh` as a convenience wrapper that refreshes and validates a participant machine.
+- [ ] `local-otel/check-workshop-local.sh` (Windows: `local-otel/check-workshop-local.ps1`) reports ready. The facilitator can also run `local-otel/workshop-ready.sh` (Windows: `local-otel/workshop-ready.ps1`) as a convenience wrapper that refreshes and validates a participant machine.
 - [ ] The `copilot-otel-jobs` container is running, so the session materializer and daily rollup run automatically on macOS, Linux, and Windows without any LaunchAgents or other host schedulers.
 - [ ] Content capture is off unless the facilitator approved opting in with `FRONTIER_ENABLE_CONTENT_CAPTURE=true` in `local-otel/client.env`.
 - [ ] Frontier Cockpit Local mini app opens at `http://localhost:3300`.

@@ -25,10 +25,16 @@ Estimated duration: 30 minutes.
 
 ## Step 1, Start The Local Stack
 
-Run from the cloned repository root:
+Run from the cloned repository root (macOS/Linux; on Linux install `zsh` first):
 
 ```bash
 local-otel/start-full-stack.sh
+```
+
+Windows PowerShell:
+
+```powershell
+pwsh -ExecutionPolicy Bypass -File local-otel/start-full-stack.ps1
 ```
 
 Expected local endpoints:
@@ -51,6 +57,12 @@ Run from the cloned repository root:
 
 ```bash
 local-otel/check-workshop-local.sh
+```
+
+Windows PowerShell:
+
+```powershell
+pwsh -ExecutionPolicy Bypass -File local-otel/check-workshop-local.ps1
 ```
 
 The output should show Docker, Collector, Aspire, Grafana, Prometheus, Tempo, Loki, the jobs container, and VS Code settings as ready.

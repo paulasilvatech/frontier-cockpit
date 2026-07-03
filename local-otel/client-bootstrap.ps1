@@ -181,6 +181,16 @@ function Ensure-Docker {
 }
 
 function Start-Stack {
+    # A leftover standalone Aspire container from older setups can hold host
+    # ports 4317/4318, which the full-stack Collector needs.
+    $runningNames = (& docker ps --format '{{.Names}}') -split "`n"
+    if ($runningNames -contains "aspire-dashboard") {
+        $standalonePorts = (& docker port aspire-dashboard "18890/tcp" 2>$null)
+        if ($standalonePorts -match ':4318') {
+            Write-Warn "Stopping the standalone Aspire container to free OTLP ports 4317/4318 for the Collector."
+            docker stop aspire-dashboard *> $null
+        }
+    }
     Push-Location $StackDir
     try {
         $composeArgs = @("compose", "-f", "docker-compose.yml", "up", "-d")

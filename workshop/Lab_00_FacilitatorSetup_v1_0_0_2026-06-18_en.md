@@ -39,10 +39,14 @@ Estimated duration: 45 minutes.
 
 ## Setup Validation
 
-Run from the cloned repository root:
+Run from the cloned repository root. On macOS install nothing extra; on Linux install `zsh` first (`sudo apt install zsh`); on Windows use PowerShell 7+ (`pwsh`) with the `.ps1` equivalents shown below.
 
 ```bash
 local-otel/check-workshop-local.sh
+```
+
+```powershell
+pwsh -ExecutionPolicy Bypass -File local-otel/check-workshop-local.ps1
 ```
 
 Expected result:
@@ -57,7 +61,11 @@ If not ready, start the local stack:
 local-otel/start-full-stack.sh
 ```
 
-For Azure demos, start hybrid mode:
+```powershell
+pwsh -ExecutionPolicy Bypass -File local-otel/start-full-stack.ps1
+```
+
+For Azure demos, start hybrid mode (`--hybrid` on macOS/Linux, `-Hybrid` on Windows):
 
 ```bash
 local-otel/start-full-stack.sh --hybrid

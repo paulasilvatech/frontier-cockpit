@@ -77,6 +77,38 @@ jobs:
           done < <(git ls-files '*.sh' '*.zsh')
           exit "$fail"
 
+      - name: Parse and lint PowerShell scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          $files = git ls-files '*.ps1'
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $failed = $true
+              Write-Host "FAIL $file"
+              $errors | ForEach-Object { Write-Host "  $($_.Extent.StartLineNumber): $($_.Message)" }
+            }
+            else {
+              Write-Host "ok: $file (parse)"
+            }
+          }
+          if (Get-Module -ListAvailable PSScriptAnalyzer) {
+            foreach ($file in $files) {
+              $findings = Invoke-ScriptAnalyzer -Path $file -Severity Error
+              if ($findings) {
+                $failed = $true
+                $findings | ForEach-Object { Write-Host "FAIL $($file): $($_.RuleName) line $($_.Line): $($_.Message)" }
+              }
+              else {
+                Write-Host "ok: $file (analyzer)"
+              }
+            }
+          }
+          if ($failed) { exit 1 }
+
   dashboard-app:
     name: Dashboard API and web build
     runs-on: ubuntu-latest

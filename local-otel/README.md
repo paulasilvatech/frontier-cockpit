@@ -232,7 +232,7 @@ Prerequisites by platform:
 
 - macOS: zsh and python3 ship with the OS; nothing extra is needed.
 - Linux: the orchestration scripts (`start-full-stack.sh`, `stop-full-stack.sh`, `check-workshop-local.sh`, `workshop-ready.sh`) use zsh, which most distributions do not install by default. Install it first (`sudo apt install zsh` on Debian/Ubuntu, `sudo dnf install zsh` on Fedora) along with `python3`.
-- Windows: use `client-bootstrap.ps1` under `pwsh`. The zsh orchestration scripts require WSL; the bootstrap script alone covers the standard setup.
+- Windows: use PowerShell 7+ (`pwsh`). Every orchestration script has a native PowerShell equivalent — `client-bootstrap.ps1`, `start-full-stack.ps1`, `stop-full-stack.ps1`, `check-workshop-local.ps1`, and `workshop-ready.ps1` — so WSL is not required. Host-only zsh helpers (VS Code memory sampling) are macOS/Linux extras; `workshop-ready.ps1` runs the materializer and coverage audit inside the jobs container instead.
 
 Do not run `docker compose up` directly from `local-otel/stack` before the first bootstrap: the compose file expects the gitignored `aspire-api-key.env` and `grafana-admin.env` files, which `start-full-stack.sh`, `client-bootstrap.sh`, and `client-bootstrap.ps1` generate on first run.
 
@@ -262,6 +262,12 @@ Workshop-ready local setup, run from the participant Git repository:
 local-otel/workshop-ready.sh
 ```
 
+Windows PowerShell:
+
+```powershell
+pwsh -ExecutionPolicy Bypass -File local-otel/workshop-ready.ps1
+```
+
 This command is local-only. It does not enable hybrid mode or forward data to Azure. It enables the local OpenTelemetry environment, starts the full Docker stack, registers the current Git workspace, sends a synthetic validation span, materializes recent GitHub Copilot sessions, refreshes support metrics, and runs the workshop validation gate.
 
 Open the local mini app after setup:
@@ -278,7 +284,13 @@ Full local stack, live view plus local history:
 local-otel/start-full-stack.sh
 ```
 
-On first start the script generates the Grafana admin password into `local-otel/stack/grafana-admin.env` and the Aspire API key into `local-otel/stack/aspire-api-key.env`. Both files are gitignored.
+Windows PowerShell:
+
+```powershell
+pwsh -ExecutionPolicy Bypass -File local-otel/start-full-stack.ps1
+```
+
+On first start the script generates the Grafana admin password into `local-otel/stack/grafana-admin.env` and the Aspire API key into `local-otel/stack/aspire-api-key.env`. Both files are gitignored. Stop the stack with `local-otel/stop-full-stack.sh` (macOS/Linux) or `local-otel/stop-full-stack.ps1` (Windows); add `--reset` / `-Reset` to also delete the local history volumes.
 
 Frontier Cockpit Hybrid, local history plus Azure forwarding:
 
@@ -327,7 +339,13 @@ Use the workshop validation gate:
 local-otel/check-workshop-local.sh
 ```
 
-After the participant has generated one real GitHub Copilot Chat or agent session in the repository, use strict data mode:
+Windows PowerShell:
+
+```powershell
+pwsh -ExecutionPolicy Bypass -File local-otel/check-workshop-local.ps1
+```
+
+After the participant has generated one real GitHub Copilot Chat or agent session in the repository, use strict data mode (`--strict-data` on macOS/Linux, `-StrictData` on Windows):
 
 ```bash
 local-otel/check-workshop-local.sh --strict-data

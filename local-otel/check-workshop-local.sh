@@ -94,6 +94,7 @@ for item in \
   "http://localhost:3300/api/summary?range=24h&repo=all|Dashboard summary API" \
   "http://localhost:3300/api/sessions?range=24h&repo=all|Dashboard sessions API" \
   "http://localhost:3300/api/coach?range=24h&repo=all|Dashboard coach API" \
+  "http://localhost:3300/api/planner?lookback=7d&weeks=4&repo=all|Dashboard planner API" \
   "http://localhost:3000/api/health|Grafana" \
   "http://localhost:18888|Aspire Dashboard" \
   "http://localhost:9090/-/ready|Prometheus" \

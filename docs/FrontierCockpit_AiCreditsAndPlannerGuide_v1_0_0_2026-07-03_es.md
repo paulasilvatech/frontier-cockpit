@@ -87,6 +87,12 @@ El "flex allotment" de los planes individuales es un monto variable adicional so
    local-otel/stop-full-stack.sh && local-otel/start-full-stack.sh
    ```
 
+   Windows PowerShell:
+
+   ```powershell
+   pwsh -File local-otel/stop-full-stack.ps1; pwsh -File local-otel/start-full-stack.ps1
+   ```
+
 4. Abre `http://localhost:3300` → **Credits**. El panel de presupuesto ahora muestra tu plan, el allowance incluido correcto y si el valor es `standard`, `promotional` o un `override`. El panel de comparación muestra los seis planes con tu plan resaltado.
 
 5. Verifica desde la terminal (datos reales, no hardcoded):

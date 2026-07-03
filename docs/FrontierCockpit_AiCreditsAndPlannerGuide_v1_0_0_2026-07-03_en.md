@@ -87,6 +87,12 @@ The "flex allotment" on individual plans is an additional variable amount on top
    local-otel/stop-full-stack.sh && local-otel/start-full-stack.sh
    ```
 
+   Windows PowerShell:
+
+   ```powershell
+   pwsh -File local-otel/stop-full-stack.ps1; pwsh -File local-otel/start-full-stack.ps1
+   ```
+
 4. Open `http://localhost:3300` → **Credits**. The budget panel now shows your plan, the correct included allowance, and whether the value is `standard`, `promotional`, or an `override`. The plan comparison panel shows all six plans with your configured plan highlighted.
 
 5. Verify from the terminal (real data, not hardcoded):
