@@ -129,6 +129,28 @@ jobs:
         working-directory: local-otel/stack
         run: docker compose -f docker-compose.yml build jobs registry
 
+      # `docker compose config` never resolves remote tags, so a pinned image
+      # that does not exist on the registry (like grafana-oss:11.6.16 once was)
+      # only fails on the user's machine. Resolve every pinned tag here.
+      - name: Verify pinned images exist on their registries
+        working-directory: local-otel/stack
+        run: |
+          images=$(docker compose -f docker-compose.yml config --images | sort -u)
+          status=0
+          for image in $images; do
+            case "$image" in
+              *:*) ;; # pinned remote image, verify below
+              *) continue ;; # locally built service images carry no remote tag
+            esac
+            if docker buildx imagetools inspect "$image" > /dev/null 2>&1; then
+              echo "ok: $image"
+            else
+              echo "MISSING: $image does not resolve on its registry" >&2
+              status=1
+            fi
+          done
+          exit $status
+
   secrets:
     name: Secret scanning
     runs-on: ubuntu-latest

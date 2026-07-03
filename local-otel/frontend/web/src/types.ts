@@ -109,11 +109,111 @@ export interface EconomySummary {
 }
 
 export type BudgetAlertLevel = "ok" | "warning" | "critical" | "over";
+export type AllowanceSource = "standard" | "promotional" | "override" | "unpublished";
+export type PlanAudience = "individual" | "organization";
+export type PlanModelAccess = "auto-only" | "full";
+export type ModelTier = "frontier" | "standard" | "unknown";
+
+export interface CopilotPlanFacts {
+    id: string;
+    audience: PlanAudience;
+    priceUsdMonth: number;
+    perSeat: boolean;
+    baseCredits: number | null;
+    flexCredits: number;
+    includedCredits: number | null;
+    promoCredits: number | null;
+    modelAccess: PlanModelAccess;
+}
+
+export interface BillingFacts {
+    creditUsd: number;
+    autoModelDiscount: number;
+    noRollover: boolean;
+    resetRule: string;
+    meteringRule: string;
+    overageRule: string;
+    promoWindow: { start: string; end: string; active: boolean };
+    configuredPlan: string;
+    seats: number;
+    allowance: {
+        credits: number;
+        perSeatCredits: number;
+        source: AllowanceSource;
+        promoActive: boolean;
+    };
+    planCatalog: CopilotPlanFacts[];
+    source: string;
+}
+
+export interface PlannerModelSplit {
+    tier: ModelTier;
+    credits: number;
+    sessions: number;
+    avgToolCalls: number | null;
+    models: string[];
+}
+
+export interface PlannerReviewSession {
+    traceId: string;
+    repoShort: string;
+    model: string;
+    aiCredits: number;
+    toolCalls: number;
+    outputTokens: number;
+}
+
+export type PlannerVerdict = "justified" | "review" | "no-frontier" | "no-data";
+
+export interface PlannerInsight {
+    generatedAt: string;
+    scope: string;
+    lookbackDays: number;
+    horizonWeeks: number;
+    plan: string;
+    seats: number;
+    allowanceCredits: number;
+    allowanceSource: AllowanceSource;
+    perSeatAllowanceCredits: number;
+    creditUsd: number;
+    autoModelDiscount: number;
+    status: MetricStatus;
+    message?: string;
+    observed: {
+        workspaceCredits: number | null;
+        allCredits: number | null;
+        workspaceShare: number | null;
+        workspaceSessions: number;
+        cacheEfficiency: number | null;
+    };
+    forecast: {
+        workspaceDailyCredits: number | null;
+        allDailyCredits: number | null;
+        workspaceHorizonCredits: number | null;
+        allMonthlyCredits: number | null;
+        monthUtilizationPct: number | null;
+        projectedOverageCredits: number | null;
+        projectedOverageUsd: number | null;
+        needsOverage: boolean;
+    };
+    modelStrategy: {
+        splits: PlannerModelSplit[];
+        frontierShare: number | null;
+        frontierComplexAvgToolCalls: number | null;
+        lowComplexityFrontierCredits: number;
+        reviewSessions: PlannerReviewSession[];
+        autoWhatIfSavingsCredits: number | null;
+        verdict: PlannerVerdict;
+    };
+    justificationMarkdown: string;
+}
 
 export interface BudgetInsight {
     plan: string;
     seats: number;
     monthlyAllowanceCredits: number;
+    allowanceSource: AllowanceSource;
+    promoActive: boolean;
     observedCredits: number | null;
     utilizationPct: number | null;
     remainingCredits: number | null;
@@ -169,6 +269,8 @@ export interface SummaryResponse {
     repositories: string[];
     links: AppLink[];
     thresholds: Record<string, number>;
+    coachTuning: Record<string, number>;
+    billing: BillingFacts;
     alerts: Alert[];
     economy: EconomySummary;
     budget: BudgetInsight;

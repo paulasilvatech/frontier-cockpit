@@ -1828,3 +1828,31 @@ ul {
     grid-template-columns: 1fr;
   }
 }
+/* Planner view */
+.planner-justification {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--line-1, #d0d0d0);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: inherit;
+  background: transparent;
+  resize: vertical;
+}
+
+.planner-overage {
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+.warn-text {
+  color: var(--c-red-700, #b3261e);
+}
+
+.planner-review-title {
+  margin: 16px 0 8px;
+  font-size: 0.9rem;
+}

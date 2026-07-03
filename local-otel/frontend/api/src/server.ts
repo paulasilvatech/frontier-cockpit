@@ -82,43 +82,136 @@ const thresholds = {
   cacheEfficiencyWarn: numberFromEnv("THRESHOLD_CACHE_EFFICIENCY_WARN", 0.35),
   coldRatioWarn: numberFromEnv("THRESHOLD_COLD_RATIO_WARN", 0.45),
   budgetWarnPct: numberFromEnv("THRESHOLD_AI_CREDITS_BUDGET_WARN_PCT", 75),
-  budgetCritPct: numberFromEnv("THRESHOLD_AI_CREDITS_BUDGET_CRIT_PCT", 90)
+  budgetCritPct: numberFromEnv("THRESHOLD_AI_CREDITS_BUDGET_CRIT_PCT", 90),
+  modelConcentrationInfo: numberFromEnv("THRESHOLD_MODEL_CONCENTRATION", 0.6),
+  promptIoRatioInfo: numberFromEnv("THRESHOLD_PROMPT_IO_RATIO", 20)
+};
+
+// Coaching and planning tuning. These control how the efficiency score,
+// savings estimates, and the workspace planner classify and weigh local
+// telemetry. They are heuristics for local coaching, not official billing
+// math, and every one of them is overridable with an environment variable.
+const coachTuning = {
+  scoreBase: numberFromEnv("COACH_SCORE_BASE", 55),
+  scoreCacheWeight: numberFromEnv("COACH_SCORE_CACHE_WEIGHT", 45),
+  scoreColdPenalty: numberFromEnv("COACH_SCORE_COLD_PENALTY", 30),
+  scoreContextPenalty: numberFromEnv("COACH_SCORE_CONTEXT_PENALTY", 15),
+  scoreErrorPenalty: numberFromEnv("COACH_SCORE_ERROR_PENALTY", 10),
+  coldSavingsFactor: numberFromEnv("COACH_COLD_SAVINGS_FACTOR", 0.5),
+  errorSavingsFactor: numberFromEnv("COACH_ERROR_SAVINGS_FACTOR", 0.15),
+  frontierOutputPriceMinUsdPerMillion: numberFromEnv("PLANNER_FRONTIER_OUTPUT_PRICE_MIN", 20),
+  complexSessionMinToolCalls: numberFromEnv("PLANNER_COMPLEX_SESSION_MIN_TOOL_CALLS", 5)
 };
 
 function lowerFromEnv(name: string, fallback: string): string {
   return stringFromEnv(name, fallback).toLowerCase();
 }
 
-// GitHub Copilot usage-based billing is measured in GitHub AI Credits. These
-// defaults follow the current GitHub documentation and remain configurable
-// because plan allowances and promotional periods can change.
-// Sources: GitHub Copilot usage-based billing for individuals and for
-// organizations and enterprises. Standard allowances are the cockpit default;
-// promotional allowances must be enabled explicitly for qualifying customers.
-const standardAiCreditsByPlan: Record<string, number> = {
-  pro: 1500,
-  "pro+": 7000,
-  max: 20000,
-  business: 1900,
-  enterprise: 3900
-};
+// GitHub Copilot usage-based billing (effective June 1, 2026) is measured in
+// GitHub AI Credits, where 1 AI Credit equals US$0.01. Usage is metered from
+// tokens (input, output, cached) at each model's listed API rate; code
+// completions and next edit suggestions never consume credits, and Auto model
+// selection applies a discount to model costs on paid plans. Allowances reset
+// on the first day of each calendar month (UTC) and do not roll over.
+// Individual paid plans include base credits (matching the plan price) plus a
+// flex allotment; Business and Enterprise seats include exactly the per-seat
+// base. Existing Business and Enterprise customers keep a temporary
+// promotional allowance during the transition window. These defaults follow
+// the GitHub Docs pages "Usage-based billing for individuals" and
+// "Usage-based billing for organizations and enterprises" and remain
+// configurable because allowances and promotions change over time.
+const aiCreditUsd = numberFromEnv("AI_CREDIT_USD", 0.01);
+const autoModelDiscount = numberFromEnv("AUTO_MODEL_SELECTION_DISCOUNT", 0.1);
+const promoWindowStart = stringFromEnv("FRONTIER_AI_CREDITS_PROMO_START", "2026-06-01");
+const promoWindowEnd = stringFromEnv("FRONTIER_AI_CREDITS_PROMO_END", "2026-09-01");
 
-const promotionalAiCreditsByPlan: Record<string, number> = {
-  business: 3000,
-  enterprise: 7000
-};
+type PlanAudience = "individual" | "organization";
+type PlanModelAccess = "auto-only" | "full";
+
+interface CopilotPlanFacts {
+  id: string;
+  audience: PlanAudience;
+  priceUsdMonth: number;
+  perSeat: boolean;
+  baseCredits: number | null;
+  flexCredits: number;
+  includedCredits: number | null;
+  promoCredits: number | null;
+  modelAccess: PlanModelAccess;
+}
+
+const copilotPlanCatalog: CopilotPlanFacts[] = [
+  { id: "free", audience: "individual", priceUsdMonth: 0, perSeat: false, baseCredits: null, flexCredits: 0, includedCredits: null, promoCredits: null, modelAccess: "auto-only" },
+  { id: "pro", audience: "individual", priceUsdMonth: 10, perSeat: false, baseCredits: 1000, flexCredits: 500, includedCredits: 1500, promoCredits: null, modelAccess: "full" },
+  { id: "pro+", audience: "individual", priceUsdMonth: 39, perSeat: false, baseCredits: 3900, flexCredits: 3100, includedCredits: 7000, promoCredits: null, modelAccess: "full" },
+  { id: "max", audience: "individual", priceUsdMonth: 100, perSeat: false, baseCredits: 10000, flexCredits: 10000, includedCredits: 20000, promoCredits: null, modelAccess: "full" },
+  { id: "business", audience: "organization", priceUsdMonth: 19, perSeat: true, baseCredits: 1900, flexCredits: 0, includedCredits: 1900, promoCredits: 3000, modelAccess: "full" },
+  { id: "enterprise", audience: "organization", priceUsdMonth: 39, perSeat: true, baseCredits: 3900, flexCredits: 0, includedCredits: 3900, promoCredits: 7000, modelAccess: "full" }
+];
 
 const copilotPlan = lowerFromEnv("FRONTIER_COPILOT_PLAN", "business");
 const copilotSeats = numberFromEnv("FRONTIER_COPILOT_SEATS", 1);
 const usePromotionalAllowance = lowerFromEnv("FRONTIER_AI_CREDITS_USE_PROMO", "false") === "true";
-const defaultAiCreditsPerSeat =
-  (usePromotionalAllowance ? promotionalAiCreditsByPlan[copilotPlan] : undefined) ??
-  standardAiCreditsByPlan[copilotPlan] ??
-  standardAiCreditsByPlan.business;
-const aiCreditsMonthlyAllowance = numberFromEnv(
-  "FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE",
-  defaultAiCreditsPerSeat * copilotSeats
-);
+const allowanceOverride = numberFromEnv("FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE", Number.NaN);
+
+function planFactsFor(planId: string): CopilotPlanFacts {
+  return copilotPlanCatalog.find((plan) => plan.id === planId) ?? copilotPlanCatalog.find((plan) => plan.id === "business")!;
+}
+
+function promoWindowActive(now: Date): boolean {
+  const iso = now.toISOString().slice(0, 10);
+  return iso >= promoWindowStart && iso < promoWindowEnd;
+}
+
+type AllowanceSource = "standard" | "promotional" | "override" | "unpublished";
+
+interface AllowanceResolution {
+  credits: number;
+  perSeatCredits: number;
+  source: AllowanceSource;
+  promoActive: boolean;
+}
+
+// The promotional allowance only applies to qualifying existing customers,
+// only when explicitly enabled, and only while the promotional window is
+// open — after it closes the cockpit falls back to the standard allowance
+// automatically so the dashboard never overstates included credits.
+function resolveAllowance(now = new Date()): AllowanceResolution {
+  const plan = planFactsFor(copilotPlan);
+  const promoActive = usePromotionalAllowance && plan.promoCredits !== null && promoWindowActive(now);
+  if (Number.isFinite(allowanceOverride)) {
+    return { credits: allowanceOverride, perSeatCredits: allowanceOverride / Math.max(1, copilotSeats), source: "override", promoActive };
+  }
+  if (plan.includedCredits === null) {
+    return { credits: 0, perSeatCredits: 0, source: "unpublished", promoActive: false };
+  }
+  const perSeat = promoActive ? plan.promoCredits ?? plan.includedCredits : plan.includedCredits;
+  const seats = plan.perSeat ? Math.max(1, copilotSeats) : 1;
+  return {
+    credits: perSeat * seats,
+    perSeatCredits: perSeat,
+    source: promoActive ? "promotional" : "standard",
+    promoActive
+  };
+}
+
+function billingFacts(now = new Date()) {
+  const allowance = resolveAllowance(now);
+  return {
+    creditUsd: aiCreditUsd,
+    autoModelDiscount,
+    noRollover: true,
+    resetRule: "Allowances reset at 00:00 UTC on the first day of each calendar month and unused credits do not carry over.",
+    meteringRule: "Usage is metered from input, output, and cached tokens at each model's listed API rate. Code completions and next edit suggestions do not consume AI Credits.",
+    overageRule: "When the included allowance is exhausted, paid plans can purchase additional usage billed at per-model API rates at the end of the cycle. Organization admins must enable overages and can set per-user budgets.",
+    promoWindow: { start: promoWindowStart, end: promoWindowEnd, active: promoWindowActive(now) },
+    configuredPlan: copilotPlan,
+    seats: copilotSeats,
+    allowance,
+    planCatalog: copilotPlanCatalog,
+    source: "GitHub Docs: Copilot plans and usage-based billing (individuals; organizations and enterprises). Values are reference defaults and stay configurable because they can change."
+  };
+}
 
 // Participant identity makes the local cockpit a reusable workshop template.
 // Each participant sets these via environment variables (see workshop.env).
@@ -807,7 +900,8 @@ interface EconomySummary {
 
 // Local token-economy heuristics. All values are local AIU estimates for
 // coaching, not official GitHub billing. The efficiency score rewards cache
-// reuse and penalizes cold context, context pressure, and error loops.
+// reuse and penalizes cold context, context pressure, and error loops. The
+// weights and savings factors live in coachTuning and are env-overridable.
 function computeEconomy(input: {
   aiCredits: number;
   sessions: number;
@@ -821,18 +915,18 @@ function computeEconomy(input: {
 
   let efficiencyScore: number | null = null;
   if (promptTotal > 0 || sessions > 0) {
-    const cacheComponent = (cacheEfficiency ?? 0) * 45;
-    const coldPenalty = (coldRatio ?? 0) * 30;
-    const contextPenalty = contextPeak == null ? 0 : Math.min(contextPeak / 100, 1) * 15;
+    const cacheComponent = (cacheEfficiency ?? 0) * coachTuning.scoreCacheWeight;
+    const coldPenalty = (coldRatio ?? 0) * coachTuning.scoreColdPenalty;
+    const contextPenalty = contextPeak == null ? 0 : Math.min(contextPeak / 100, 1) * coachTuning.scoreContextPenalty;
     const errorRate = sessions > 0 ? errors / sessions : 0;
-    const errorPenalty = Math.min(errorRate, 1) * 10;
-    const score = 55 + cacheComponent - coldPenalty - contextPenalty - errorPenalty;
+    const errorPenalty = Math.min(errorRate, 1) * coachTuning.scoreErrorPenalty;
+    const score = coachTuning.scoreBase + cacheComponent - coldPenalty - contextPenalty - errorPenalty;
     efficiencyScore = Math.max(0, Math.min(100, Math.round(score)));
   }
 
-  const coldSavings = aiCredits * (coldRatio ?? 0) * 0.5;
+  const coldSavings = aiCredits * (coldRatio ?? 0) * coachTuning.coldSavingsFactor;
   const errorRate = sessions > 0 ? errors / sessions : 0;
-  const errorSavings = aiCredits * Math.min(errorRate, 1) * 0.15;
+  const errorSavings = aiCredits * Math.min(errorRate, 1) * coachTuning.errorSavingsFactor;
   const potentialSavingsCredits = coldSavings + errorSavings;
 
   const savingsOpportunities: SavingsOpportunity[] = [
@@ -886,6 +980,8 @@ interface AiCreditsBudgetInsight {
   plan: string;
   seats: number;
   monthlyAllowanceCredits: number;
+  allowanceSource: AllowanceSource;
+  promoActive: boolean;
   observedCredits: number | null;
   utilizationPct: number | null;
   remainingCredits: number | null;
@@ -962,16 +1058,18 @@ function budgetAlertLevel(utilizationPct: number | null): AiCreditsBudgetInsight
 
 async function aiCreditsBudgetInsight(): Promise<AiCreditsBudgetInsight> {
   const cycle = billingCycle();
+  const allowance = resolveAllowance();
+  const allowanceCredits = allowance.credits;
   const monthWindow = `${Math.max(1, cycle.daysElapsed)}d`;
   const observed = await scalarMetric(`${realSessionSum("nano_aiu", monthWindow, "")} / 1e9`);
   const observedCredits = observed.value;
   const status: MetricStatus = observedCredits === null ? "unavailable" : "ok";
   const utilizationPct =
-    observedCredits !== null && aiCreditsMonthlyAllowance > 0
-      ? (observedCredits / aiCreditsMonthlyAllowance) * 100
+    observedCredits !== null && allowanceCredits > 0
+      ? (observedCredits / allowanceCredits) * 100
       : null;
   const remainingCredits =
-    observedCredits === null ? null : Math.max(0, aiCreditsMonthlyAllowance - observedCredits);
+    observedCredits === null ? null : Math.max(0, allowanceCredits - observedCredits);
   const dailyRate =
     observedCredits !== null && cycle.daysElapsed > 0 ? observedCredits / cycle.daysElapsed : null;
   // Only project month-end consumption once a few days of the cycle have
@@ -979,13 +1077,15 @@ async function aiCreditsBudgetInsight(): Promise<AiCreditsBudgetInsight> {
   const canProject = cycle.daysElapsed >= 3;
   const projectedMonthEnd = canProject && dailyRate !== null ? dailyRate * cycle.daysInCycle : null;
   const projectedUtilizationPct =
-    projectedMonthEnd !== null && aiCreditsMonthlyAllowance > 0
-      ? (projectedMonthEnd / aiCreditsMonthlyAllowance) * 100
+    projectedMonthEnd !== null && allowanceCredits > 0
+      ? (projectedMonthEnd / allowanceCredits) * 100
       : null;
   return {
     plan: copilotPlan,
     seats: copilotSeats,
-    monthlyAllowanceCredits: aiCreditsMonthlyAllowance,
+    monthlyAllowanceCredits: allowanceCredits,
+    allowanceSource: allowance.source,
+    promoActive: allowance.promoActive,
     observedCredits,
     utilizationPct,
     remainingCredits,
@@ -1249,6 +1349,8 @@ async function summary(url: URL) {
     repositories: repoValues,
     links: appLinks(),
     thresholds,
+    coachTuning,
+    billing: billingFacts(),
     alerts,
     economy,
     budget,
@@ -1458,6 +1560,340 @@ async function sessionsBreakdown(
   }
 }
 
+type ModelTier = "frontier" | "standard" | "unknown";
+
+interface ModelPrice {
+  inputUsdPerMillion: number | null;
+  outputUsdPerMillion: number | null;
+  tier: ModelTier;
+}
+
+// Model prices come from the local registry sidecar
+// (copilot_model_price_usd_per_million_ratio). A model counts as frontier tier
+// when its output list price crosses the configurable planner threshold, so
+// the classification follows whatever prices the user registered instead of a
+// hardcoded model list.
+async function modelPriceMap(): Promise<Map<string, ModelPrice>> {
+  const prices = await seriesMetric(
+    "max by (gen_ai_request_model, gen_ai_token_type) (copilot_model_price_usd_per_million_ratio)"
+  );
+  const byModel = new Map<string, ModelPrice>();
+  for (const point of prices.points) {
+    const model = point.labels.gen_ai_request_model;
+    if (!model) {
+      continue;
+    }
+    let entry = byModel.get(model);
+    if (!entry) {
+      entry = { inputUsdPerMillion: null, outputUsdPerMillion: null, tier: "unknown" };
+      byModel.set(model, entry);
+    }
+    const tokenType = (point.labels.gen_ai_token_type ?? "").toLowerCase();
+    if (tokenType.includes("output")) {
+      entry.outputUsdPerMillion = point.value;
+    } else if (tokenType.includes("input")) {
+      entry.inputUsdPerMillion = point.value;
+    }
+  }
+  for (const entry of byModel.values()) {
+    if (entry.outputUsdPerMillion !== null) {
+      entry.tier = entry.outputUsdPerMillion >= coachTuning.frontierOutputPriceMinUsdPerMillion ? "frontier" : "standard";
+    }
+  }
+  return byModel;
+}
+
+function modelTierOf(model: string, prices: Map<string, ModelPrice>): ModelTier {
+  return prices.get(model)?.tier ?? "unknown";
+}
+
+interface PlannerModelSplit {
+  tier: ModelTier;
+  credits: number;
+  sessions: number;
+  avgToolCalls: number | null;
+  models: string[];
+}
+
+interface PlannerReviewSession {
+  traceId: string;
+  repoShort: string;
+  model: string;
+  aiCredits: number;
+  toolCalls: number;
+  outputTokens: number;
+}
+
+interface PlannerInsight {
+  generatedAt: string;
+  scope: string;
+  lookbackDays: number;
+  horizonWeeks: number;
+  plan: string;
+  seats: number;
+  allowanceCredits: number;
+  allowanceSource: AllowanceSource;
+  perSeatAllowanceCredits: number;
+  creditUsd: number;
+  autoModelDiscount: number;
+  status: MetricStatus;
+  message?: string;
+  observed: {
+    workspaceCredits: number | null;
+    allCredits: number | null;
+    workspaceShare: number | null;
+    workspaceSessions: number;
+    cacheEfficiency: number | null;
+  };
+  forecast: {
+    workspaceDailyCredits: number | null;
+    allDailyCredits: number | null;
+    workspaceHorizonCredits: number | null;
+    allMonthlyCredits: number | null;
+    monthUtilizationPct: number | null;
+    projectedOverageCredits: number | null;
+    projectedOverageUsd: number | null;
+    needsOverage: boolean;
+  };
+  modelStrategy: {
+    splits: PlannerModelSplit[];
+    frontierShare: number | null;
+    frontierComplexAvgToolCalls: number | null;
+    lowComplexityFrontierCredits: number;
+    reviewSessions: PlannerReviewSession[];
+    autoWhatIfSavingsCredits: number | null;
+    verdict: "justified" | "review" | "no-frontier" | "no-data";
+  };
+  justificationMarkdown: string;
+}
+
+const plannerLookbackDays: Record<string, number> = { "24h": 1, "7d": 7, "14d": 14, "30d": 30 };
+
+function plannerLookbackFromUrl(url: URL): { literal: string; days: number } {
+  const requested = url.searchParams.get("lookback") ?? "7d";
+  const days = plannerLookbackDays[requested];
+  return days ? { literal: requested, days } : { literal: "7d", days: 7 };
+}
+
+function plannerWeeksFromUrl(url: URL): number {
+  const parsed = Number.parseInt(url.searchParams.get("weeks") ?? "4", 10);
+  if (!Number.isFinite(parsed)) {
+    return 4;
+  }
+  return Math.min(26, Math.max(1, parsed));
+}
+
+function round2(value: number | null): number | null {
+  return value === null ? null : Math.round(value * 100) / 100;
+}
+
+function buildJustificationMarkdown(insight: PlannerInsight): string {
+  const lines: string[] = [];
+  const usd = (credits: number | null) =>
+    credits === null ? "n/a" : `US$${(credits * insight.creditUsd).toFixed(2)}`;
+  lines.push(`# AI Credits plan for ${insight.scope}`);
+  lines.push("");
+  lines.push(`Prepared from local Frontier Cockpit telemetry (last ${insight.lookbackDays} day(s), horizon ${insight.horizonWeeks} week(s)). Local estimates from OpenTelemetry, not official GitHub billing.`);
+  lines.push("");
+  lines.push("## Current usage");
+  lines.push(`- Copilot plan: ${insight.plan} (${insight.seats} seat(s)), included allowance ${insight.allowanceCredits.toLocaleString()} AI Credits/month (${insight.allowanceSource}).`);
+  lines.push(`- Observed in lookback: ${insight.observed.workspaceCredits?.toFixed(1) ?? "n/a"} AI Credits in this scope across ${insight.observed.workspaceSessions} session(s); ${insight.observed.allCredits?.toFixed(1) ?? "n/a"} AI Credits across all local work.`);
+  if (insight.observed.cacheEfficiency !== null) {
+    lines.push(`- Cache efficiency in scope: ${(insight.observed.cacheEfficiency * 100).toFixed(0)}% of prompt tokens served from cache.`);
+  }
+  lines.push("");
+  lines.push("## Forecast");
+  lines.push(`- Daily burn: ${insight.forecast.workspaceDailyCredits?.toFixed(1) ?? "n/a"} AI Credits/day in this scope; ${insight.forecast.allDailyCredits?.toFixed(1) ?? "n/a"} AI Credits/day overall.`);
+  lines.push(`- Projected for ${insight.horizonWeeks} week(s) in this scope: ${insight.forecast.workspaceHorizonCredits?.toFixed(0) ?? "n/a"} AI Credits (${usd(insight.forecast.workspaceHorizonCredits)}).`);
+  lines.push(`- Projected monthly total (all local work): ${insight.forecast.allMonthlyCredits?.toFixed(0) ?? "n/a"} AI Credits, about ${insight.forecast.monthUtilizationPct?.toFixed(0) ?? "n/a"}% of the included allowance.`);
+  if (insight.forecast.needsOverage) {
+    lines.push(`- Projected overage: ${insight.forecast.projectedOverageCredits?.toFixed(0)} AI Credits (~${usd(insight.forecast.projectedOverageCredits)}) beyond the included allowance this cycle.`);
+    lines.push("");
+    lines.push("## Overage request");
+    lines.push(`Based on the sustained burn rate above, the included allowance will not cover this cycle. Requesting budget for approximately ${insight.forecast.projectedOverageCredits?.toFixed(0)} additional AI Credits (~${usd(insight.forecast.projectedOverageCredits)}). Overage is billed at per-model API rates at the end of the cycle and requires an admin to enable additional usage with a per-user budget.`);
+  } else {
+    lines.push("- Projected usage fits inside the included allowance; no overage request is needed at the current rate.");
+  }
+  lines.push("");
+  lines.push("## Model strategy");
+  const strategy = insight.modelStrategy;
+  if (strategy.verdict === "no-data") {
+    lines.push("No per-model telemetry is available yet for this scope.");
+  } else if (strategy.verdict === "no-frontier") {
+    lines.push("No frontier-tier model usage was observed in this scope. Auto model selection (discounted model costs) plus included models cover the current workload.");
+  } else {
+    lines.push(`- Frontier-tier models account for ${((strategy.frontierShare ?? 0) * 100).toFixed(0)}% of estimated AI Credits in this scope.`);
+    if (strategy.verdict === "justified") {
+      lines.push(`- Frontier sessions average ${strategy.frontierComplexAvgToolCalls?.toFixed(1) ?? "n/a"} tool calls, indicating multi-step agent work (complex refactoring, architecture, deep debugging) where stronger reasoning models are the documented recommendation.`);
+      lines.push("- Justification: routine work already runs on lower-cost models; the frontier share maps to genuinely complex tasks, so switching it to Auto would likely trade quality and rework time for a small credit saving.");
+    } else {
+      lines.push(`- ${strategy.lowComplexityFrontierCredits.toFixed(1)} AI Credits went to frontier models in low-complexity sessions (fewer than ${coachTuning.complexSessionMinToolCalls} tool calls). These are candidates for Auto model selection or an included model.`);
+    }
+    if (strategy.autoWhatIfSavingsCredits !== null) {
+      lines.push(`- What-if: running the same chat work through Auto model selection (${(insight.autoModelDiscount * 100).toFixed(0)}% discount on model costs on paid plans) would save roughly ${strategy.autoWhatIfSavingsCredits.toFixed(1)} AI Credits (~${usd(strategy.autoWhatIfSavingsCredits)}).`);
+    }
+  }
+  lines.push("");
+  lines.push("---");
+  lines.push("Generated by Frontier Cockpit Local. Numbers are local operational estimates; confirm official spend in the GitHub usage dashboard or billing exports before approving budgets.");
+  return lines.join("\n");
+}
+
+async function planner(url: URL): Promise<PlannerInsight> {
+  const repo = repoFromUrl(url);
+  const lookback = plannerLookbackFromUrl(url);
+  const horizonWeeks = plannerWeeksFromUrl(url);
+  const repoLabelMatcher = repoMatcher(repo);
+  const cycle = billingCycle();
+  const allowance = resolveAllowance();
+
+  const [scopeCredits, allCredits, sessions, prices, scopeCacheRead, scopeCacheCreation, scopeCold] = await Promise.all([
+    scalarMetric(`${realSessionSum("nano_aiu", lookback.literal, repoLabelMatcher)} / 1e9`),
+    scalarMetric(`${realSessionSum("nano_aiu", lookback.literal, "")} / 1e9`),
+    sessionsBreakdown(lookback.literal, repo),
+    modelPriceMap(),
+    scalarMetric(realSessionSum("cache_read_tokens", lookback.literal, repoLabelMatcher)),
+    scalarMetric(realSessionSum("cache_creation_tokens", lookback.literal, repoLabelMatcher)),
+    scalarMetric(realSessionSum("cold_input_tokens", lookback.literal, repoLabelMatcher))
+  ]);
+
+  const workspaceCredits = scopeCredits.value;
+  const allCreditsValue = allCredits.value;
+  const promptTotal = (scopeCacheRead.value ?? 0) + (scopeCacheCreation.value ?? 0) + (scopeCold.value ?? 0);
+  const cacheEfficiency = promptTotal > 0 ? (scopeCacheRead.value ?? 0) / promptTotal : null;
+
+  const workspaceDaily = workspaceCredits === null ? null : workspaceCredits / lookback.days;
+  const allDaily = allCreditsValue === null ? null : allCreditsValue / lookback.days;
+  const workspaceHorizon = workspaceDaily === null ? null : workspaceDaily * 7 * horizonWeeks;
+  const allMonthly = allDaily === null ? null : allDaily * cycle.daysInCycle;
+  const monthUtilizationPct =
+    allMonthly !== null && allowance.credits > 0 ? (allMonthly / allowance.credits) * 100 : null;
+  const overageCredits =
+    allMonthly !== null && allowance.credits > 0 ? Math.max(0, allMonthly - allowance.credits) : null;
+  const needsOverage = (overageCredits ?? 0) > 0;
+
+  // Model strategy is derived from materialized sessions because per-model
+  // GenAI metrics are editor-wide and carry no workspace attribution.
+  const tierAgg = new Map<ModelTier, { credits: number; sessions: number; toolCalls: number; models: Set<string> }>();
+  const reviewSessions: PlannerReviewSession[] = [];
+  let frontierToolCalls = 0;
+  let frontierSessions = 0;
+  let lowComplexityFrontierCredits = 0;
+  let sessionCreditsTotal = 0;
+  for (const session of sessions.items) {
+    const tier = modelTierOf(session.model, prices);
+    let agg = tierAgg.get(tier);
+    if (!agg) {
+      agg = { credits: 0, sessions: 0, toolCalls: 0, models: new Set() };
+      tierAgg.set(tier, agg);
+    }
+    agg.credits += session.aiCredits;
+    agg.sessions += 1;
+    agg.toolCalls += session.toolCalls;
+    agg.models.add(session.model);
+    sessionCreditsTotal += session.aiCredits;
+    if (tier === "frontier") {
+      frontierSessions += 1;
+      frontierToolCalls += session.toolCalls;
+      if (session.toolCalls < coachTuning.complexSessionMinToolCalls) {
+        lowComplexityFrontierCredits += session.aiCredits;
+        if (session.aiCredits > 0 && reviewSessions.length < 10) {
+          reviewSessions.push({
+            traceId: session.traceId,
+            repoShort: session.repoShort,
+            model: session.model,
+            aiCredits: session.aiCredits,
+            toolCalls: session.toolCalls,
+            outputTokens: session.outputTokens
+          });
+        }
+      }
+    }
+  }
+  const splits: PlannerModelSplit[] = [...tierAgg.entries()]
+    .map(([tier, agg]) => ({
+      tier,
+      credits: agg.credits,
+      sessions: agg.sessions,
+      avgToolCalls: agg.sessions > 0 ? agg.toolCalls / agg.sessions : null,
+      models: [...agg.models].sort((a, b) => a.localeCompare(b))
+    }))
+    .sort((a, b) => b.credits - a.credits);
+  const frontierCredits = tierAgg.get("frontier")?.credits ?? 0;
+  const frontierShare = sessionCreditsTotal > 0 ? frontierCredits / sessionCreditsTotal : null;
+  const frontierComplexAvgToolCalls = frontierSessions > 0 ? frontierToolCalls / frontierSessions : null;
+  const autoWhatIfSavingsCredits =
+    sessionCreditsTotal > 0 ? sessionCreditsTotal * autoModelDiscount : null;
+
+  let verdict: PlannerInsight["modelStrategy"]["verdict"];
+  if (sessions.items.length === 0) {
+    verdict = "no-data";
+  } else if (frontierCredits <= 0) {
+    verdict = "no-frontier";
+  } else if (
+    frontierComplexAvgToolCalls !== null &&
+    frontierComplexAvgToolCalls >= coachTuning.complexSessionMinToolCalls &&
+    lowComplexityFrontierCredits <= frontierCredits * 0.25
+  ) {
+    verdict = "justified";
+  } else {
+    verdict = "review";
+  }
+
+  const status: MetricStatus = workspaceCredits === null && sessions.items.length === 0 ? "unavailable" : "ok";
+
+  const insight: PlannerInsight = {
+    generatedAt: new Date().toISOString(),
+    scope: repo ? shortRepoName(repo) : "all workspaces",
+    lookbackDays: lookback.days,
+    horizonWeeks,
+    plan: copilotPlan,
+    seats: copilotSeats,
+    allowanceCredits: allowance.credits,
+    allowanceSource: allowance.source,
+    perSeatAllowanceCredits: allowance.perSeatCredits,
+    creditUsd: aiCreditUsd,
+    autoModelDiscount,
+    status,
+    message:
+      status === "unavailable"
+        ? "No workspace telemetry is available for this scope and lookback yet. Run Copilot sessions inside a Git repository first."
+        : undefined,
+    observed: {
+      workspaceCredits: round2(workspaceCredits),
+      allCredits: round2(allCreditsValue),
+      workspaceShare:
+        workspaceCredits !== null && allCreditsValue !== null && allCreditsValue > 0
+          ? round2(workspaceCredits / allCreditsValue)
+          : null,
+      workspaceSessions: sessions.items.length,
+      cacheEfficiency: round2(cacheEfficiency)
+    },
+    forecast: {
+      workspaceDailyCredits: round2(workspaceDaily),
+      allDailyCredits: round2(allDaily),
+      workspaceHorizonCredits: round2(workspaceHorizon),
+      allMonthlyCredits: round2(allMonthly),
+      monthUtilizationPct: round2(monthUtilizationPct),
+      projectedOverageCredits: round2(overageCredits),
+      projectedOverageUsd: round2(overageCredits === null ? null : overageCredits * aiCreditUsd),
+      needsOverage
+    },
+    modelStrategy: {
+      splits,
+      frontierShare: round2(frontierShare),
+      frontierComplexAvgToolCalls: round2(frontierComplexAvgToolCalls),
+      lowComplexityFrontierCredits: Math.round(lowComplexityFrontierCredits * 100) / 100,
+      reviewSessions,
+      autoWhatIfSavingsCredits: round2(autoWhatIfSavingsCredits),
+      verdict
+    },
+    justificationMarkdown: ""
+  };
+  insight.justificationMarkdown = buildJustificationMarkdown(insight);
+  return insight;
+}
+
 type CoachSeverity = "good" | "info" | "warning" | "critical";
 
 interface CoachCard {
@@ -1479,6 +1915,7 @@ interface CoachContext {
   budget: AiCreditsBudgetInsight;
   mix: ModelMix;
   sessions: SessionRecord[];
+  modelPrices: Map<string, ModelPrice>;
 }
 
 type CoachRule = (ctx: CoachContext) => CoachCard | null;
@@ -1544,11 +1981,11 @@ const coachRules: CoachRule[] = [
         severity: budget.projectedUtilizationPct >= 100 ? "critical" : "warning",
         title: "Pace your AI Credits pool",
         insight: `At the current daily rate, local AI Credits would reach about ${budget.projectedMonthEndCredits === null ? "?" : budget.projectedMonthEndCredits.toFixed(0)} by the end of the cycle, roughly ${budget.projectedUtilizationPct.toFixed(0)}% of the configured ${budget.monthlyAllowanceCredits} credit pool for the ${budget.plan} plan. This is a local estimate, not official billing.`,
-        action: "Reduce cold context, choose the lowest-cost model that can do the job, and avoid retrying large prompts before fixing the root cause."
+        action: "Reduce cold context, prefer Auto model selection or an included model for routine work, and avoid retrying large prompts before fixing the root cause. If the overshoot is sustained, open the Planner view to draft an overage request with real numbers."
       }
       : null,
   ({ mix }) =>
-    mix.entries.length > 0 && (mix.entries[0].share ?? 0) > 0.6
+    mix.entries.length > 0 && (mix.entries[0].share ?? 0) > thresholds.modelConcentrationInfo
       ? {
         id: "model-cost-concentration",
         severity: "info",
@@ -1557,10 +1994,39 @@ const coachRules: CoachRule[] = [
         action: "Use a less expensive capable model for routine work and reserve higher-cost models for tasks that genuinely need stronger reasoning."
       }
       : null,
+  // Auto model selection routes each prompt to a capable model and is billed
+  // with a discount on model costs on paid plans, so heavy frontier-tier spend
+  // on simple work is the clearest documented savings opportunity.
+  ({ mix, sessions, modelPrices }) => {
+    const frontierCredits = mix.entries
+      .filter((entry) => modelTierOf(entry.model, modelPrices) === "frontier")
+      .reduce((sum, entry) => sum + (entry.estimatedAiCredits ?? 0), 0);
+    const totalCredits = mix.totalEstimatedAiCredits ?? 0;
+    if (totalCredits <= 0 || frontierCredits / totalCredits <= 0.5) {
+      return null;
+    }
+    const simpleFrontier = sessions.filter(
+      (session) =>
+        modelTierOf(session.model, modelPrices) === "frontier" &&
+        session.toolCalls < coachTuning.complexSessionMinToolCalls &&
+        session.aiCredits > 0
+    );
+    if (simpleFrontier.length === 0) {
+      return null;
+    }
+    const movableCredits = simpleFrontier.reduce((sum, session) => sum + session.aiCredits, 0);
+    return {
+      id: "auto-model-adoption",
+      severity: "info",
+      title: "Try Auto model selection for routine work",
+      insight: `${simpleFrontier.length} low-complexity session(s) used frontier-tier models and spent ${movableCredits.toFixed(1)} AI Credits. Auto model selection routes each prompt to a capable model and is billed with a ${(autoModelDiscount * 100).toFixed(0)}% discount on model costs on paid plans.`,
+      action: "Set the model picker to Auto for everyday edits, boilerplate, and questions. Pick a specific frontier model only for complex refactoring, architecture, or multi-step debugging, and keep one model per session so the prompt cache stays valid."
+    };
+  },
   ({ tokens }) => {
     const input = tokens.input.value;
     const output = tokens.output.value;
-    if (input === null || output === null || output <= 0 || input / output <= 20) {
+    if (input === null || output === null || output <= 0 || input / output <= thresholds.promptIoRatioInfo) {
       return null;
     }
     return {
@@ -1596,7 +2062,7 @@ const coachRules: CoachRule[] = [
   }
 ];
 
-function buildCoachCards(data: SummaryResult, sessions: SessionRecord[]): CoachCard[] {
+function buildCoachCards(data: SummaryResult, sessions: SessionRecord[], modelPrices: Map<string, ModelPrice>): CoachCard[] {
   const context: CoachContext = {
     tokens: data.metrics.tokens,
     aiCredits: data.metrics.aiCredits.value,
@@ -1605,7 +2071,8 @@ function buildCoachCards(data: SummaryResult, sessions: SessionRecord[]): CoachC
     nonWorkspace: data.metrics.dataQuality.nonWorkspaceReal.value ?? 0,
     budget: data.budget,
     mix: data.modelMix,
-    sessions
+    sessions,
+    modelPrices
   };
 
   const cards = coachRules
@@ -1626,13 +2093,16 @@ function buildCoachCards(data: SummaryResult, sessions: SessionRecord[]): CoachC
 }
 
 async function coach(url: URL) {
-  const data = await summary(url);
-  const sessions = await sessionsBreakdown(data.range, repoFromUrl(url));
+  const [data, sessions, modelPrices] = await Promise.all([
+    summary(url),
+    sessionsBreakdown(rangeFromUrl(url), repoFromUrl(url)),
+    modelPriceMap()
+  ]);
   return {
     generatedAt: new Date().toISOString(),
     range: data.range,
     repo: data.repo,
-    cards: buildCoachCards(data, sessions.items),
+    cards: buildCoachCards(data, sessions.items, modelPrices),
     topSessions: sessions.items.slice(0, 5)
   };
 }
@@ -1650,7 +2120,9 @@ const getRoutes: Record<string, RouteHandler> = {
   "/api/summary": async (url, response) => jsonResponse(response, 200, await summary(url)),
   "/api/sessions": async (url, response) =>
     jsonResponse(response, 200, await sessionsBreakdown(rangeFromUrl(url), repoFromUrl(url))),
-  "/api/coach": async (url, response) => jsonResponse(response, 200, await coach(url))
+  "/api/coach": async (url, response) => jsonResponse(response, 200, await coach(url)),
+  "/api/plans": (_url, response) => jsonResponse(response, 200, billingFacts()),
+  "/api/planner": async (url, response) => jsonResponse(response, 200, await planner(url))
 };
 
 const server = http.createServer((request, response) => {

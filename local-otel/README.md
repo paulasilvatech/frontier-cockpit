@@ -20,6 +20,7 @@ The repository can be cloned anywhere. All scripts resolve their own location, s
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.2.0 | 2026-07-03 | Frontier Cockpit Team | Added the Planner view (workspace forecast, overage justification, Auto vs frontier model strategy), the full per-plan AI Credits registry with promo-window awareness, configurable coaching and planner weights, the in-Docker OTel coverage audit, and CI verification that pinned images resolve. |
 | 1.1.0 | 2026-07-02 | Frontier Cockpit Team | Documented the 10-container stack with the jobs container, Grafana embedded SQLite, generated Grafana admin credentials, privacy-first content capture defaults, repository-relative paths, and removal of the legacy Aspire-only helper scripts. |
 | 1.0.5 | 2026-07-02 | Frontier Cockpit Team | Added cross-platform client bootstrap scripts for macOS, Linux, and Windows. |
 | 1.0.4 | 2026-06-30 | Frontier Cockpit Team | Added the local workshop-ready flow, the workshop validation gate, and the Frontier Cockpit Local mini app entry point. |
@@ -111,6 +112,7 @@ The `copilot-otel-jobs` container replaces the earlier host-side schedulers for 
 
 - `materialize-copilot-sessions.sh` every 5 minutes
 - `daily-rollup.sh` daily
+- `audit-coverage.sh` every hour (Prometheus, Tempo, and Loki coverage only; the VS Code settings rows are skipped inside Docker because the container cannot see host settings)
 
 The `copilot-otel-registry` sidecar re-seeds model prices and multipliers every 5 minutes so registry metrics do not expire from the collector.
 
@@ -225,6 +227,14 @@ Access controls:
 ## Start local backends
 
 Docker Desktop (or a compatible Docker engine on Linux) must be running.
+
+Prerequisites by platform:
+
+- macOS: zsh and python3 ship with the OS; nothing extra is needed.
+- Linux: the orchestration scripts (`start-full-stack.sh`, `stop-full-stack.sh`, `check-workshop-local.sh`, `workshop-ready.sh`) use zsh, which most distributions do not install by default. Install it first (`sudo apt install zsh` on Debian/Ubuntu, `sudo dnf install zsh` on Fedora) along with `python3`.
+- Windows: use `client-bootstrap.ps1` under `pwsh`. The zsh orchestration scripts require WSL; the bootstrap script alone covers the standard setup.
+
+Do not run `docker compose up` directly from `local-otel/stack` before the first bootstrap: the compose file expects the gitignored `aspire-api-key.env` and `grafana-admin.env` files, which `start-full-stack.sh`, `client-bootstrap.sh`, and `client-bootstrap.ps1` generate on first run.
 
 Cross-platform client setup, recommended for customer machines:
 

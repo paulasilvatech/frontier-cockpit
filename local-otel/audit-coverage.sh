@@ -16,6 +16,13 @@ else
 fi
 settings_file="${FRONTIER_VSCODE_SETTINGS_FILE:-$vscode_config_root/Code - Insiders/User/settings.json}"
 
+# Inside the Docker jobs container the host VS Code settings are not visible,
+# so reporting them as "not observed" would be misleading. Set
+# FRONTIER_COVERAGE_SKIP_SETTINGS=true to skip the settings rows entirely.
+if [[ "${FRONTIER_COVERAGE_SKIP_SETTINGS:-false}" == "true" ]]; then
+  settings_file=""
+fi
+
 python3 - "$metrics_endpoint" "$prometheus_url" "$tempo_url" "$loki_url" "$settings_file" <<'PY'
 import json
 import pathlib
@@ -164,8 +171,9 @@ for category, tags in EXPECTED_TEMPO_TAGS.items():
     for tag in tags:
         add(category, tag, tag in tempo_tags, "Tempo", tag, "Trace attribute appears only after a span carrying it is emitted.")
 
-for key, expected_value in EXPECTED_SETTINGS.items():
-    add("VS Code setting", key, settings.get(key) == expected_value, "VS Code User Settings", str(expected_value), "Setting must be enabled for future sessions.")
+if settings_file:
+    for key, expected_value in EXPECTED_SETTINGS.items():
+        add("VS Code setting", key, settings.get(key) == expected_value, "VS Code User Settings", str(expected_value), "Setting must be enabled for future sessions.")
 
 for label in ["service_name"]:
     add("Logs/events backend", f"Loki label {label}", label in loki_labels, "Loki", label, "Loki labels are sparse until logs/events with attributes are emitted.")

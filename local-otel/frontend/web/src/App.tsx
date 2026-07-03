@@ -3,7 +3,9 @@ import type {
   Alert,
   AlertSeverity,
   CoachResponse,
+  CopilotPlanFacts,
   HistoryPoint,
+  PlannerInsight,
   RangeOption,
   SessionRecord,
   ServiceStatus,
@@ -30,7 +32,7 @@ import { CheckIcon, DashIcon, NavIcon } from "./icons";
 
 const rangeOptions: RangeOption[] = ["1h", "6h", "24h", "7d"];
 
-type ViewId = "overview" | "credits" | "sessions" | "workspaces" | "coach" | "history" | "health" | "settings";
+type ViewId = "overview" | "credits" | "planner" | "sessions" | "workspaces" | "coach" | "history" | "health" | "settings";
 
 interface ViewDef {
   id: ViewId;
@@ -41,6 +43,7 @@ interface ViewDef {
 const viewOrder: ViewId[] = [
   "overview",
   "credits",
+  "planner",
   "sessions",
   "workspaces",
   "coach",
@@ -651,18 +654,6 @@ function CreditsView({ summary }: Readonly<{ summary: SummaryResponse | null }>)
   );
 }
 
-interface PlanFacts {
-  readonly id: "business" | "enterprise";
-  readonly priceUsd: number;
-  readonly standardCredits: number;
-  readonly promoCredits: number;
-}
-
-const planFacts: readonly PlanFacts[] = [
-  { id: "business", priceUsd: 19, standardCredits: 1900, promoCredits: 3000 },
-  { id: "enterprise", priceUsd: 39, standardCredits: 3900, promoCredits: 7000 }
-];
-
 interface PlanRow {
   readonly id: string;
   readonly label: string;
@@ -671,11 +662,16 @@ interface PlanRow {
   readonly kind: "text" | "icon";
 }
 
-function planFeatureRows(t: TranslateFn): readonly PlanRow[] {
-  return [
-    { id: "price", label: t("plans.row.price"), biz: "US$19", ent: "US$39", kind: "text" },
-    { id: "standard", label: t("plans.row.standard"), biz: formatNumber(1900, 0), ent: formatNumber(3900, 0), kind: "text" },
-    { id: "promo", label: t("plans.row.promo"), biz: formatNumber(3000, 0), ent: formatNumber(7000, 0), kind: "text" },
+function planFeatureRows(t: TranslateFn, business?: CopilotPlanFacts, enterprise?: CopilotPlanFacts, promoActive?: boolean): readonly PlanRow[] {
+  const credits = (value: number | null | undefined) => (value === null || value === undefined ? "—" : formatNumber(value, 0));
+  const rows: PlanRow[] = [
+    { id: "price", label: t("plans.row.price"), biz: `US$${business?.priceUsdMonth ?? "—"}`, ent: `US$${enterprise?.priceUsdMonth ?? "—"}`, kind: "text" },
+    { id: "standard", label: t("plans.row.standard"), biz: credits(business?.includedCredits), ent: credits(enterprise?.includedCredits), kind: "text" }
+  ];
+  if (promoActive) {
+    rows.push({ id: "promo", label: t("plans.row.promo"), biz: credits(business?.promoCredits), ent: credits(enterprise?.promoCredits), kind: "text" });
+  }
+  rows.push(
     { id: "value", label: t("plans.row.value"), biz: t("plans.val.creditValue"), ent: t("plans.val.creditValue"), kind: "text" },
     { id: "pooling", label: t("plans.row.pooling"), biz: t("plans.val.pooledOrg"), ent: t("plans.val.pooledEnt"), kind: "text" },
     { id: "completions", label: t("plans.row.completions"), biz: t("plans.val.notBilled"), ent: t("plans.val.notBilled"), kind: "text" },
@@ -683,7 +679,8 @@ function planFeatureRows(t: TranslateFn): readonly PlanRow[] {
     { id: "githubcom", label: t("plans.row.githubcom"), biz: "dash", ent: "check", kind: "icon" },
     { id: "knowledge", label: t("plans.row.knowledge"), biz: "dash", ent: "check", kind: "icon" },
     { id: "governance", label: t("plans.row.governance"), biz: t("plans.val.orgScope"), ent: t("plans.val.entScope"), kind: "text" }
-  ];
+  );
+  return rows;
 }
 
 function PlanCell({ kind, value, t }: Readonly<{ kind: "text" | "icon"; value: string; t: TranslateFn }>) {
@@ -704,53 +701,84 @@ function PlanCell({ kind, value, t }: Readonly<{ kind: "text" | "icon"; value: s
   );
 }
 
-const PLAN_MAX_CREDITS = 7000;
+function planDisplayName(plan: CopilotPlanFacts, t: TranslateFn): string {
+  const key = `plans.name.${plan.id}`;
+  const translated = t(key);
+  return translated === key ? plan.id : translated;
+}
 
-function PlanCard({ plan, current, t }: Readonly<{ plan: PlanFacts; current: boolean; t: TranslateFn }>) {
-  const stdPct = (plan.standardCredits / PLAN_MAX_CREDITS) * 100;
-  const promoPct = (plan.promoCredits / PLAN_MAX_CREDITS) * 100;
+function PlanCard({
+  plan,
+  current,
+  promoActive,
+  maxCredits,
+  t
+}: Readonly<{ plan: CopilotPlanFacts; current: boolean; promoActive: boolean; maxCredits: number; t: TranslateFn }>) {
+  const included = plan.includedCredits;
+  const stdPct = included === null ? 0 : (included / maxCredits) * 100;
+  const showPromo = promoActive && plan.promoCredits !== null;
+  const promoPct = showPromo ? ((plan.promoCredits ?? 0) / maxCredits) * 100 : 0;
   return (
     <article className={current ? "plan-card plan-card-current" : "plan-card"}>
       <div className="plan-card-head">
-        <h3>{t(`plans.${plan.id}`)}</h3>
+        <h3>{planDisplayName(plan, t)}</h3>
         {current ? <span className="plan-current-badge">{t("plans.current")}</span> : null}
       </div>
       <div className="plan-price">
-        <span className="plan-price-value">US${plan.priceUsd}</span>
-        <span className="plan-price-unit muted">{t("plans.perUserMonth")}</span>
+        <span className="plan-price-value">US${plan.priceUsdMonth}</span>
+        <span className="plan-price-unit muted">{plan.perSeat ? t("plans.perUserMonth") : t("plans.perMonth")}</span>
       </div>
       <div className="plan-allowance-row">
         <span className="plan-allowance-label">{t("plans.standard")}</span>
-        <span className="plan-allowance-value">{formatNumber(plan.standardCredits, 0)}</span>
+        <span className="plan-allowance-value">{included === null ? t("plans.autoOnly") : formatNumber(included, 0)}</span>
       </div>
       <svg className="plan-bar" viewBox="0 0 100 6" preserveAspectRatio="none" role="img" aria-label={t("plans.standard")}>
         <rect className="plan-bar-track" x="0" y="0" width="100" height="6" rx="3" />
         <rect className="plan-bar-fill plan-bar-standard" x="0" y="0" width={stdPct} height="6" rx="3" />
       </svg>
-      <div className="plan-allowance-row">
-        <span className="plan-allowance-label">
-          {t("plans.promo")} <span className="muted">({t("plans.promoWindow")})</span>
-        </span>
-        <span className="plan-allowance-value">{formatNumber(plan.promoCredits, 0)}</span>
-      </div>
-      <svg className="plan-bar" viewBox="0 0 100 6" preserveAspectRatio="none" role="img" aria-label={t("plans.promo")}>
-        <rect className="plan-bar-track" x="0" y="0" width="100" height="6" rx="3" />
-        <rect className="plan-bar-fill plan-bar-promo" x="0" y="0" width={promoPct} height="6" rx="3" />
-      </svg>
-      <span className="plan-allowance-unit muted">{t("plans.creditsUnit")}</span>
+      {plan.flexCredits > 0 ? (
+        <span className="plan-allowance-unit muted">{t("plans.flexNote", { base: formatNumber(plan.baseCredits ?? 0, 0), flex: formatNumber(plan.flexCredits, 0) })}</span>
+      ) : null}
+      {showPromo ? (
+        <>
+          <div className="plan-allowance-row">
+            <span className="plan-allowance-label">
+              {t("plans.promo")} <span className="muted">({t("plans.promoWindow")})</span>
+            </span>
+            <span className="plan-allowance-value">{formatNumber(plan.promoCredits ?? 0, 0)}</span>
+          </div>
+          <svg className="plan-bar" viewBox="0 0 100 6" preserveAspectRatio="none" role="img" aria-label={t("plans.promo")}>
+            <rect className="plan-bar-track" x="0" y="0" width="100" height="6" rx="3" />
+            <rect className="plan-bar-fill plan-bar-promo" x="0" y="0" width={promoPct} height="6" rx="3" />
+          </svg>
+        </>
+      ) : null}
+      <span className="plan-allowance-unit muted">{plan.perSeat ? t("plans.creditsUnit") : t("plans.creditsUnitIndividual")}</span>
     </article>
   );
 }
 
 function PlanComparisonPanel({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
   const t = useT();
-  const currentPlan = summary?.budget?.plan ?? null;
-  const rows = planFeatureRows(t);
+  const billing = summary?.billing;
+  const catalog = billing?.planCatalog ?? [];
+  const currentPlan = billing?.configuredPlan ?? summary?.budget?.plan ?? null;
+  const promoActive = billing?.promoWindow.active ?? false;
+  const business = catalog.find((plan) => plan.id === "business");
+  const enterprise = catalog.find((plan) => plan.id === "enterprise");
+  const maxCredits = Math.max(
+    1,
+    ...catalog.map((plan) => Math.max(plan.includedCredits ?? 0, promoActive ? plan.promoCredits ?? 0 : 0))
+  );
+  const rows = planFeatureRows(t, business, enterprise, promoActive);
+  if (catalog.length === 0) {
+    return null;
+  }
   return (
     <Panel title={t("plans.title")} aside={<span className="muted">{t("plans.aside")}</span>}>
       <div className="plans-grid">
-        {planFacts.map((plan) => (
-          <PlanCard key={plan.id} plan={plan} current={currentPlan === plan.id} t={t} />
+        {catalog.map((plan) => (
+          <PlanCard key={plan.id} plan={plan} current={currentPlan === plan.id} promoActive={promoActive} maxCredits={maxCredits} t={t} />
         ))}
       </div>
       <div className="table-wrap">
@@ -778,7 +806,253 @@ function PlanComparisonPanel({ summary }: Readonly<{ summary: SummaryResponse | 
         </table>
       </div>
       <p className="plan-note muted">{t("plans.note")}</p>
+      {!promoActive && billing ? <p className="plan-note muted">{t("plans.promoEnded", { end: billing.promoWindow.end })}</p> : null}
     </Panel>
+  );
+}
+
+const plannerWeeksOptions = [2, 4, 8, 12] as const;
+const plannerLookbackOptions = ["24h", "7d", "14d", "30d"] as const;
+
+function usePlannerData(repo: string, weeks: number, lookback: string) {
+  const [planner, setPlanner] = useState<PlannerInsight | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+    const params = new URLSearchParams({ repo, weeks: String(weeks), lookback });
+    fetch(`/api/planner?${params.toString()}`, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Planner API returned HTTP ${response.status}`);
+        }
+        const payload = (await response.json()) as PlannerInsight;
+        if (!cancelled) {
+          setPlanner(payload);
+        }
+      })
+      .catch((requestError) => {
+        if (!cancelled) {
+          setError(requestError instanceof Error ? requestError.message : "Unable to load planner data.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [repo, weeks, lookback]);
+
+  return { planner, error, isLoading };
+}
+
+function plannerVerdictTone(verdict: string): string {
+  if (verdict === "justified") {
+    return "pill-good";
+  }
+  if (verdict === "review") {
+    return "pill-warn";
+  }
+  return "pill-good";
+}
+
+function PlannerView({ summary, repo }: Readonly<{ summary: SummaryResponse | null; repo: string }>) {
+  const t = useT();
+  const [weeks, setWeeks] = useState<number>(4);
+  const [lookback, setLookback] = useState<string>("7d");
+  const [copied, setCopied] = useState(false);
+  const { planner, error, isLoading } = usePlannerData(repo, weeks, lookback);
+
+  const copyJustification = useCallback(async () => {
+    if (!planner) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(planner.justificationMarkdown);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  }, [planner]);
+
+  const forecast = planner?.forecast;
+  const strategy = planner?.modelStrategy;
+  const allowance = planner?.allowanceCredits ?? 0;
+  const projectedPct = forecast?.monthUtilizationPct ?? null;
+  const barWidth = projectedPct === null ? 0 : Math.min(100, projectedPct);
+  const overageTone = forecast?.needsOverage ? "bad" : "good";
+
+  return (
+    <>
+      <Panel
+        title={t("planner.title")}
+        status={planner?.status}
+        aside={
+          <div className="link-row">
+            <div className="segmented small">
+              {plannerLookbackOptions.map((option) => (
+                <button key={option} type="button" className={lookback === option ? "active" : ""} onClick={() => setLookback(option)}>
+                  {option}
+                </button>
+              ))}
+            </div>
+            <div className="segmented small">
+              {plannerWeeksOptions.map((option) => (
+                <button key={option} type="button" className={weeks === option ? "active" : ""} onClick={() => setWeeks(option)}>
+                  {t("planner.weeks", { count: option })}
+                </button>
+              ))}
+            </div>
+          </div>
+        }
+      >
+        {error ? <p className="muted">{error}</p> : null}
+        {isLoading && !planner ? <p className="muted">{t("state.loading")}</p> : null}
+        {planner ? (
+          <>
+            <p className="muted">
+              {t("planner.scopeLine", {
+                scope: planner.scope,
+                lookback: planner.lookbackDays,
+                plan: planner.plan,
+                allowance: formatNumber(allowance, 0)
+              })}
+            </p>
+            <div className="composition-stats">
+              <div>
+                <span className="stat-label">{t("planner.observedScope")}</span>
+                <span className="stat-value">{formatNumber(planner.observed.workspaceCredits, 1)}</span>
+              </div>
+              <div>
+                <span className="stat-label">{t("planner.dailyBurn")}</span>
+                <span className="stat-value">{formatNumber(forecast?.workspaceDailyCredits ?? null, 1)}</span>
+              </div>
+              <div>
+                <span className="stat-label">{t("planner.horizonForecast", { weeks })}</span>
+                <span className="stat-value">{formatNumber(forecast?.workspaceHorizonCredits ?? null, 0)}</span>
+              </div>
+              <div>
+                <span className="stat-label">{t("planner.monthAll")}</span>
+                <span className="stat-value">{formatNumber(forecast?.allMonthlyCredits ?? null, 0)}</span>
+              </div>
+              <div>
+                <span className="stat-label">{t("planner.monthUtilization")}</span>
+                <span className="stat-value">{projectedPct === null ? "—" : `${formatNumber(projectedPct, 0)}%`}</span>
+              </div>
+            </div>
+            <svg className="budget-bar" viewBox="0 0 100 8" preserveAspectRatio="none" role="img" aria-label={t("planner.monthUtilization")}>
+              <rect className="budget-bar-track" x="0" y="0" width="100" height="8" />
+              <rect className={`budget-bar-fill budget-${overageTone}`} x="0" y="0" width={barWidth} height="8" />
+              <line className="budget-bar-crit" x1={100} y1="0" x2={100} y2="8" />
+            </svg>
+            <p className={forecast?.needsOverage ? "planner-overage warn-text" : "planner-overage muted"}>
+              {forecast?.needsOverage
+                ? t("planner.overageNeeded", {
+                  credits: formatNumber(forecast.projectedOverageCredits, 0),
+                  usd: formatNumber(forecast.projectedOverageUsd, 2)
+                })
+                : t("planner.fitsAllowance")}
+            </p>
+            <p className="muted">{t("planner.note")}</p>
+          </>
+        ) : null}
+      </Panel>
+      {planner && strategy ? (
+        <Panel
+          title={t("planner.modelStrategy")}
+          aside={<span className={`pill ${plannerVerdictTone(strategy.verdict)}`}>{t(`planner.verdict.${strategy.verdict}`)}</span>}
+        >
+          {strategy.splits.length > 0 ? (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>{t("planner.col.tier")}</th>
+                    <th className="numeric">{t("ws.col.aiCredits")}</th>
+                    <th className="numeric">{t("ws.col.sessions")}</th>
+                    <th className="numeric">{t("planner.col.avgTools")}</th>
+                    <th>{t("planner.col.models")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {strategy.splits.map((split) => (
+                    <tr key={split.tier}>
+                      <td><span className="model-tag">{t(`planner.tier.${split.tier}`)}</span></td>
+                      <td className="numeric strong">{formatNumber(split.credits, 2)}</td>
+                      <td className="numeric">{formatNumber(split.sessions, 0)}</td>
+                      <td className="numeric">{formatNumber(split.avgToolCalls, 1)}</td>
+                      <td className="muted">{split.models.join(", ")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="muted">{t("planner.noModelData")}</p>
+          )}
+          <p>{t(`planner.verdictBody.${strategy.verdict}`, {
+            share: formatNumber((strategy.frontierShare ?? 0) * 100, 0),
+            movable: formatNumber(strategy.lowComplexityFrontierCredits, 1),
+            minTools: formatNumber(summary?.coachTuning.complexSessionMinToolCalls ?? 5, 0)
+          })}</p>
+          {strategy.autoWhatIfSavingsCredits !== null ? (
+            <p className="muted">
+              {t("planner.autoWhatIf", {
+                discount: formatNumber((planner.autoModelDiscount ?? 0.1) * 100, 0),
+                credits: formatNumber(strategy.autoWhatIfSavingsCredits, 1)
+              })}
+            </p>
+          ) : null}
+          {strategy.reviewSessions.length > 0 ? (
+            <>
+              <h3 className="planner-review-title">{t("planner.reviewSessions")}</h3>
+              <div className="table-wrap">
+                <table className="sessions-table">
+                  <thead>
+                    <tr>
+                      <th>{t("ws.col.workspace")}</th>
+                      <th>{t("sessions.col.model")}</th>
+                      <th className="numeric">{t("ws.col.aiCredits")}</th>
+                      <th className="numeric">{t("sessions.col.tools")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {strategy.reviewSessions.map((session) => (
+                      <tr key={session.traceId}>
+                        <td><span className="ws-name">{session.repoShort}</span></td>
+                        <td><span className="model-tag">{session.model}</span></td>
+                        <td className="numeric strong">{formatNumber(session.aiCredits, 3)}</td>
+                        <td className="numeric">{formatNumber(session.toolCalls, 0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : null}
+        </Panel>
+      ) : null}
+      {planner ? (
+        <Panel
+          title={t("planner.justification")}
+          aside={
+            <button type="button" className="refresh" onClick={() => void copyJustification()}>
+              {copied ? t("planner.copied") : t("planner.copy")}
+            </button>
+          }
+        >
+          <p className="muted">{t("planner.justificationHelp")}</p>
+          <textarea className="planner-justification" readOnly value={planner.justificationMarkdown} rows={18} />
+        </Panel>
+      ) : null}
+    </>
   );
 }
 
@@ -1197,7 +1471,11 @@ const thresholdKeys = [
   "contextWarnPct",
   "contextCritPct",
   "cacheEfficiencyWarn",
-  "coldRatioWarn"
+  "coldRatioWarn",
+  "budgetWarnPct",
+  "budgetCritPct",
+  "modelConcentrationInfo",
+  "promptIoRatioInfo"
 ];
 
 const thresholdEnv: Record<string, string> = {
@@ -1208,12 +1486,41 @@ const thresholdEnv: Record<string, string> = {
   contextWarnPct: "THRESHOLD_CONTEXT_WARN_PCT",
   contextCritPct: "THRESHOLD_CONTEXT_CRIT_PCT",
   cacheEfficiencyWarn: "THRESHOLD_CACHE_EFFICIENCY_WARN",
-  coldRatioWarn: "THRESHOLD_COLD_RATIO_WARN"
+  coldRatioWarn: "THRESHOLD_COLD_RATIO_WARN",
+  budgetWarnPct: "THRESHOLD_AI_CREDITS_BUDGET_WARN_PCT",
+  budgetCritPct: "THRESHOLD_AI_CREDITS_BUDGET_CRIT_PCT",
+  modelConcentrationInfo: "THRESHOLD_MODEL_CONCENTRATION",
+  promptIoRatioInfo: "THRESHOLD_PROMPT_IO_RATIO"
+};
+
+const coachTuningKeys = [
+  "scoreBase",
+  "scoreCacheWeight",
+  "scoreColdPenalty",
+  "scoreContextPenalty",
+  "scoreErrorPenalty",
+  "coldSavingsFactor",
+  "errorSavingsFactor",
+  "frontierOutputPriceMinUsdPerMillion",
+  "complexSessionMinToolCalls"
+];
+
+const coachTuningEnv: Record<string, string> = {
+  scoreBase: "COACH_SCORE_BASE",
+  scoreCacheWeight: "COACH_SCORE_CACHE_WEIGHT",
+  scoreColdPenalty: "COACH_SCORE_COLD_PENALTY",
+  scoreContextPenalty: "COACH_SCORE_CONTEXT_PENALTY",
+  scoreErrorPenalty: "COACH_SCORE_ERROR_PENALTY",
+  coldSavingsFactor: "COACH_COLD_SAVINGS_FACTOR",
+  errorSavingsFactor: "COACH_ERROR_SAVINGS_FACTOR",
+  frontierOutputPriceMinUsdPerMillion: "PLANNER_FRONTIER_OUTPUT_PRICE_MIN",
+  complexSessionMinToolCalls: "PLANNER_COMPLEX_SESSION_MIN_TOOL_CALLS"
 };
 
 function SettingsView({ summary }: Readonly<{ summary: SummaryResponse | null }>) {
   const t = useT();
   const thresholds = summary?.thresholds ?? {};
+  const coachTuning = summary?.coachTuning ?? {};
   return (
     <>
       <Panel title={t("settings.thresholds")} aside={<span className="muted">{t("settings.guardrails")}</span>}>
@@ -1241,6 +1548,31 @@ function SettingsView({ summary }: Readonly<{ summary: SummaryResponse | null }>
         </div>
         <p className="muted">{t("settings.note")}</p>
       </Panel>
+      <Panel title={t("settings.coachTuning")} aside={<span className="muted">{t("settings.coachTuningAside")}</span>}>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{t("settings.col.guardrail")}</th>
+                <th className="numeric">{t("settings.col.value")}</th>
+                <th>{t("settings.col.env")}</th>
+                <th>{t("settings.col.does")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {coachTuningKeys.map((key) => (
+                <tr key={key}>
+                  <td>{t(`ct.${key}.label`)}</td>
+                  <td className="numeric strong">{formatNumberText(coachTuning[key], 2, t)}</td>
+                  <td><code>{coachTuningEnv[key]}</code></td>
+                  <td className="muted">{t(`ct.${key}.help`)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="muted">{t("settings.coachTuningNote")}</p>
+      </Panel>
       <Panel title={t("settings.about")} aside={undefined}>
         <p>{t("settings.aboutBody")}</p>
         <ul>
@@ -1259,11 +1591,13 @@ interface ViewProps {
   summary: SummaryResponse | null;
   sessions: SessionsResponse | null;
   coach: CoachResponse | null;
+  repo: string;
 }
 
 const viewRenderers: Record<ViewId, (props: ViewProps) => ReactNode> = {
   overview: ({ summary }) => <OverviewView summary={summary} />,
   credits: ({ summary }) => <CreditsView summary={summary} />,
+  planner: ({ summary, repo }) => <PlannerView summary={summary} repo={repo} />,
   sessions: ({ sessions }) => <SessionsView sessions={sessions} />,
   workspaces: ({ summary }) => <WorkspacesView summary={summary} />,
   coach: ({ coach, summary }) => <CoachView coach={coach} summary={summary} />,
@@ -1397,7 +1731,7 @@ function AppShell({ lang, setLang }: Readonly<{ lang: Lang; setLang: (lang: Lang
         {!summary && !error ? <div className="loading">{t("state.loading")}</div> : null}
 
         <div className="view">
-          {viewRenderers[activeView]({ summary, sessions, coach })}
+          {viewRenderers[activeView]({ summary, sessions, coach, repo })}
         </div>
 
         <footer className="content-foot">

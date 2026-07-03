@@ -120,6 +120,17 @@ export function SettingsIcon(props: Readonly<IconProps>): ReactElement {
     );
 }
 
+// Planner: a compass, for forecasting a workspace and justifying budget.
+export function PlannerIcon(props: Readonly<IconProps>): ReactElement {
+    return (
+        <IconBase {...props}>
+            <circle cx="12" cy="12" r="8.25" />
+            <path d="M15.2 8.8 13.4 13.4 8.8 15.2 10.6 10.6Z" />
+            <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+        </IconBase>
+    );
+}
+
 // Check: an affirmative mark, for capabilities a plan includes.
 export function CheckIcon(props: Readonly<IconProps>): ReactElement {
     return (
@@ -144,6 +155,7 @@ export const navIcons: Record<string, (props: Readonly<IconProps>) => ReactEleme
     sessions: SessionsIcon,
     workspaces: WorkspacesIcon,
     coach: CoachIcon,
+    planner: PlannerIcon,
     history: HistoryIcon,
     health: HealthIcon,
     settings: SettingsIcon
