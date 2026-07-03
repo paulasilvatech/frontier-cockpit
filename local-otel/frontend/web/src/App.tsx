@@ -28,7 +28,9 @@ import {
   formatCurrency,
   formatNumber,
   formatPercent,
+  formatShare,
   setNumberLocale,
+  TrendAxis,
   statusClass,
   sumSeries,
   type HistoryField
@@ -376,7 +378,7 @@ function TokenComposition({ summary }: Readonly<{ summary: SummaryResponse | nul
         </div>
         <div>
           <span className="stat-label">{t("composition.toolCalls")}</span>
-          <span className="stat-value">{formatNumberText(summary?.metrics.activity.toolCalls.value, 0, t)}</span>
+          <span className="stat-value">{formatCompact(summary?.metrics.activity.toolCalls.value ?? null)}</span>
         </div>
       </div>
     </Panel>
@@ -402,9 +404,12 @@ function HistoryPanel({ points, message }: Readonly<{ points: HistoryPoint[]; me
       }
     >
       {points.length > 0 ? (
-        <TrendChart points={points} field={field} tone={tone} />
+        <>
+          <TrendChart points={points} field={field} tone={tone} />
+          <TrendAxis points={points} />
+        </>
       ) : (
-        <p className="muted">{message ?? t("history.empty")}</p>
+        <p className="muted" title={message}>{t("history.empty")}</p>
       )}
       <p className="muted">{t("history.note")}</p>
     </Panel>
@@ -416,7 +421,7 @@ function WorkspaceTable({ summary, limit }: Readonly<{ summary: SummaryResponse 
   const items = summary?.workspaces.items ?? [];
   const shown = limit ? items.slice(0, limit) : items;
   if (shown.length === 0) {
-    return <p className="muted">{summary?.workspaces.message ?? t("ws.empty")}</p>;
+    return <p className="muted" title={summary?.workspaces.message}>{t("ws.empty")}</p>;
   }
   return (
     <div className="table-wrap">
@@ -513,12 +518,14 @@ function BudgetPanel({ summary, compact }: Readonly<{ summary: SummaryResponse |
   const planLabel = budget?.plan ? budget.plan.charAt(0).toUpperCase() + budget.plan.slice(1) : "—";
   // Percentages read as percentages only while they stay in human range; past
   // 10x the pool a multiplier is the honest, readable form (945% vs 97.6x).
-  const pctText = (pct: number | null): string => {
-    if (pct === null) {
-      return "—";
-    }
-    return pct < 1000 ? `${formatNumber(pct, 0)}%` : `${formatNumber(pct / 100, 1)}×`;
-  };
+  // One unit for the whole facts row: if either share crosses 10x, both
+  // render as multipliers so the pair stays comparable.
+  const forceMultiplier = Math.max(utilization ?? 0, projected ?? 0) >= 1000;
+  const pctText = (pct: number | null): string => formatShare(pct, forceMultiplier && pct !== null);
+  const overBy =
+    budget && budget.observedCredits !== null && budget.observedCredits > budget.monthlyAllowanceCredits
+      ? budget.observedCredits - budget.monthlyAllowanceCredits
+      : null;
   const exhaustionText = budget?.projectedExhaustionDate
     ? t("budget.exhaustionValue", {
       date: new Date(budget.projectedExhaustionDate).toLocaleDateString(),
@@ -529,8 +536,17 @@ function BudgetPanel({ summary, compact }: Readonly<{ summary: SummaryResponse |
   return (
     <Panel
       title={t("budget.title")}
-      status={budget?.status}
-      aside={<span className="muted">{t("budget.aside", { plan: planLabel })}</span>}
+      status={budget?.status === "unavailable" ? "unavailable" : undefined}
+      aside={
+        <div className="link-row">
+          <span className="muted">{t("budget.aside", { plan: planLabel })}</span>
+          {budget && budget.alertLevel !== "ok" ? (
+            <span className={`pill ${budget.alertLevel === "warning" ? "pill-warn" : "pill-bad"}`}>
+              {t(`budget.level.${budget.alertLevel}`)}
+            </span>
+          ) : null}
+        </div>
+      }
     >
       <div className="budget-head">
         <div className={`budget-figure budget-${tone}`}>
@@ -555,7 +571,12 @@ function BudgetPanel({ summary, compact }: Readonly<{ summary: SummaryResponse |
           </div>
           <div>
             <span className="stat-label">{t("budget.remaining")}</span>
-            <span className="stat-value">{formatNumber(budget?.remainingCredits ?? null, 0)}</span>
+            <span className="stat-value">
+              {formatNumber(budget?.remainingCredits ?? null, 0)}
+              {overBy !== null ? (
+                <span className="pill pill-bad budget-level-pill">{t("budget.overBy", { value: formatNumber(overBy, 0) })}</span>
+              ) : null}
+            </span>
           </div>
           <div>
             <span className="stat-label">{t("budget.daysLeft")}</span>
@@ -978,6 +999,9 @@ function usePlannerData(repo: string, weeks: number, lookback: string, prefs: Se
 }
 
 function plannerVerdictTone(verdict: string): string {
+  if (verdict === "no-data") {
+    return "pill-neutral";
+  }
   if (verdict === "justified") {
     return "pill-good";
   }
@@ -1069,21 +1093,31 @@ function PlannerView({ summary, repo, prefs }: Readonly<{ summary: SummaryRespon
               </div>
               <div>
                 <span className="stat-label">{t("planner.monthUtilization")}</span>
-                <span className="stat-value">{projectedPct === null ? "—" : `${formatNumber(projectedPct, 0)}%`}</span>
+                <span className="stat-value">{formatShare(projectedPct)}</span>
               </div>
             </div>
             <svg className="budget-bar" viewBox="0 0 100 8" preserveAspectRatio="none" role="img" aria-label={t("planner.monthUtilization")}>
               <rect className="budget-bar-track" x="0" y="0" width="100" height="8" />
               <rect className={`budget-bar-fill budget-${overageTone}`} x="0" y="0" width={barWidth} height="8" />
-              <line className="budget-bar-crit" x1={100} y1="0" x2={100} y2="8" />
+              {/* Allowance marker: past 100% it moves left so the overshoot
+                  magnitude stays readable inside the bar. */}
+              <line
+                className="budget-bar-crit"
+                x1={projectedPct !== null && projectedPct > 100 ? Math.max(1, 100 * (100 / projectedPct)) : 99.5}
+                y1="0"
+                x2={projectedPct !== null && projectedPct > 100 ? Math.max(1, 100 * (100 / projectedPct)) : 99.5}
+                y2="8"
+              />
             </svg>
             <p className={forecast?.needsOverage ? "planner-overage warn-text" : "planner-overage muted"}>
-              {forecast?.needsOverage
-                ? t("planner.overageNeeded", {
-                  credits: formatNumber(forecast.projectedOverageCredits, 0),
-                  usd: formatNumber(forecast.projectedOverageUsd, 2)
-                })
-                : t("planner.fitsAllowance")}
+              {projectedPct === null
+                ? t("planner.noForecastData")
+                : forecast?.needsOverage
+                  ? t("planner.overageNeeded", {
+                    credits: formatNumber(forecast.projectedOverageCredits, 0),
+                    usd: formatNumber(forecast.projectedOverageUsd, 2)
+                  })
+                  : t("planner.fitsAllowance")}
             </p>
             <p className="muted">{t("planner.note")}</p>
           </>
@@ -1217,14 +1251,10 @@ function useInspectorData(traceId: string) {
   return { inspector, isLoading };
 }
 
-function eventTypeTone(type: string): string {
-  if (type === "llm_request") {
-    return "pill-good";
-  }
-  if (type === "tool_call") {
-    return "pill-warn";
-  }
-  return "pill-good";
+function eventTypeTone(): string {
+  // Event type is a category, not a status — status colors are reserved for
+  // outcomes (the ERROR column carries failure).
+  return "pill-neutral";
 }
 
 function formatMs(value: number | null | undefined): string {
@@ -1611,7 +1641,7 @@ function InspectorView({ sessions }: Readonly<{ sessions: SessionsResponse | nul
                 {events.map((event) => (
                   <tr key={`${event.spanId}-${event.startMs}`}>
                     <td className="numeric">{formatMs(event.startMs)}</td>
-                    <td><span className={`pill ${eventTypeTone(event.type)}`}>{t(`inspector.type.${event.type}`)}</span></td>
+                    <td><span className={`pill ${eventTypeTone()}`}>{t(`inspector.type.${event.type}`)}</span></td>
                     <td>{event.name}</td>
                     <td className="muted">{event.tool || event.model || event.agent || "—"}</td>
                     <td className="numeric">{formatMs(event.durationMs)}</td>
@@ -1717,10 +1747,14 @@ function OverviewView({
           <article className="highlight-card">
             <span className="stat-label">{t("overview.hl.contextPeak")}</span>
             <span className="stat-value">{contextPeak === null ? "—" : `${formatNumber(contextPeak, 0)}%`}</span>
-            <span className="muted">{t("ctx.aside", {
-              peak: contextPeak === null ? "—" : `${formatNumber(contextPeak, 0)}%`,
-              compactions: compactions === null ? "—" : formatNumber(compactions, 0)
-            })}</span>
+            {contextPeak === null && compactions === null ? (
+              <span className="muted">{t("overview.hl.none")}</span>
+            ) : (
+              <span className="muted">{t("ctx.aside", {
+                peak: contextPeak === null ? "—" : `${formatNumber(contextPeak, 0)}%`,
+                compactions: compactions === null ? "—" : formatNumber(compactions, 0)
+              })}</span>
+            )}
           </article>
           <article className="highlight-card">
             <span className="stat-label">{t("overview.hl.exhaustion")}</span>
@@ -1810,6 +1844,7 @@ function SessionsView({ sessions }: Readonly<{ sessions: SessionsResponse | null
                 <th className="numeric">{t("ws.col.input")}</th>
                 <th className="numeric">{t("sessions.col.output")}</th>
                 <th className="numeric">{t("ws.col.cached")}</th>
+                <th className="numeric">{t("inspector.col.cacheWrite")}</th>
                 <th className="numeric">{t("ws.col.cold")}</th>
                 <th className="numeric">{t("ws.col.cacheEff")}</th>
                 <th className="numeric">{t("sessions.col.tools")}</th>
@@ -1830,6 +1865,7 @@ function SessionsView({ sessions }: Readonly<{ sessions: SessionsResponse | null
                   <td className="numeric">{formatCompact(session.inputTokens)}</td>
                   <td className="numeric">{formatCompact(session.outputTokens)}</td>
                   <td className="numeric">{formatCompact(session.cacheReadTokens)}</td>
+                  <td className="numeric">{formatCompact(session.cacheCreationTokens)}</td>
                   <td className="numeric">{formatCompact(session.coldInputTokens)}</td>
                   <td className="numeric">
                     <span className={`pill ${cacheTone(session.cacheEfficiency)}`}>{formatPercent(session.cacheEfficiency)}</span>
@@ -1847,7 +1883,7 @@ function SessionsView({ sessions }: Readonly<{ sessions: SessionsResponse | null
           </table>
         </div>
       ) : (
-        <p className="muted">{sessions?.message ?? t("sessions.empty")}</p>
+        <p className="muted" title={sessions?.message}>{t("sessions.empty")}</p>
       )}
       <p className="muted">{t("sessions.note")}</p>
     </Panel>
@@ -1898,7 +1934,27 @@ function localizeCoachCard(card: CoachCard, t: TranslateFn): CoachCard {
   if (!localizedCoachIds.has(card.id)) {
     return card;
   }
-  const params = card.params ?? {};
+  // Numeric params go through the locale-aware formatter so card bodies never
+  // show raw "400000" or "9762%" style values.
+  const params: Record<string, string | number> = {};
+  for (const [key, value] of Object.entries(card.params ?? {})) {
+    const numeric = typeof value === "number" ? value : Number(value);
+    params[key] = Number.isFinite(numeric) && `${value}`.trim() !== ""
+      ? formatNumber(numeric, Number.isInteger(numeric) ? 0 : 1)
+      : value;
+  }
+  if (card.id === "budget-pacing") {
+    const pct = Number(card.params?.pct);
+    if (Number.isFinite(pct) && pct >= 300) {
+      params.times = formatNumber(pct / 100, 1);
+      const insightTimes = t("coachCard.budget-pacing.insightTimes", params);
+      if (!insightTimes.startsWith("coachCard.")) {
+        const title = t("coachCard.budget-pacing.title", params);
+        const action = t("coachCard.budget-pacing.action", params);
+        return { ...card, title, insight: insightTimes, action };
+      }
+    }
+  }
   const title = t(`coachCard.${card.id}.title`, params);
   const insight = t(`coachCard.${card.id}.insight`, params);
   const action = t(`coachCard.${card.id}.action`, params);
@@ -1957,7 +2013,11 @@ function CoachView({ coach, summary }: Readonly<{ coach: CoachResponse | null; s
             </div>
             <div>
               <span className="stat-label">{t("coach.potentialSavings")}</span>
-              <span className="stat-value">{formatNumber(economy?.potentialSavingsCredits ?? null, 2)}</span>
+              <span className="stat-value">
+                {economy?.potentialSavingsCredits === null || economy === undefined
+                  ? "—"
+                  : t("coach.creditsUnit", { value: formatNumber(economy.potentialSavingsCredits, 0) })}
+              </span>
             </div>
           </div>
         </div>
@@ -1969,10 +2029,10 @@ function CoachView({ coach, summary }: Readonly<{ coach: CoachResponse | null; s
             {opportunities.map((item) => (
               <li key={item.id} className="savings-card">
                 <div className="savings-head">
-                  <h3>{item.label}</h3>
-                  <span className="savings-credits">{t("coach.creditsUnit", { value: formatNumber(item.estimateCredits, 2) })}</span>
+                  <h3>{(() => { const l = t(`savings.${item.id}.label`); return l.startsWith("savings.") ? item.label : l; })()}</h3>
+                  <span className="savings-credits">{t("coach.creditsUnit", { value: formatNumber(item.estimateCredits, 0) })}</span>
                 </div>
-                <p>{item.detail}</p>
+                <p>{(() => { const d = t(`savings.${item.id}.detail`, item.params ?? {}); return d.startsWith("savings.") ? item.detail : d; })()}</p>
               </li>
             ))}
           </ul>
@@ -2136,7 +2196,7 @@ function LongTermPanel({ repo }: Readonly<{ repo: string }>) {
           </table>
         </div>
       ) : (
-        <p className="muted">{history?.message ?? t("longterm.empty")}</p>
+        <p className="muted" title={history?.message}>{t("longterm.empty")}</p>
       )}
       <p className="muted">{t("longterm.note")}</p>
     </Panel>
@@ -2179,7 +2239,7 @@ function HistoryView({ summary, repo }: Readonly<{ summary: SummaryResponse | nu
             </table>
           </div>
         ) : (
-          <p className="muted">{summary?.history.message ?? t("history.emptyRows")}</p>
+          <p className="muted" title={summary?.history.message}>{t("history.emptyRows")}</p>
         )}
       </Panel>
     </>
@@ -2210,19 +2270,19 @@ function HealthView({ summary }: Readonly<{ summary: SummaryResponse | null }>) 
           <dl className="quality-grid">
             <div>
               <dt>{t("health.workspaceReal")}</dt>
-              <dd>{formatNumberText(summary?.metrics.dataQuality.workspaceReal.value, 0, t)}</dd>
+              <dd title={summary?.metrics.dataQuality.workspaceReal.message}>{formatNumberText(summary?.metrics.dataQuality.workspaceReal.value, 0, t)}</dd>
             </div>
             <div>
               <dt>{t("health.nonWorkspaceReal")}</dt>
-              <dd>{formatNumberText(summary?.metrics.dataQuality.nonWorkspaceReal.value, 0, t)}</dd>
+              <dd title={summary?.metrics.dataQuality.nonWorkspaceReal.message}>{formatNumberText(summary?.metrics.dataQuality.nonWorkspaceReal.value, 0, t)}</dd>
             </div>
             <div>
               <dt>{t("health.observedCoverage")}</dt>
-              <dd>{formatNumberText(summary?.metrics.dataQuality.observedCoverage.value, 0, t)}</dd>
+              <dd title={summary?.metrics.dataQuality.observedCoverage.message}>{formatNumberText(summary?.metrics.dataQuality.observedCoverage.value, 0, t)}</dd>
             </div>
             <div>
               <dt>{t("health.notObservedYet")}</dt>
-              <dd>{formatNumberText(summary?.metrics.dataQuality.notObservedYet.value, 0, t)}</dd>
+              <dd title={summary?.metrics.dataQuality.notObservedYet.message}>{formatNumberText(summary?.metrics.dataQuality.notObservedYet.value, 0, t)}</dd>
             </div>
           </dl>
           <p className="muted">{t("health.dqNote")}</p>
@@ -2230,7 +2290,7 @@ function HealthView({ summary }: Readonly<{ summary: SummaryResponse | null }>) 
         <div>
           <div className="panel-header">
             <h2>{t("health.officialBilling")}</h2>
-            <span className="status status-unavailable">{summary?.officialBilling.status ?? "unavailable"}</span>
+            <span className={statusClass(summary?.officialBilling.status ?? "unavailable")}>{statusText(summary?.officialBilling.status ?? "unavailable", t)}</span>
           </div>
           <p>{summary?.officialBilling.reason}</p>
           <p className="muted">{t("health.usdWhatIf", { value: formatCurrencyText(usdTotal, t) })}</p>
@@ -2275,6 +2335,33 @@ const thresholdKeys = [
   "inspectorHealthyHitRate",
   "contextCompactionsInfo"
 ];
+
+// Unit hints so the mixed-scale Value column is self-describing.
+const settingUnit: Record<string, string> = {
+  aiCreditsWarn: "AI Credits",
+  aiCreditsCrit: "AI Credits",
+  inputTokensWarn: "tokens",
+  inputTokensCrit: "tokens",
+  contextWarnPct: "%",
+  contextCritPct: "%",
+  cacheEfficiencyWarn: "0\u20131",
+  coldRatioWarn: "0\u20131",
+  budgetWarnPct: "%",
+  budgetCritPct: "%",
+  modelConcentrationInfo: "0\u20131",
+  promptIoRatioInfo: "\u00d7",
+  inspectorHealthyHitRate: "0\u20131",
+  contextCompactionsInfo: "count",
+  scoreBase: "pts",
+  scoreCacheWeight: "pts",
+  scoreColdPenalty: "pts",
+  scoreContextPenalty: "pts",
+  scoreErrorPenalty: "pts",
+  coldSavingsFactor: "0\u20131",
+  errorSavingsFactor: "0\u20131",
+  frontierOutputPriceMinUsdPerMillion: "US$/M",
+  complexSessionMinToolCalls: "count"
+};
 
 const thresholdEnv: Record<string, string> = {
   aiCreditsWarn: "THRESHOLD_AI_CREDITS_WARN",
@@ -2338,7 +2425,10 @@ function SettingsView({ summary }: Readonly<{ summary: SummaryResponse | null }>
               {thresholdKeys.map((key) => (
                 <tr key={key}>
                   <td>{t(`th.${key}.label`)}</td>
-                  <td className="numeric strong">{formatNumberText(thresholds[key], 2, t)}</td>
+                  <td className="numeric strong">
+                    {formatNumberText(thresholds[key], 6, t)}
+                    {settingUnit[key] ? <span className="muted"> {settingUnit[key]}</span> : null}
+                  </td>
                   <td><code>{thresholdEnv[key]}</code></td>
                   <td className="muted">{t(`th.${key}.help`)}</td>
                 </tr>
@@ -2363,7 +2453,10 @@ function SettingsView({ summary }: Readonly<{ summary: SummaryResponse | null }>
               {coachTuningKeys.map((key) => (
                 <tr key={key}>
                   <td>{t(`ct.${key}.label`)}</td>
-                  <td className="numeric strong">{formatNumberText(coachTuning[key], 2, t)}</td>
+                  <td className="numeric strong">
+                    {formatNumberText(coachTuning[key], 6, t)}
+                    {settingUnit[key] ? <span className="muted"> {settingUnit[key]}</span> : null}
+                  </td>
                   <td><code>{coachTuningEnv[key]}</code></td>
                   <td className="muted">{t(`ct.${key}.help`)}</td>
                 </tr>

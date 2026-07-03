@@ -16,9 +16,20 @@ export function setNumberLocale(locale: string): void {
 
 export function formatNumber(value: number | null, digits = 2): string {
     if (value === null || Number.isNaN(value)) {
-        return "Unavailable";
+        return "\u2014";
     }
     return new Intl.NumberFormat(numberLocale, { maximumFractionDigits: digits }).format(value);
+}
+
+// Share-of-pool formatter: percent while readable, multiplier past 10x.
+export function formatShare(pct: number | null, forceMultiplier = false): string {
+    if (pct === null || Number.isNaN(pct)) {
+        return "\u2014";
+    }
+    if (forceMultiplier || pct >= 1000) {
+        return `${formatNumber(pct / 100, 1)}\u00d7`;
+    }
+    return `${formatNumber(pct, 0)}%`;
 }
 
 export function formatCompact(value: number | null): string {
@@ -37,7 +48,7 @@ export function formatPercent(value: number | null, digits = 0): string {
 
 export function formatCurrency(value: number | null): string {
     if (value === null || Number.isNaN(value)) {
-        return "Unavailable";
+        return "\u2014";
     }
     return new Intl.NumberFormat(numberLocale, {
         style: "currency",
@@ -65,7 +76,7 @@ export function statusClass(status: ServiceStatus | MetricStatus): string {
 // contextCritPct thresholds when the summary provides them.
 export function contextTone(peakPct: number | null, thresholds?: Record<string, number>): string {
     if (peakPct === null) {
-        return "pill-good";
+        return "pill-neutral";
     }
     const warn = thresholds?.contextWarnPct ?? 70;
     const crit = thresholds?.contextCritPct ?? 90;
@@ -80,7 +91,7 @@ export function contextTone(peakPct: number | null, thresholds?: Record<string, 
 
 export function cacheTone(efficiency: number | null): string {
     if (efficiency === null) {
-        return "pill-warn";
+        return "pill-neutral";
     }
     if (efficiency >= 0.5) {
         return "pill-good";
@@ -106,7 +117,10 @@ export function Panel({
         <section className="panel">
             <div className="panel-header">
                 <h2>{title}</h2>
-                {status ? <span className={statusClass(status)}>{statusLabel(status)}</span> : aside}
+                <div className="panel-header-actions">
+                    {aside}
+                    {status ? <span className={statusClass(status)}>{statusLabel(status)}</span> : null}
+                </div>
             </div>
             {children}
         </section>
@@ -196,6 +210,28 @@ export function TrendChart({ points, field, tone }: Readonly<{ points: HistoryPo
                 );
             })}
         </svg>
+    );
+}
+
+// First/middle/last bucket timestamps so the trend has a readable time axis.
+export function TrendAxis({ points }: Readonly<{ points: HistoryPoint[] }>) {
+    if (points.length < 2) {
+        return null;
+    }
+    const spanMs = new Date(points.at(-1)!.t).getTime() - new Date(points[0].t).getTime();
+    const fmt = (iso: string) => {
+        const date = new Date(iso);
+        return spanMs > 48 * 3600 * 1000
+            ? date.toLocaleDateString(numberLocale, { month: "short", day: "numeric" })
+            : date.toLocaleTimeString(numberLocale, { hour: "2-digit", minute: "2-digit" });
+    };
+    const middle = points[Math.floor(points.length / 2)];
+    return (
+        <div className="trend-axis">
+            <span>{fmt(points[0].t)}</span>
+            <span>{fmt(middle.t)}</span>
+            <span>{fmt(points.at(-1)!.t)}</span>
+        </div>
     );
 }
 

@@ -131,7 +131,7 @@ test("efficiency score rewards cache reuse and penalizes waste", async () => {
   });
   assert.equal(wasteful.efficiencyScore, 0);
   // cold savings 100 * 1 * 0.5 plus error savings 100 * 1 * 0.15
-  assert.ok(Math.abs(wasteful.potentialSavingsCredits - 65) < 1e-9);
+  assert.ok(Math.abs((wasteful.potentialSavingsCredits ?? 0) - 65) < 1e-9);
 });
 
 test("inspector event classification maps GenAI operations", async () => {

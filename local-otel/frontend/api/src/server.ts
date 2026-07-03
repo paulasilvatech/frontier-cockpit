@@ -351,6 +351,18 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs =
   }
 }
 
+// Stable human-readable detail for upstream failures; raw exception strings
+// like "fetch failed" or "This operation was aborted" never reach the UI.
+export function humanErrorDetail(error: unknown, service: string): string {
+  if (error instanceof Error && error.name === "AbortError") {
+    return `${service} did not respond within the timeout.`;
+  }
+  if (error instanceof Error && /fetch failed/i.test(error.message)) {
+    return `${service} is unreachable. Is the stack running?`;
+  }
+  return error instanceof Error ? error.message : `${service} request failed.`;
+}
+
 async function queryPrometheus(query: string): Promise<PrometheusVectorResult[]> {
   const queryUrl = new URL("/api/v1/query", prometheusUrl);
   queryUrl.searchParams.set("query", query);
@@ -419,7 +431,7 @@ async function scalarMetric(query: string): Promise<ScalarMetric> {
       status: "unavailable",
       value: null,
       query,
-      message: error instanceof Error ? error.message : "Prometheus query failed"
+      message: humanErrorDetail(error, "Prometheus")
     };
   }
 }
@@ -442,7 +454,7 @@ async function seriesMetric(query: string): Promise<SeriesMetric> {
       status: "unavailable",
       points: [],
       query,
-      message: error instanceof Error ? error.message : "Prometheus query failed"
+      message: humanErrorDetail(error, "Prometheus")
     };
   }
 }
@@ -460,7 +472,7 @@ async function httpHealth(id: string, name: string, url: string): Promise<Servic
       id,
       name,
       status: "unavailable",
-      detail: error instanceof Error ? error.message : "Endpoint did not respond",
+      detail: humanErrorDetail(error, name),
       checkedAt
     };
   }
@@ -492,7 +504,7 @@ async function jobsHealth(): Promise<ServiceHealth> {
       id: "copilot-otel-jobs",
       name: "Session materializer jobs",
       status: "unavailable",
-      detail: error instanceof Error ? error.message : "Materializer job metrics could not be checked.",
+      detail: humanErrorDetail(error, "Prometheus"),
       checkedAt
     };
   }
@@ -524,7 +536,7 @@ async function registryHealth(): Promise<ServiceHealth> {
       id: "copilot-otel-registry",
       name: "Model price registry sidecar",
       status: "unavailable",
-      detail: error instanceof Error ? error.message : "Model price registry metrics could not be checked.",
+      detail: humanErrorDetail(error, "Prometheus"),
       checkedAt
     };
   }
@@ -713,7 +725,7 @@ async function workspaceBreakdown(
     return {
       status: "unavailable",
       items: [],
-      message: error instanceof Error ? error.message : "Workspace breakdown failed"
+      message: humanErrorDetail(error, "Prometheus")
     };
   }
 }
@@ -741,13 +753,20 @@ async function usageHistory(
   const buildQuery = (metric: string, toCredits = false) =>
     `sum(max by (trace_id) (max_over_time(copilot_real_session_${metric}_ratio{${selector}}[${window}])))${toCredits ? " / 1e9" : ""}`;
   try {
-    const [input, output, cacheRead, cold, aiu] = await Promise.all([
+    // allSettled: one timed-out series must not discard the four that loaded.
+    const settled = await Promise.allSettled([
       queryPrometheusRange(buildQuery("input_tokens"), start, end, shape.stepSeconds),
       queryPrometheusRange(buildQuery("output_tokens"), start, end, shape.stepSeconds),
       queryPrometheusRange(buildQuery("cache_read_tokens"), start, end, shape.stepSeconds),
       queryPrometheusRange(buildQuery("cold_input_tokens"), start, end, shape.stepSeconds),
       queryPrometheusRange(buildQuery("nano_aiu", true), start, end, shape.stepSeconds)
     ]);
+    if (settled.every((result) => result.status === "rejected")) {
+      throw (settled[0] as PromiseRejectedResult).reason;
+    }
+    const pick = (index: number): PrometheusMatrixResult[] =>
+      settled[index].status === "fulfilled" ? (settled[index] as PromiseFulfilledResult<PrometheusMatrixResult[]>).value : [];
+    const [input, output, cacheRead, cold, aiu] = [pick(0), pick(1), pick(2), pick(3), pick(4)];
     const byTimestamp = new Map<number, HistoryPoint>();
     const ensure = (timestamp: number): HistoryPoint => {
       let point = byTimestamp.get(timestamp);
@@ -797,7 +816,7 @@ async function usageHistory(
       status: "unavailable",
       stepSeconds: shape.stepSeconds,
       points: [],
-      message: error instanceof Error ? error.message : "Usage history failed"
+      message: humanErrorDetail(error, "Prometheus")
     };
   }
 }
@@ -933,13 +952,14 @@ interface SavingsOpportunity {
   id: string;
   label: string;
   estimateCredits: number;
+  params?: Record<string, string | number>;
   detail: string;
 }
 
 interface EconomySummary {
   efficiencyScore: number | null;
-  aiCredits: number;
-  potentialSavingsCredits: number;
+  aiCredits: number | null;
+  potentialSavingsCredits: number | null;
   coldCostShare: number | null;
   cacheEfficiency: number | null;
   savingsOpportunities: SavingsOpportunity[];
@@ -950,7 +970,7 @@ interface EconomySummary {
 // reuse and penalizes cold context, context pressure, and error loops. The
 // weights and savings factors live in coachTuning and are env-overridable.
 export function computeEconomy(input: {
-  aiCredits: number;
+  aiCredits: number | null;
   sessions: number;
   errors: number;
   promptTotal: number;
@@ -971,22 +991,26 @@ export function computeEconomy(input: {
     efficiencyScore = Math.max(0, Math.min(100, Math.round(score)));
   }
 
-  const coldSavings = aiCredits * (coldRatio ?? 0) * coachTuning.coldSavingsFactor;
+  const observedCredits = aiCredits ?? 0;
+  const coldSavings = observedCredits * (coldRatio ?? 0) * coachTuning.coldSavingsFactor;
   const errorRate = sessions > 0 ? errors / sessions : 0;
-  const errorSavings = aiCredits * Math.min(errorRate, 1) * coachTuning.errorSavingsFactor;
-  const potentialSavingsCredits = coldSavings + errorSavings;
+  const errorSavings = observedCredits * Math.min(errorRate, 1) * coachTuning.errorSavingsFactor;
+  // With no telemetry at all, savings are unknown, not zero.
+  const potentialSavingsCredits = aiCredits === null ? null : coldSavings + errorSavings;
 
   const savingsOpportunities: SavingsOpportunity[] = [
     {
       id: "cold-context",
       label: "Reduce cold context",
       estimateCredits: coldSavings,
+      params: { value: Math.round((coldRatio ?? 0) * 100) },
       detail: `${Math.round((coldRatio ?? 0) * 100)}% of prompt tokens were cold input. Reusing warm context lowers cost.`
     },
     {
       id: "error-loops",
       label: "Avoid tool-error loops",
       estimateCredits: errorSavings,
+      params: { value: Math.round(errors) },
       detail: `${Math.round(errors)} error signal(s) in range. Fixing the root cause avoids wasted retries.`
     }
   ].filter((item) => item.estimateCredits > 0);
@@ -1075,11 +1099,11 @@ export function exhaustionForecast(
 
 interface ModelMixEntry {
   model: string;
-  calls: number;
-  inputTokens: number;
-  outputTokens: number;
-  cachedTokens: number;
-  totalTokens: number;
+  calls: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cachedTokens: number | null;
+  totalTokens: number | null;
   estimatedAiCredits: number | null;
   share: number | null;
 }
@@ -1205,21 +1229,23 @@ function budgetToAlert(budget: AiCreditsBudgetInsight): Alert | null {
 }
 
 function createModelMixEntry(model: string): ModelMixEntry {
-  return { model, calls: 0, inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0, estimatedAiCredits: null, share: null };
+  // Token/call fields start null: a model that only appears in the price join
+  // must show "no data" for calls/tokens, not a fabricated zero.
+  return { model, calls: null, inputTokens: null, outputTokens: null, cachedTokens: null, totalTokens: null, estimatedAiCredits: null, share: null };
 }
 
 function applyModelToken(entry: ModelMixEntry, tokenType: string, value: number): void {
-  entry.totalTokens += value;
+  entry.totalTokens = (entry.totalTokens ?? 0) + value;
   const normalized = tokenType.toLowerCase();
   if (normalized.includes("output")) {
-    entry.outputTokens += value;
+    entry.outputTokens = (entry.outputTokens ?? 0) + value;
     return;
   }
   if (normalized.includes("cache")) {
-    entry.cachedTokens += value;
+    entry.cachedTokens = (entry.cachedTokens ?? 0) + value;
     return;
   }
-  entry.inputTokens += value;
+  entry.inputTokens = (entry.inputTokens ?? 0) + value;
 }
 
 async function modelMix(range: string): Promise<ModelMix> {
@@ -1261,15 +1287,15 @@ async function modelMix(range: string): Promise<ModelMix> {
       ensure(model).estimatedAiCredits = point.value;
     }
   }
-  const totalCalls = [...byModel.values()].reduce((sum, entry) => sum + entry.calls, 0);
+  const totalCalls = [...byModel.values()].reduce((sum, entry) => sum + (entry.calls ?? 0), 0);
   const totalEstimatedAiCredits = [...byModel.values()].reduce((sum, entry) => sum + (entry.estimatedAiCredits ?? 0), 0);
   const entries = [...byModel.values()]
     .map((entry) => ({
       ...entry,
       share: totalEstimatedAiCredits > 0 && entry.estimatedAiCredits !== null ? entry.estimatedAiCredits / totalEstimatedAiCredits : null
     }))
-    .filter((entry) => entry.calls > 0 || entry.totalTokens > 0 || (entry.estimatedAiCredits ?? 0) > 0)
-    .sort((left, right) => (right.estimatedAiCredits ?? 0) - (left.estimatedAiCredits ?? 0) || right.calls - left.calls);
+    .filter((entry) => (entry.calls ?? 0) > 0 || (entry.totalTokens ?? 0) > 0 || (entry.estimatedAiCredits ?? 0) > 0)
+    .sort((left, right) => (right.estimatedAiCredits ?? 0) - (left.estimatedAiCredits ?? 0) || (right.calls ?? 0) - (left.calls ?? 0));
   return {
     status: entries.length > 0 ? "ok" : "unavailable",
     entries,
@@ -1413,7 +1439,7 @@ async function summary(url: URL) {
   }
 
   const economy = computeEconomy({
-    aiCredits: aiCredits.value ?? 0,
+    aiCredits: aiCredits.value,
     sessions: workspaceReal.value ?? 0,
     errors: errors.value ?? 0,
     promptTotal,
@@ -1637,7 +1663,7 @@ async function sessionsBreakdown(
     return {
       status: "unavailable",
       items: [],
-      message: error instanceof Error ? error.message : "Sessions breakdown failed"
+      message: humanErrorDetail(error, "Prometheus")
     };
   }
 }
@@ -2095,7 +2121,7 @@ async function inspectorTrace(url: URL): Promise<InspectorResponse> {
   } catch (error) {
     return {
       status: "unavailable",
-      message: error instanceof Error ? error.message : "Tempo trace lookup failed",
+      message: humanErrorDetail(error, "Tempo"),
       summary: null,
       events: [],
       cacheTimeline: [],

@@ -97,13 +97,14 @@ export interface SavingsOpportunity {
     id: string;
     label: string;
     estimateCredits: number;
+    params?: Record<string, string | number>;
     detail: string;
 }
 
 export interface EconomySummary {
     efficiencyScore: number | null;
-    aiCredits: number;
-    potentialSavingsCredits: number;
+    aiCredits: number | null;
+    potentialSavingsCredits: number | null;
     coldCostShare: number | null;
     cacheEfficiency: number | null;
     savingsOpportunities: SavingsOpportunity[];
@@ -359,11 +360,11 @@ export interface LongTermHistoryResponse {
 
 export interface ModelMixEntry {
     model: string;
-    calls: number;
-    inputTokens: number;
-    outputTokens: number;
-    cachedTokens: number;
-    totalTokens: number;
+    calls: number | null;
+    inputTokens: number | null;
+    outputTokens: number | null;
+    cachedTokens: number | null;
+    totalTokens: number | null;
     estimatedAiCredits: number | null;
     share: number | null;
 }
