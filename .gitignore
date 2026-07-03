@@ -6,6 +6,9 @@
 node_modules/
 local-otel/frontend/**/node_modules/
 
+# Guard against accidentally nesting a clone of this repo inside itself
+/frontier-cockpit/
+
 # Frontier dashboard build artifacts
 local-otel/frontend/**/dist/
 local-otel/frontend/**/*.tsbuildinfo
