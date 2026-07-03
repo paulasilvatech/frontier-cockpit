@@ -61,6 +61,23 @@ export function statusClass(status: ServiceStatus | MetricStatus): string {
     return `status status-${status}`;
 }
 
+// Context window pressure tone, following the server's contextWarnPct /
+// contextCritPct thresholds when the summary provides them.
+export function contextTone(peakPct: number | null, thresholds?: Record<string, number>): string {
+    if (peakPct === null) {
+        return "pill-good";
+    }
+    const warn = thresholds?.contextWarnPct ?? 70;
+    const crit = thresholds?.contextCritPct ?? 90;
+    if (peakPct >= crit) {
+        return "pill-bad";
+    }
+    if (peakPct >= warn) {
+        return "pill-warn";
+    }
+    return "pill-good";
+}
+
 export function cacheTone(efficiency: number | null): string {
     if (efficiency === null) {
         return "pill-warn";

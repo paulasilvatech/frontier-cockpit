@@ -3,7 +3,7 @@ title: "Frontier Cockpit AI Credits and Planner Guide"
 description: "Step-by-step guide to GitHub Copilot AI Credits, per-plan allowances, token-efficiency best practices, and the workspace Planner with overage and frontier-model justification."
 author: "Frontier Cockpit Team"
 date: "2026-07-03"
-version: "1.1.0"
+version: "1.2.0"
 status: "approved"
 language: "en"
 tags: ["github-copilot", "ai-credits", "planner", "token-efficiency", "local"]
@@ -21,6 +21,7 @@ This guide is for the individual developer using the local dashboard at `http://
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.2.0 | 2026-07-03 | Frontier Cockpit Team | Section 9 gained the full Cache Explorer analytics (token-weighted cache hit, healthy request pairs, avoidable recomputed tokens, cache-break cause classification) and a new section 10 covers context management and the VS Code OTel settings checklist. |
 | 1.1.0 | 2026-07-03 | Frontier Cockpit Team | Added section 9: the Inspector view (per-session debug log and cache explorer) and importing VS Code Agent Debug Logs exports. |
 | 1.0.0 | 2026-07-03 | Frontier Cockpit Team | Initial trilingual guide for AI Credits, token efficiency, and the Planner view. |
 
@@ -35,6 +36,7 @@ This guide is for the individual developer using the local dashboard at `http://
 - [7. Every Configurable Value](#7-every-configurable-value)
 - [8. Honesty Rules](#8-honesty-rules)
 - [9. Step By Step: Inspect A Session (Debug Log And Cache Explorer)](#9-step-by-step-inspect-a-session-debug-log-and-cache-explorer)
+- [10. Step By Step: Manage Context To Save Tokens And AI Credits](#10-step-by-step-manage-context-to-save-tokens-and-ai-credits)
 
 ## 1. How GitHub Copilot Billing Works Now
 
@@ -191,8 +193,8 @@ The **Inspector** view gives you, per workspace, the same signals as the VS Code
 
 1. Open `http://localhost:3300` → **Inspector**.
 2. Pick a session in the selector (sessions are labeled by workspace, model, and credits) or arrive from the Sessions view with a trace id.
-3. Read the **summary tiles** (like the VS Code Summary view): total duration, LLM requests, agent turns, tool calls, tokens in/out, cache hit rate, cache breaks, and errors.
-4. Read the **Cache explorer** table: one row per LLM request with its cache hit rate (cache reads over cache reads plus writes). A red row marks where the prompt-cache prefix broke — either the hit rate dropped sharply or the model switched mid-session (the documented cache breakers). Everything after a break was re-billed as fresh input.
+3. Read the **summary tiles** (like the VS Code Summary view): total duration, LLM requests, agent turns, tool calls, tokens in/out, cache hit rate, cache breaks, **healthy request pairs**, **avoidable recompute**, and errors. Below the tiles, the token-weighted headline reads like the VS Code Cache Explorer: "X of Y prompt-cache tokens were served from cache across N LLM requests".
+4. Read the **Cache explorer** table: one row per LLM request with its cache hit rate (cache reads over cache reads plus writes). A red row marks where the prompt-cache prefix broke, and the signal column names the **cause**: `model switch`, `system prompt changed`, `tool catalog changed`, or `prefix drift`. Model switches are always detectable; classifying system-prompt and tool-catalog changes requires the VS Code setting **Chat > Agent Host > Otel: Capture Content** (safe on this local-only stack — the API exposes only short content signatures, never the text). Everything after a break was re-billed as fresh input.
 5. Read the **Event log**: the chronological span timeline (LLM requests, agent turns, tool calls, hooks) with offsets, durations, per-event tokens, and errors. For full attribute payloads, open the trace id in Aspire or Grafana Tempo Explore.
 6. Apply the **keep-the-cache-warm practices** shown in the view: lock in model/tools before starting, keep instruction files stable, add volatile context late, and start fresh after a break.
 
@@ -209,3 +211,15 @@ pwsh -ExecutionPolicy Bypass -File local-otel/import-agent-debug-session.ps1 -Pa
 ```
 
 The imported session is inspectable by trace id immediately and appears in the session lists after the next materializer pass (up to 5 minutes).
+
+## 10. Step By Step: Manage Context To Save Tokens And AI Credits
+
+Context is the main lever for cost, latency, and answer quality. These steps follow the VS Code guide "Manage context for AI" and are wired into the cockpit with real telemetry.
+
+1. **Check the VS Code OTel settings first.** Two emitters ship telemetry and each has its own endpoint. The most-missed setting is `Chat > Agent Host > Otel: Otlp Endpoint` — without it the agent-host spans never reach the stack. The full checklist (with the values for this stack) is in `local-otel/README.md`, section "VS Code OTel settings checklist". Every change needs a window reload.
+2. **Attach precisely with #-mentions.** Type `#` to attach specific files, folders, or symbols. Reserve `#codebase` for discovery questions ("where is X handled?"); for focused edits, #-mention the two or three files that matter. Cold-input alerts in the Overview drop when you do.
+3. **Watch the context window control** in the chat input: it shows how full the model's window is and the session's AI Credits; hover it for the token breakdown. The cockpit mirrors this per workspace — the Workspaces view has a **Context peak** column colored by the 70%/90% guardrails.
+4. **Compact deliberately.** Run `/compact` at natural checkpoints, optionally with focus instructions (for example `/compact focus on the schema decisions`). The Coach fires "Compact before the window fills" when peak context crosses the warning threshold with zero compactions in the range, and "Scope sessions tighter" when more than the `THRESHOLD_CONTEXT_COMPACTIONS_INFO` guardrail (default 3) ran — frequent auto-compaction means sessions outgrow the window, and each compaction also resets the prompt cache.
+5. **One session per task.** Start a fresh chat for unrelated work; long conversations accumulate stale context and pay for it on every request.
+6. **Verify the effect in the Inspector.** Stable context shows up as healthy request pairs and a higher token-weighted cache hit; churned context shows up as prefix-drift breaks and avoidable recomputed tokens.
+7. **Read the Context management playbook** in the Coach view — it shows these practices with your observed peak context and compaction count for the selected range.

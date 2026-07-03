@@ -3,7 +3,7 @@ title: "Guia de AI Credits e Planner do Frontier Cockpit"
 description: "Guia passo a passo sobre GitHub Copilot AI Credits, allowances por plano, melhores práticas de eficiência de tokens e o Planner de workspace com justificativa de overage e de modelos frontier."
 author: "Frontier Cockpit Team"
 date: "2026-07-03"
-version: "1.1.0"
+version: "1.2.0"
 status: "approved"
 language: "pt-BR"
 tags: ["github-copilot", "ai-credits", "planner", "token-efficiency", "local"]
@@ -21,6 +21,7 @@ Este guia é para a pessoa desenvolvedora que usa o dashboard local em `http://l
 
 | Versão | Data | Autor | Alterações |
 | --- | --- | --- | --- |
+| 1.2.0 | 2026-07-03 | Frontier Cockpit Team | A seção 9 ganhou as análises completas do Cache Explorer (acerto de cache ponderado por tokens, pares de requests saudáveis, tokens recomputados evitáveis, classificação da causa das quebras de cache) e a nova seção 10 cobre gestão de contexto e o checklist de configurações OTel do VS Code. |
 | 1.1.0 | 2026-07-03 | Frontier Cockpit Team | Adicionada a seção 9: a view Inspector (log de debug e explorador de cache por sessão) e a importação de exports do Agent Debug Logs do VS Code. |
 | 1.0.0 | 2026-07-03 | Frontier Cockpit Team | Guia trilíngue inicial de AI Credits, eficiência de tokens e a view Planner. |
 
@@ -35,6 +36,7 @@ Este guia é para a pessoa desenvolvedora que usa o dashboard local em `http://l
 - [7. Todos os Valores Configuráveis](#7-todos-os-valores-configuráveis)
 - [8. Regras de Honestidade](#8-regras-de-honestidade)
 - [9. Passo a Passo: Inspecione uma Sessão (Log de Debug e Explorador de Cache)](#9-passo-a-passo-inspecione-uma-sessão-log-de-debug-e-explorador-de-cache)
+- [10. Passo a Passo: Gerencie o Contexto para Economizar Tokens e AI Credits](#10-passo-a-passo-gerencie-o-contexto-para-economizar-tokens-e-ai-credits)
 
 ## 1. Como Funciona o Billing do GitHub Copilot Hoje
 
@@ -191,8 +193,8 @@ A view **Inspector** dá, por workspace, os mesmos sinais do painel Agent Debug 
 
 1. Abra `http://localhost:3300` → **Inspector**.
 2. Escolha uma sessão no seletor (as sessões são rotuladas por workspace, modelo e créditos) ou chegue pela view Sessions com um trace id.
-3. Leia os **tiles de resumo** (como a Summary view do VS Code): duração total, requests LLM, turnos de agente, tool calls, tokens entrada/saída, taxa de acerto de cache, quebras de cache e erros.
-4. Leia a tabela do **Explorador de cache**: uma linha por request LLM com sua taxa de acerto (leituras de cache sobre leituras mais escritas). Uma linha vermelha marca onde o prefixo do cache de prompt quebrou — a taxa caiu bruscamente ou o modelo trocou no meio da sessão (as causas documentadas). Tudo depois de uma quebra foi refaturado como entrada nova.
+3. Leia os **tiles de resumo** (como a Summary view do VS Code): duração total, requests LLM, turnos de agente, tool calls, tokens entrada/saída, taxa de acerto de cache, quebras de cache, **pares de requests saudáveis**, **recomputo evitável** e erros. Abaixo dos tiles, a manchete ponderada por tokens é igual à do Cache Explorer do VS Code: "X de Y tokens de cache de prompt foram servidos do cache em N requests LLM".
+4. Leia a tabela do **Explorador de cache**: uma linha por request LLM com sua taxa de acerto (leituras de cache sobre leituras mais escritas). Uma linha vermelha marca onde o prefixo do cache de prompt quebrou, e a coluna de sinal nomeia a **causa**: `troca de modelo`, `system prompt mudou`, `catálogo de ferramentas mudou` ou `deriva de prefixo`. Trocas de modelo são sempre detectáveis; classificar mudanças de system prompt e de catálogo de ferramentas exige a configuração do VS Code **Chat > Agent Host > Otel: Capture Content** (segura nesta stack local — a API expõe apenas assinaturas curtas do conteúdo, nunca o texto). Tudo depois de uma quebra foi refaturado como entrada nova.
 5. Leia o **Log de eventos**: a linha do tempo cronológica de spans (requests LLM, turnos de agente, tool calls, hooks) com offsets, durações, tokens por evento e erros. Para os payloads completos de atributos, abra o trace id no Aspire ou no Grafana Tempo Explore.
 6. Aplique as **práticas de manter o cache aquecido** mostradas na view: trave modelo/ferramentas antes de começar, mantenha os arquivos de instruções estáveis, adicione contexto volátil por último e comece do zero após uma pausa.
 
@@ -209,3 +211,15 @@ pwsh -ExecutionPolicy Bypass -File local-otel/import-agent-debug-session.ps1 -Pa
 ```
 
 A sessão importada fica inspecionável pelo trace id imediatamente e aparece nas listas de sessões após a próxima passada do materializador (até 5 minutos).
+
+## 10. Passo a Passo: Gerencie o Contexto para Economizar Tokens e AI Credits
+
+O contexto é a principal alavanca de custo, latência e qualidade das respostas. Estes passos seguem o guia do VS Code "Manage context for AI" e estão ligados ao cockpit com telemetria real.
+
+1. **Confira primeiro as configurações OTel do VS Code.** Dois emissores enviam telemetria e cada um tem seu próprio endpoint. A configuração mais esquecida é `Chat > Agent Host > Otel: Otlp Endpoint` — sem ela os spans do agent host nunca chegam à stack. O checklist completo (com os valores para esta stack) está em `local-otel/README.md`, seção "VS Code OTel settings checklist". Toda mudança exige recarregar a janela.
+2. **Anexe com precisão usando #-mentions.** Digite `#` para anexar arquivos, pastas ou símbolos específicos. Reserve `#codebase` para perguntas de descoberta ("onde X é tratado?"); para edições focadas, use #-mention nos dois ou três arquivos que importam. Os alertas de entrada fria na Overview caem quando você faz isso.
+3. **Acompanhe o controle da janela de contexto** no campo do chat: ele mostra o quanto da janela do modelo está em uso e os AI Credits da sessão; passe o mouse para ver a divisão de tokens. O cockpit espelha isso por workspace — a view Workspaces tem a coluna **Pico de contexto**, colorida pelos guardrails de 70%/90%.
+4. **Compacte deliberadamente.** Execute `/compact` em checkpoints naturais, opcionalmente com instruções de foco (por exemplo `/compact focar nas decisões de schema`). O Coach dispara "Compacte antes de a janela encher" quando o pico de contexto cruza o limite de aviso com zero compactações no período, e "Reduza o escopo das sessões" quando mais compactações que o guardrail `THRESHOLD_CONTEXT_COMPACTIONS_INFO` (padrão 3) rodaram — compactação automática frequente significa que as sessões ultrapassam a janela, e cada compactação também zera o cache de prompt.
+5. **Uma sessão por tarefa.** Inicie um chat novo para trabalho não relacionado; conversas longas acumulam contexto obsoleto e pagam por ele em cada request.
+6. **Verifique o efeito no Inspector.** Contexto estável aparece como pares de requests saudáveis e um acerto de cache ponderado por tokens mais alto; contexto instável aparece como quebras por deriva de prefixo e tokens recomputados evitáveis.
+7. **Leia o Playbook de gestão de contexto** na view Coach — ele mostra estas práticas com o seu pico de contexto e contagem de compactações observados no período selecionado.

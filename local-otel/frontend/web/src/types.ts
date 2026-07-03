@@ -63,6 +63,7 @@ export interface WorkspaceUsage {
     sessions: number;
     cacheEfficiency: number | null;
     coldRatio: number | null;
+    contextPeakPct: number | null;
 }
 
 export interface HistoryPoint {
@@ -229,6 +230,8 @@ export interface InspectorEvent {
     error: string | null;
 }
 
+export type CacheBreakCause = "model-switch" | "system-prompt-change" | "tool-catalog-change" | "prefix-drift";
+
 export interface InspectorCacheTurn {
     seq: number;
     startMs: number;
@@ -239,6 +242,8 @@ export interface InspectorCacheTurn {
     hitRate: number | null;
     modelSwitched: boolean;
     cacheBreak: boolean;
+    breakCause: CacheBreakCause | null;
+    promptSig: string;
 }
 
 export interface InspectorSummary {
@@ -257,6 +262,12 @@ export interface InspectorSummary {
     cacheEfficiency: number | null;
     cacheBreaks: number;
     modelSwitches: number;
+    promptCacheTokens: number;
+    cachedTokenShare: number | null;
+    requestPairs: number;
+    healthyPairs: number;
+    avoidableRecomputedTokens: number;
+    contentCaptureSeen: boolean;
     models: string[];
     tools: string[];
     services: string[];

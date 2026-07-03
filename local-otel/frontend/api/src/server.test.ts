@@ -162,3 +162,61 @@ test("planner URL parameters are validated and clamped", async () => {
   assert.deepEqual(mod.plannerLookbackFromUrl(new URL("http://x/?lookback=30d")), { literal: "30d", days: 30 });
   assert.deepEqual(mod.plannerLookbackFromUrl(new URL("http://x/?lookback=bogus")), { literal: "7d", days: 7 });
 });
+
+test("content signature is stable, short, and empty for empty input", async () => {
+  const mod = await loadServer("signature");
+  assert.equal(mod.contentSignature(""), "");
+  assert.equal(mod.contentSignature("system prompt A"), mod.contentSignature("system prompt A"));
+  assert.notEqual(mod.contentSignature("system prompt A"), mod.contentSignature("system prompt B"));
+  assert.match(mod.contentSignature("anything"), /^[0-9a-f]{8}$/);
+});
+
+test("cache analysis classifies break causes and counts healthy pairs", async () => {
+  const mod = await loadServer("cache-analysis");
+  const turn = (overrides: Partial<import("./server.js").CacheAnalysisRequest>) => ({
+    startMs: 0,
+    model: "claude-sonnet-4.6",
+    inputTokens: 500,
+    cacheReadTokens: 9000,
+    cacheCreationTokens: 1000,
+    systemSig: "aaaa0000",
+    toolSig: "bbbb0000",
+    ...overrides
+  });
+  const result = mod.buildCacheAnalysis(
+    [
+      turn({ startMs: 0, cacheReadTokens: 0, cacheCreationTokens: 10000 }),
+      turn({ startMs: 1000 }),
+      turn({ startMs: 2000, model: "gpt-5.5", cacheReadTokens: 0, cacheCreationTokens: 10000 }),
+      turn({ startMs: 3000, model: "gpt-5.5" }),
+      turn({ startMs: 4000, model: "gpt-5.5", systemSig: "cccc1111", cacheReadTokens: 0, cacheCreationTokens: 10000 }),
+      turn({ startMs: 5000, model: "gpt-5.5", systemSig: "cccc1111", toolSig: "dddd2222", cacheReadTokens: 0, cacheCreationTokens: 10000 })
+    ],
+    0.5
+  );
+  assert.equal(result.requestPairs, 5);
+  assert.equal(result.cacheBreaks, 3);
+  assert.equal(result.modelSwitches, 1);
+  assert.equal(result.healthyPairs, 2);
+  assert.equal(result.contentCaptureSeen, true);
+  assert.equal(result.timeline[0].cacheBreak, false);
+  assert.equal(result.timeline[2].breakCause, "model-switch");
+  assert.equal(result.timeline[4].breakCause, "system-prompt-change");
+  assert.equal(result.timeline[5].breakCause, "tool-catalog-change");
+  // Each break re-created 10k tokens that were cacheable before it.
+  assert.equal(result.avoidableRecomputedTokens, 30000);
+});
+
+test("cache analysis falls back to prefix drift without content capture", async () => {
+  const mod = await loadServer("cache-analysis-drift");
+  const result = mod.buildCacheAnalysis(
+    [
+      { startMs: 0, model: "m", inputTokens: 1, cacheReadTokens: 9000, cacheCreationTokens: 1000, systemSig: "", toolSig: "" },
+      { startMs: 1, model: "m", inputTokens: 1, cacheReadTokens: 1000, cacheCreationTokens: 9000, systemSig: "", toolSig: "" }
+    ],
+    0.5
+  );
+  assert.equal(result.contentCaptureSeen, false);
+  assert.equal(result.cacheBreaks, 1);
+  assert.equal(result.timeline[1].breakCause, "prefix-drift");
+});

@@ -20,6 +20,7 @@ The repository can be cloned anywhere. All scripts resolve their own location, s
 
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
+| 1.6.0 | 2026-07-03 | Frontier Cockpit Team | Cache Explorer parity in the Inspector (token-weighted cache hit, healthy request pairs, avoidable recomputed tokens, and cache-break cause classification: model switch, system-prompt change, tool-catalog change, prefix drift), per-workspace context-window peak, context-management coaching (deliberate `/compact`, session scoping, #-mentions), the Context management playbook in the Coach view, and the VS Code OTel settings checklist. |
 | 1.5.0 | 2026-07-03 | Frontier Cockpit Team | Completed the local persistence layer: the jobs container now runs the DuckDB analytics rollups (analytics volume), the dashboard serves long-term history beyond the 30-day Prometheus retention from the rollup snapshot, the budget panel projects the credit run-out date, and the API gained a node:test suite wired into CI. |
 | 1.4.0 | 2026-07-03 | Frontier Cockpit Team, @jkjunior | Added Podman container runtime support (runtime and compose-tool auto-detection in the bash bootstrap, fully qualified image references) and Fish shell support for the persistent OTel environment. Contributed by @jkjunior with maintainer corrections to keep the maintained `grafana/grafana:12.4.3` image and Loki 3.3.4. |
 | 1.3.0 | 2026-07-03 | Frontier Cockpit Team | Added the Inspector view (per-session agent debug log with event timeline, cache explorer with cache-break detection, and summary stats) and the import scripts for VS Code Agent Debug Logs OTLP session exports with workspace attribution. |
@@ -418,7 +419,14 @@ DuckDB was chosen over SQLite for this layer on purpose: it is a local, embedded
 
 ## Inspect a session (agent debug log)
 
-The mini app's **Inspector** view turns any observed session into a chronological event log — the same signals the VS Code Agent Debug Log panel shows (LLM requests, agent turns, tool calls, hooks, token usage, errors) plus a per-request **cache explorer** that flags where the prompt-cache prefix broke (sharp hit-rate drops and model switches). Pick a session in the view or paste a trace id from the Sessions view. Data comes from local Tempo only; raw content never leaves the machine.
+The mini app's **Inspector** view turns any observed session into a chronological event log — the same signals the VS Code Agent Debug Log panel shows (LLM requests, agent turns, tool calls, hooks, token usage, errors) plus a per-request **cache explorer** with the same analytics as the VS Code Cache Explorer:
+
+- **Token-weighted cache hit**: how many prompt-cache tokens were served from cache across all LLM requests in the session (for example "24K of 59K across 5 requests, 40.7%").
+- **Healthy request pairs**: consecutive request pairs where the prompt-cache prefix survived (hit rate at or above `THRESHOLD_INSPECTOR_HEALTHY_HIT_RATE`, default 0.5).
+- **Avoidable recomputed tokens**: an estimate of cache-write work forced by each break — tokens that a stable prefix would have served from cache.
+- **Cache-break cause per request**: `model switch`, `system prompt changed`, `tool catalog changed`, or `prefix drift`. The model switch is always detectable; classifying system-prompt and tool-catalog changes needs prompt content on the spans — enable the VS Code setting **Chat > Agent Host > Otel: Capture Content** (safe here: content stays in local Tempo, and the API exposes only short signatures, never the text).
+
+Pick a session in the view or paste a trace id from the Sessions view. Data comes from local Tempo only; raw content never leaves the machine.
 
 Sessions exported from the VS Code **Agent Debug Logs** panel (Export icon, OTLP JSON format) can be imported into the same stack, attributed to the current Git workspace:
 
@@ -433,6 +441,35 @@ pwsh -ExecutionPolicy Bypass -File local-otel/import-agent-debug-session.ps1 -Pa
 ```
 
 Run the import from inside the project repository so the session is grouped under that workspace. Imported sessions appear in the mini app after the next materializer pass (up to 5 minutes) and are inspectable by trace id immediately.
+
+## VS Code OTel settings checklist
+
+Two independent emitters ship telemetry from VS Code, and each has its own OTLP endpoint setting. A stack that receives chat metrics but no agent-host spans usually means the second endpoint was left empty.
+
+| Setting (Settings UI search) | Value for this stack | Why |
+| --- | --- | --- |
+| `GitHub > Copilot > Chat > Otel: Otlp Endpoint` | `http://localhost:4318` | Chat/editor telemetry (metrics, usage counters) to the local collector. |
+| `Chat > Agent Host > Otel: Enabled` | checked | Emits agent-host OpenTelemetry traces from the Copilot SDK. |
+| `Chat > Agent Host > Otel: Otlp Endpoint` | `http://localhost:4318` | **Most-missed setting.** The agent host is a separate process; without this its spans never reach the collector (only the local SQLite Db Span Exporter, if enabled). |
+| `Chat > Agent Host > Otel: Exporter Type` | `otlp-http` | Matches the collector's 4318 HTTP receiver. |
+| `Chat > Agent Host > Otel: Capture Content` | checked (local-only stacks) | Enables cache-break **cause** classification (system prompt vs tool catalog) in the Inspector. Do not enable when spans ship to shared sinks. |
+| `Chat > Agent Host > Otel: Db Span Exporter` | optional | Local SQLite copy of every span; source for the `Export Agent Host Traces Database` command and the import scripts. |
+| `GitHub > Copilot > Chat > Otel: Protocol` | empty (`http/json`) or `http/protobuf` | The collector's 4318 receiver accepts both. |
+| `GitHub > Copilot > Chat > Otel: Max Attribute Size Chars` | `0` | No truncation; keeps full payloads for cause classification. This stack has no per-attribute cap. |
+| `GitHub > Copilot > Chat > Otel: Service Name` / `Outfile` | leave empty | Defaults are correct; `Outfile` would divert the exporter to a file. |
+
+All of these require a window reload after changing. Workspace attribution (repo, branch, workspace name) comes from the OTel resource attributes exported by the client bootstrap, so run `client-bootstrap.sh` / `client-bootstrap.ps1` in each workspace once.
+
+## Manage context per workspace
+
+Context is the main cost and quality lever, so the cockpit tracks it per workspace and coaches on it with real numbers:
+
+- **Workspaces view**: a `Context peak` column shows each workspace's highest context-window utilization in the range, colored by the `THRESHOLD_CONTEXT_WARN_PCT` / `THRESHOLD_CONTEXT_CRIT_PCT` guardrails.
+- **Coach view — Context management playbook**: #-mention targeted files instead of `#codebase`, watch the context window control in the chat input, run `/compact` deliberately at task checkpoints (optionally with focus instructions), one session per task, and keep context stable so the prompt cache keeps hitting. The panel header shows the observed peak context and compaction count for the selected range.
+- **Coach cards**: threshold-driven recommendations fire from real telemetry — context pressure (`/compact` guidance), "compact before the window fills" when pressure is high but no compaction ran, and "scope sessions tighter" when more than `THRESHOLD_CONTEXT_COMPACTIONS_INFO` compactions ran in the range (each compaction also resets the prompt cache).
+- **Inspector**: verifies the effect — stable context shows up directly as healthy request pairs and a higher token-weighted cache hit.
+
+These practices follow the VS Code guide "Manage context for AI" (`code.visualstudio.com/docs/chat/copilot-chat-context`).
 
 ## Coverage audit
 

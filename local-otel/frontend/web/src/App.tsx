@@ -22,6 +22,7 @@ import {
   Panel,
   TrendChart,
   cacheTone,
+  contextTone,
   formatCompact,
   formatCurrency,
   formatNumber,
@@ -429,6 +430,7 @@ function WorkspaceTable({ summary, limit }: Readonly<{ summary: SummaryResponse 
             <th className="numeric">{t("ws.col.cached")}</th>
             <th className="numeric">{t("ws.col.cold")}</th>
             <th className="numeric">{t("ws.col.cacheEff")}</th>
+            <th className="numeric">{t("ws.col.contextPeak")}</th>
           </tr>
         </thead>
         <tbody>
@@ -445,6 +447,11 @@ function WorkspaceTable({ summary, limit }: Readonly<{ summary: SummaryResponse 
               <td className="numeric">{formatCompact(workspace.coldInputTokens)}</td>
               <td className="numeric">
                 <span className={`pill ${cacheTone(workspace.cacheEfficiency)}`}>{formatPercent(workspace.cacheEfficiency)}</span>
+              </td>
+              <td className="numeric">
+                <span className={`pill ${contextTone(workspace.contextPeakPct, summary?.thresholds)}`}>
+                  {workspace.contextPeakPct === null ? "—" : `${formatNumber(workspace.contextPeakPct, 0)}%`}
+                </span>
               </td>
             </tr>
           ))}
@@ -1227,10 +1234,32 @@ function InspectorView({ sessions }: Readonly<{ sessions: SessionsResponse | nul
               <span className="stat-value">{formatNumber(summary.cacheBreaks, 0)}</span>
             </div>
             <div>
+              <span className="stat-label">{t("inspector.healthyPairs")}</span>
+              <span className="stat-value">
+                {summary.requestPairs > 0
+                  ? `${formatNumber(summary.healthyPairs, 0)}/${formatNumber(summary.requestPairs, 0)}`
+                  : "—"}
+              </span>
+            </div>
+            <div>
+              <span className="stat-label">{t("inspector.avoidableTokens")}</span>
+              <span className="stat-value">{formatCompact(summary.avoidableRecomputedTokens)}</span>
+            </div>
+            <div>
               <span className="stat-label">{t("inspector.errors")}</span>
               <span className="stat-value">{formatNumber(summary.errors, 0)}</span>
             </div>
           </div>
+        ) : null}
+        {summary && summary.cachedTokenShare !== null ? (
+          <p className="muted">
+            {t("inspector.tokenWeighted", {
+              cached: formatCompact(summary.cacheReadTokens),
+              total: formatCompact(summary.promptCacheTokens),
+              requests: summary.llmRequests,
+              pct: formatPercent(summary.cachedTokenShare)
+            })}
+          </p>
         ) : null}
         {summary && summary.models.length > 0 ? (
           <p className="muted">{t("inspector.modelsUsed", { models: summary.models.join(", ") })}</p>
@@ -1263,7 +1292,7 @@ function InspectorView({ sessions }: Readonly<{ sessions: SessionsResponse | nul
                     <td className="numeric">{formatCompact(turn.cacheReadTokens)}</td>
                     <td className="numeric">{formatCompact(turn.cacheCreationTokens)}</td>
                     <td className="muted">
-                      {turn.modelSwitched ? t("inspector.modelSwitch") : turn.cacheBreak ? t("inspector.cacheBreak") : "—"}
+                      {turn.cacheBreak && turn.breakCause ? t(`inspector.cause.${turn.breakCause}`) : "—"}
                     </td>
                   </tr>
                 ))}
@@ -1271,6 +1300,9 @@ function InspectorView({ sessions }: Readonly<{ sessions: SessionsResponse | nul
             </table>
           </div>
           <p className="muted">{t("inspector.cacheNote")}</p>
+          {summary && !summary.contentCaptureSeen ? (
+            <p className="muted">{t("inspector.captureHint")}</p>
+          ) : null}
         </Panel>
       ) : null}
       {events.length > 0 ? (
@@ -1499,6 +1531,8 @@ const localizedCoachIds = new Set([
   "cache-reuse",
   "cold-context",
   "context-pressure",
+  "context-compact-now",
+  "context-session-scope",
   "errors",
   "attribution",
   "budget-pacing",
@@ -1541,6 +1575,14 @@ function CoachView({ coach, summary }: Readonly<{ coach: CoachResponse | null; s
     { id: "model", title: t("playbook.model.title"), body: t("playbook.model.body") },
     { id: "validate", title: t("playbook.validate.title"), body: t("playbook.validate.body") },
     { id: "workspace", title: t("playbook.workspace.title"), body: t("playbook.workspace.body") }
+  ];
+  const contextPlaybook: { id: string; title: string; body: string }[] = [
+    { id: "mentions", title: t("ctx.mentions.title"), body: t("ctx.mentions.body") },
+    { id: "codebase", title: t("ctx.codebase.title"), body: t("ctx.codebase.body") },
+    { id: "monitor", title: t("ctx.monitor.title"), body: t("ctx.monitor.body") },
+    { id: "compact", title: t("ctx.compact.title"), body: t("ctx.compact.body") },
+    { id: "sessions", title: t("ctx.sessions.title"), body: t("ctx.sessions.body") },
+    { id: "cache", title: t("ctx.cache.title"), body: t("ctx.cache.body") }
   ];
   return (
     <>
@@ -1613,6 +1655,34 @@ function CoachView({ coach, summary }: Readonly<{ coach: CoachResponse | null; s
             </li>
           ))}
         </ul>
+      </Panel>
+      <Panel
+        title={t("ctx.title")}
+        aside={
+          <span className="muted">
+            {t("ctx.aside", {
+              peak:
+                summary?.metrics.context.peak.value == null
+                  ? "—"
+                  : `${formatNumber(summary.metrics.context.peak.value, 0)}%`,
+              compactions:
+                summary?.outcomes.contextCompactions.value == null
+                  ? "—"
+                  : formatNumber(summary.outcomes.contextCompactions.value, 0)
+            })}
+          </span>
+        }
+      >
+        <p className="muted">{t("ctx.blurb")}</p>
+        <ul className="playbook-grid">
+          {contextPlaybook.map((item) => (
+            <li key={item.id} className="playbook-card">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="muted">{t("ctx.note")}</p>
       </Panel>
       {topSessions.length > 0 ? (
         <Panel title={t("coach.expensive")} aside={<span className="muted">{t("coach.byCredits")}</span>}>
@@ -1851,7 +1921,9 @@ const thresholdKeys = [
   "budgetWarnPct",
   "budgetCritPct",
   "modelConcentrationInfo",
-  "promptIoRatioInfo"
+  "promptIoRatioInfo",
+  "inspectorHealthyHitRate",
+  "contextCompactionsInfo"
 ];
 
 const thresholdEnv: Record<string, string> = {
@@ -1866,7 +1938,9 @@ const thresholdEnv: Record<string, string> = {
   budgetWarnPct: "THRESHOLD_AI_CREDITS_BUDGET_WARN_PCT",
   budgetCritPct: "THRESHOLD_AI_CREDITS_BUDGET_CRIT_PCT",
   modelConcentrationInfo: "THRESHOLD_MODEL_CONCENTRATION",
-  promptIoRatioInfo: "THRESHOLD_PROMPT_IO_RATIO"
+  promptIoRatioInfo: "THRESHOLD_PROMPT_IO_RATIO",
+  inspectorHealthyHitRate: "THRESHOLD_INSPECTOR_HEALTHY_HIT_RATE",
+  contextCompactionsInfo: "THRESHOLD_CONTEXT_COMPACTIONS_INFO"
 };
 
 const coachTuningKeys = [

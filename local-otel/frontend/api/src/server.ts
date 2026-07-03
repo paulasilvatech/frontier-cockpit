@@ -85,7 +85,11 @@ export const thresholds = {
   budgetWarnPct: numberFromEnv("THRESHOLD_AI_CREDITS_BUDGET_WARN_PCT", 75),
   budgetCritPct: numberFromEnv("THRESHOLD_AI_CREDITS_BUDGET_CRIT_PCT", 90),
   modelConcentrationInfo: numberFromEnv("THRESHOLD_MODEL_CONCENTRATION", 0.6),
-  promptIoRatioInfo: numberFromEnv("THRESHOLD_PROMPT_IO_RATIO", 20)
+  promptIoRatioInfo: numberFromEnv("THRESHOLD_PROMPT_IO_RATIO", 20),
+  // A request pair counts as cache-healthy when the follow-up request served
+  // at least this share of its prompt-cache tokens from cache reads.
+  inspectorHealthyHitRate: numberFromEnv("THRESHOLD_INSPECTOR_HEALTHY_HIT_RATE", 0.5),
+  contextCompactionsInfo: numberFromEnv("THRESHOLD_CONTEXT_COMPACTIONS_INFO", 3)
 };
 
 // Coaching and planning tuning. These control how the efficiency score,
@@ -593,6 +597,7 @@ interface WorkspaceUsage {
   sessions: number;
   cacheEfficiency: number | null;
   coldRatio: number | null;
+  contextPeakPct: number | null;
 }
 
 type NumericWorkspaceField =
@@ -624,15 +629,20 @@ async function workspaceBreakdown(
   const base = (metric: string) =>
     `${groupBy} (max by (trace_id, workspace_path_hash, branch, workspace_name) (max_over_time(copilot_real_session_${metric}_ratio{${selector}}[${range}])))`;
   const sessionsQuery = `count by (workspace_path_hash, branch, workspace_name) (max by (trace_id, workspace_path_hash, branch, workspace_name) (max_over_time(copilot_real_session_input_tokens_ratio{${selector}}[${range}])))`;
+  const contextPeakQuery =
+    `max by (workspace_path_hash, branch, workspace_name) ` +
+    `(max by (trace_id, workspace_path_hash, branch, workspace_name) ` +
+    `(max_over_time(copilot_real_session_context_utilization_pct_ratio{${selector}}[${range}])))`;
   try {
-    const [input, output, cacheRead, cacheCreation, cold, aiu, sessions] = await Promise.all([
+    const [input, output, cacheRead, cacheCreation, cold, aiu, sessions, contextPeak] = await Promise.all([
       queryPrometheus(base("input_tokens")),
       queryPrometheus(base("output_tokens")),
       queryPrometheus(base("cache_read_tokens")),
       queryPrometheus(base("cache_creation_tokens")),
       queryPrometheus(base("cold_input_tokens")),
       queryPrometheus(base("nano_aiu")),
-      queryPrometheus(sessionsQuery)
+      queryPrometheus(sessionsQuery),
+      queryPrometheus(contextPeakQuery)
     ]);
     const map = new Map<string, WorkspaceUsage>();
     const keyOf = (metric: Record<string, string>) =>
@@ -655,7 +665,8 @@ async function workspaceBreakdown(
           aiCredits: 0,
           sessions: 0,
           cacheEfficiency: null,
-          coldRatio: null
+          coldRatio: null,
+          contextPeakPct: null
         };
         map.set(key, entry);
       }
@@ -677,6 +688,12 @@ async function workspaceBreakdown(
     apply(cold, "coldInputTokens");
     apply(aiu, "aiCredits", 1 / 1e9);
     apply(sessions, "sessions");
+    for (const result of contextPeak) {
+      const value = numericValue(result);
+      if (value !== null) {
+        ensure(result.metric).contextPeakPct = value;
+      }
+    }
     const items = [...map.values()]
       .map((entry) => {
         const promptTotal = entry.cacheReadTokens + entry.cacheCreationTokens + entry.coldInputTokens;
@@ -1669,10 +1686,30 @@ interface InspectorSummary {
   cacheEfficiency: number | null;
   cacheBreaks: number;
   modelSwitches: number;
+  // Token-weighted view, matching the VS Code Cache Explorer headline:
+  // "cacheReadTokens of promptCacheTokens input tokens served from cache
+  // across llmRequests requests".
+  promptCacheTokens: number;
+  cachedTokenShare: number | null;
+  requestPairs: number;
+  healthyPairs: number;
+  avoidableRecomputedTokens: number;
+  contentCaptureSeen: boolean;
   models: string[];
   tools: string[];
   services: string[];
 }
+
+// Why a prompt-cache prefix broke between two consecutive requests. The
+// documented invalidators are a model switch, a system-prompt change, and a
+// tool-catalog change; anything else shows up as prefix drift. Cause
+// classification beyond the model switch needs prompt/tool content on the
+// spans (VS Code setting "Chat > Agent Host > Otel: Capture Content").
+export type CacheBreakCause =
+  | "model-switch"
+  | "system-prompt-change"
+  | "tool-catalog-change"
+  | "prefix-drift";
 
 // Cache timeline: one entry per LLM request, mirroring the VS Code Cache
 // Explorer idea. The hit rate is cache_read / (cache_read + cache_creation)
@@ -1688,6 +1725,8 @@ interface InspectorCacheTurn {
   hitRate: number | null;
   modelSwitched: boolean;
   cacheBreak: boolean;
+  breakCause: CacheBreakCause | null;
+  promptSig: string;
 }
 
 interface InspectorResponse {
@@ -1731,6 +1770,45 @@ function attributeNumber(value: TempoAttribute["value"]): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+// Short stable signature (djb2 as hex) of free-form span content. Only the
+// signature ever leaves the API, never the captured text itself, so prompt
+// content stays inside the local trace store.
+export function contentSignature(text: string): string {
+  if (!text) {
+    return "";
+  }
+  let hash = 5381;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = ((hash * 33) ^ text.charCodeAt(index)) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+// Attribute names that can carry the system prompt / tool catalog when
+// content capture is enabled. Copilot emits GenAI semantic-convention
+// attributes; the older names are kept as fallbacks.
+const systemPromptAttributeKeys = [
+  "gen_ai.system_instructions",
+  "gen_ai.request.system_instructions",
+  "gen_ai.input.messages",
+  "gen_ai.prompt"
+];
+const toolCatalogAttributeKeys = [
+  "gen_ai.request.tools",
+  "gen_ai.tool.definitions",
+  "llm.request.functions"
+];
+
+function firstAttributeText(attrs: Map<string, TempoAttribute["value"]>, keys: string[]): string {
+  for (const key of keys) {
+    const text = attributeText(attrs.get(key));
+    if (text) {
+      return text;
+    }
+  }
+  return "";
+}
+
 export function classifyInspectorEvent(operation: string, name: string): InspectorEventType {
   const key = `${operation} ${name}`.toLowerCase();
   if (key.includes("execute_tool") || key.includes("tool")) {
@@ -1746,6 +1824,116 @@ export function classifyInspectorEvent(operation: string, name: string): Inspect
     return "llm_request";
   }
   return "other";
+}
+
+export interface CacheAnalysisRequest {
+  startMs: number;
+  model: string;
+  inputTokens: number | null;
+  cacheReadTokens: number | null;
+  cacheCreationTokens: number | null;
+  systemSig: string;
+  toolSig: string;
+}
+
+export interface CacheAnalysisResult {
+  timeline: InspectorCacheTurn[];
+  cacheBreaks: number;
+  modelSwitches: number;
+  requestPairs: number;
+  healthyPairs: number;
+  avoidableRecomputedTokens: number;
+  contentCaptureSeen: boolean;
+}
+
+// One pass over the session's LLM requests in chronological order. For every
+// consecutive request pair it decides whether the prompt-cache prefix
+// survived (healthy pair) or broke, and when it broke, why: model switch and
+// (with content capture) system-prompt or tool-catalog changes are the
+// documented invalidators; everything else is prefix drift. Avoidable
+// recomputed tokens estimate how much cache-write work a break forced that a
+// stable prefix would have served from cache.
+export function buildCacheAnalysis(requests: CacheAnalysisRequest[], healthyHitRate: number): CacheAnalysisResult {
+  const timeline: InspectorCacheTurn[] = [];
+  const result: CacheAnalysisResult = {
+    timeline,
+    cacheBreaks: 0,
+    modelSwitches: 0,
+    requestPairs: Math.max(0, requests.length - 1),
+    healthyPairs: 0,
+    avoidableRecomputedTokens: 0,
+    contentCaptureSeen: requests.some((request) => request.systemSig !== "" || request.toolSig !== "")
+  };
+  let previousHit: number | null = null;
+  let previousModel = "";
+  let previousSystemSig = "";
+  let previousToolSig = "";
+  let previousCacheable = 0;
+  for (const request of requests) {
+    const read = request.cacheReadTokens ?? 0;
+    const created = request.cacheCreationTokens ?? 0;
+    const denominator = read + created;
+    const hitRate = denominator > 0 ? read / denominator : null;
+    const isFirst = timeline.length === 0;
+    const modelSwitched = previousModel !== "" && request.model !== "" && request.model !== previousModel;
+    const systemChanged =
+      previousSystemSig !== "" && request.systemSig !== "" && request.systemSig !== previousSystemSig;
+    const toolsChanged = previousToolSig !== "" && request.toolSig !== "" && request.toolSig !== previousToolSig;
+    const hitDropped = hitRate !== null && previousHit !== null && previousHit - hitRate >= 0.3;
+    const cacheBreak = !isFirst && (modelSwitched || systemChanged || toolsChanged || hitDropped);
+    let breakCause: CacheBreakCause | null = null;
+    if (cacheBreak) {
+      if (modelSwitched) {
+        breakCause = "model-switch";
+      } else if (systemChanged) {
+        breakCause = "system-prompt-change";
+      } else if (toolsChanged) {
+        breakCause = "tool-catalog-change";
+      } else {
+        breakCause = "prefix-drift";
+      }
+    }
+    timeline.push({
+      seq: timeline.length + 1,
+      startMs: request.startMs,
+      model: request.model,
+      inputTokens: request.inputTokens,
+      cacheReadTokens: request.cacheReadTokens,
+      cacheCreationTokens: request.cacheCreationTokens,
+      hitRate: hitRate === null ? null : Math.round(hitRate * 1000) / 1000,
+      modelSwitched,
+      cacheBreak,
+      breakCause,
+      promptSig: request.systemSig
+    });
+    if (cacheBreak) {
+      result.cacheBreaks += 1;
+      // The prefix that was cached before the break had to be re-written.
+      // Cap by this request's actual cache writes so the estimate stays
+      // grounded in observed tokens.
+      result.avoidableRecomputedTokens += Math.round(Math.min(previousCacheable, created));
+    }
+    if (modelSwitched) {
+      result.modelSwitches += 1;
+    }
+    if (!isFirst && !cacheBreak && hitRate !== null && hitRate >= healthyHitRate) {
+      result.healthyPairs += 1;
+    }
+    if (hitRate !== null) {
+      previousHit = hitRate;
+    }
+    if (request.model) {
+      previousModel = request.model;
+    }
+    if (request.systemSig) {
+      previousSystemSig = request.systemSig;
+    }
+    if (request.toolSig) {
+      previousToolSig = request.toolSig;
+    }
+    previousCacheable = denominator;
+  }
+  return result;
 }
 
 function traceIdFromUrl(url: URL): string | null {
@@ -1790,7 +1978,8 @@ async function inspectorTrace(url: URL): Promise<InspectorResponse> {
     };
   }
 
-  const events: InspectorEvent[] = [];
+  type ParsedEvent = InspectorEvent & { systemSig: string; toolSig: string };
+  const events: ParsedEvent[] = [];
   const batches = (payload as { batches?: unknown[] }).batches ?? [];
   for (const batch of batches as {
     resource?: { attributes?: TempoAttribute[] };
@@ -1834,7 +2023,9 @@ async function inspectorTrace(url: URL): Promise<InspectorResponse> {
           outputTokens: num("gen_ai.usage.output_tokens"),
           cacheReadTokens: num("gen_ai.usage.cache_read.input_tokens"),
           cacheCreationTokens: num("gen_ai.usage.cache_creation.input_tokens"),
-          error: errorType || (statusError ? status?.message || "error" : null)
+          error: errorType || (statusError ? status?.message || "error" : null),
+          systemSig: contentSignature(firstAttributeText(spanAttrs, systemPromptAttributeKeys)),
+          toolSig: contentSignature(firstAttributeText(spanAttrs, toolCatalogAttributeKeys))
         });
       }
     }
@@ -1872,6 +2063,12 @@ async function inspectorTrace(url: URL): Promise<InspectorResponse> {
     cacheEfficiency: null,
     cacheBreaks: 0,
     modelSwitches: 0,
+    promptCacheTokens: 0,
+    cachedTokenShare: null,
+    requestPairs: 0,
+    healthyPairs: 0,
+    avoidableRecomputedTokens: 0,
+    contentCaptureSeen: false,
     models: [],
     tools: [],
     services: []
@@ -1912,50 +2109,36 @@ async function inspectorTrace(url: URL): Promise<InspectorResponse> {
   summary.tools = [...tools].sort((a, b) => a.localeCompare(b));
   summary.services = [...services].sort((a, b) => a.localeCompare(b));
 
-  // Cache timeline over the LLM requests, in chronological order. A turn is
-  // flagged as a cache break when its hit rate falls sharply below the
-  // previous turn's, or when the model changed (a documented cache breaker).
-  const cacheTimeline: InspectorCacheTurn[] = [];
-  let previousHit: number | null = null;
-  let previousModel = "";
-  for (const event of events) {
-    if (event.type !== "llm_request") {
-      continue;
-    }
-    const read = event.cacheReadTokens ?? 0;
-    const created = event.cacheCreationTokens ?? 0;
-    const denominator = read + created;
-    const hitRate = denominator > 0 ? read / denominator : null;
-    const modelSwitched = previousModel !== "" && event.model !== "" && event.model !== previousModel;
-    const cacheBreak =
-      modelSwitched ||
-      (hitRate !== null && previousHit !== null && previousHit - hitRate >= 0.3);
-    cacheTimeline.push({
-      seq: cacheTimeline.length + 1,
-      startMs: event.startMs,
-      model: event.model,
-      inputTokens: event.inputTokens,
-      cacheReadTokens: event.cacheReadTokens,
-      cacheCreationTokens: event.cacheCreationTokens,
-      hitRate: hitRate === null ? null : Math.round(hitRate * 1000) / 1000,
-      modelSwitched,
-      cacheBreak
-    });
-    if (cacheBreak) {
-      summary.cacheBreaks += 1;
-    }
-    if (modelSwitched) {
-      summary.modelSwitches += 1;
-    }
-    if (hitRate !== null) {
-      previousHit = hitRate;
-    }
-    if (event.model) {
-      previousModel = event.model;
-    }
-  }
+  // Cache timeline over the LLM requests, in chronological order, with
+  // per-pair break/cause classification and the token-weighted totals the
+  // VS Code Cache Explorer reports.
+  const analysis = buildCacheAnalysis(
+    events
+      .filter((event) => event.type === "llm_request")
+      .map((event) => ({
+        startMs: event.startMs,
+        model: event.model,
+        inputTokens: event.inputTokens,
+        cacheReadTokens: event.cacheReadTokens,
+        cacheCreationTokens: event.cacheCreationTokens,
+        systemSig: event.systemSig,
+        toolSig: event.toolSig
+      })),
+    thresholds.inspectorHealthyHitRate
+  );
+  summary.cacheBreaks = analysis.cacheBreaks;
+  summary.modelSwitches = analysis.modelSwitches;
+  summary.requestPairs = analysis.requestPairs;
+  summary.healthyPairs = analysis.healthyPairs;
+  summary.avoidableRecomputedTokens = analysis.avoidableRecomputedTokens;
+  summary.contentCaptureSeen = analysis.contentCaptureSeen;
+  summary.promptCacheTokens = promptTotal;
+  summary.cachedTokenShare = promptTotal > 0 ? Math.round((summary.cacheReadTokens / promptTotal) * 1000) / 1000 : null;
 
-  return { status: "ok", summary, events: events.slice(0, 500), cacheTimeline };
+  // The signatures are internal inputs to the analysis; only the events'
+  // public shape leaves the API.
+  const publicEvents = events.slice(0, 500).map(({ systemSig: _systemSig, toolSig: _toolSig, ...rest }) => rest);
+  return { status: "ok", summary, events: publicEvents, cacheTimeline: analysis.timeline };
 }
 
 // Long-term history: the jobs container's daily rollup persists per-day,
@@ -2419,6 +2602,7 @@ interface CoachContext {
   tokens: SummaryResult["metrics"]["tokens"];
   aiCredits: number | null;
   contextPeak: number | null;
+  compactions: number | null;
   errors: number;
   nonWorkspace: number;
   budget: AiCreditsBudgetInsight;
@@ -2452,7 +2636,7 @@ const coachRules: CoachRule[] = [
         params: { value: (tokens.coldRatio * 100).toFixed(0) },
         title: "Reduce cold context",
         insight: `${(tokens.coldRatio * 100).toFixed(0)}% of prompt tokens were uncached cold input. Cold context is the most expensive token class.`,
-        action: "Work in shorter, related steps within one session so context stays warm, and attach only the files the task needs."
+        action: "Attach only what the task needs: #-mention specific files, folders, or symbols instead of #codebase, work in shorter related steps within one session so context stays warm, and drop stale attachments."
       }
       : null,
   ({ contextPeak }) =>
@@ -2463,7 +2647,37 @@ const coachRules: CoachRule[] = [
         params: { value: contextPeak.toFixed(0) },
         title: "Manage context window pressure",
         insight: `Peak context utilization reached ${contextPeak.toFixed(0)}%. Near-full context raises cost and can degrade answer quality.`,
-        action: "Split large tasks into smaller prompts, start a fresh session for unrelated work, and remove stale attachments."
+        action: "Run /compact (optionally with focus instructions, e.g. \"/compact focus on the schema decisions\") to summarize the conversation, split large tasks into smaller prompts, start a fresh session for unrelated work, and remove stale attachments."
+      }
+      : null,
+  // Manual compaction guidance: when the window is under pressure but no
+  // compaction has happened yet, the cheapest fix is a targeted /compact
+  // before VS Code is forced into an automatic one.
+  ({ contextPeak, compactions }) =>
+    contextPeak !== null &&
+    contextPeak >= thresholds.contextWarnPct &&
+    compactions !== null &&
+    Math.round(compactions) === 0
+      ? {
+        id: "context-compact-now",
+        severity: "info",
+        params: { value: contextPeak.toFixed(0) },
+        title: "Compact before the window fills",
+        insight: `Context reached ${contextPeak.toFixed(0)}% of the window but no compaction ran in this range. When the window fills, VS Code auto-compacts at a moment you do not control, and every request keeps paying for the accumulated history.`,
+        action: "Watch the context window control in the chat input, and run /compact with focus instructions at a natural checkpoint so the summary keeps what matters. Every subsequent request then sends fewer tokens."
+      }
+      : null,
+  // The opposite signal: many compactions in a short range means sessions run
+  // far past their useful scope, which also degrades prompt-cache reuse.
+  ({ compactions }) =>
+    compactions !== null && Math.round(compactions) > thresholds.contextCompactionsInfo
+      ? {
+        id: "context-session-scope",
+        severity: "info",
+        params: { value: Math.round(compactions), threshold: thresholds.contextCompactionsInfo },
+        title: "Scope sessions tighter",
+        insight: `${Math.round(compactions)} context compactions ran in this range (guardrail: ${thresholds.contextCompactionsInfo}). Frequent summarization means conversations regularly outgrow the window; each compaction also rewrites the prompt prefix, which resets the prompt cache.`,
+        action: "Start a new chat session per task instead of one long-running conversation, keep #-mentions targeted, and use /compact deliberately at task boundaries rather than letting auto-compaction fire mid-task."
       }
       : null,
   ({ errors }) =>
@@ -2592,6 +2806,7 @@ function buildCoachCards(data: SummaryResult, sessions: SessionRecord[], modelPr
     tokens: data.metrics.tokens,
     aiCredits: data.metrics.aiCredits.value,
     contextPeak: data.metrics.context.peak.value,
+    compactions: data.outcomes.contextCompactions.value,
     errors: data.metrics.activity.errors.value ?? 0,
     nonWorkspace: data.metrics.dataQuality.nonWorkspaceReal.value ?? 0,
     budget: data.budget,
