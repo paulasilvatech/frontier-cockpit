@@ -497,7 +497,27 @@ const en: Dict = {
     "coachCard.top-sessions.action": "Review whether these sessions needed a frontier model. Lighter tasks can use a smaller model to save credits.",
     "coachCard.healthy.title": "Usage looks healthy",
     "coachCard.healthy.insight": "Cache reuse, cold context, context pressure, and AI credits are all within the local guardrails for this range.",
-    "coachCard.healthy.action": "Keep working as you are. Revisit this view after larger agent sessions to stay efficient."
+    "coachCard.healthy.action": "Keep working as you are. Revisit this view after larger agent sessions to stay efficient.",
+
+    "wizard.title": "Welcome to Frontier Cockpit Local",
+    "wizard.subtitle": "Set up your cockpit in seconds. Everything stays on this machine.",
+    "wizard.name": "Your name",
+    "wizard.namePlaceholder": "e.g. Paula Silva",
+    "wizard.role": "Your role",
+    "wizard.plan": "GitHub Copilot license",
+    "wizard.perSeatShort": "/user",
+    "wizard.creditsShort": "{credits} credits",
+    "wizard.seats": "Seats",
+    "wizard.promo": "Existing Business/Enterprise customer inside the Jun-Sep 2026 promotional window ({credits} credits/user)",
+    "wizard.repoHost": "Where do your repositories live?",
+    "wizard.host.github": "GitHub",
+    "wizard.host.gitlab": "GitLab",
+    "wizard.host.azuredevops": "Azure DevOps",
+    "wizard.summary": "Your budget, planner, and coach will use {credits} included AI Credits per month for the {plan} plan.",
+    "wizard.summaryAuto": "Copilot Free uses Auto model selection only; the cockpit treats the included allowance as not published.",
+    "wizard.start": "Start the cockpit",
+    "wizard.note": "The selected license is applied immediately (no restart) and saved in this browser. The stack environment (workshop.env/client.env) remains the default for Grafana and other consumers.",
+    "wizard.reopen": "Edit setup"
 };
 
 const ptBR: Dict = {
@@ -984,7 +1004,27 @@ const ptBR: Dict = {
     "coachCard.top-sessions.action": "Avalie se essas sessões precisavam de um modelo frontier. Tarefas mais leves podem usar um modelo menor para economizar créditos.",
     "coachCard.healthy.title": "O uso parece saudável",
     "coachCard.healthy.insight": "Reuso de cache, contexto frio, pressão de contexto e AI credits estão dentro dos guardrails locais neste período.",
-    "coachCard.healthy.action": "Continue trabalhando assim. Revisite esta view após sessões de agente maiores para manter a eficiência."
+    "coachCard.healthy.action": "Continue trabalhando assim. Revisite esta view após sessões de agente maiores para manter a eficiência.",
+
+    "wizard.title": "Bem-vindo ao Frontier Cockpit Local",
+    "wizard.subtitle": "Configure seu cockpit em segundos. Tudo fica nesta máquina.",
+    "wizard.name": "Seu nome",
+    "wizard.namePlaceholder": "ex.: Paula Silva",
+    "wizard.role": "Seu papel",
+    "wizard.plan": "Licença do GitHub Copilot",
+    "wizard.perSeatShort": "/usuário",
+    "wizard.creditsShort": "{credits} créditos",
+    "wizard.seats": "Assentos",
+    "wizard.promo": "Cliente existente de Business/Enterprise dentro da janela promocional jun-set 2026 ({credits} créditos/usuário)",
+    "wizard.repoHost": "Onde ficam seus repositórios?",
+    "wizard.host.github": "GitHub",
+    "wizard.host.gitlab": "GitLab",
+    "wizard.host.azuredevops": "Azure DevOps",
+    "wizard.summary": "Seu orçamento, planner e coach usarão {credits} AI Credits incluídos por mês para o plano {plan}.",
+    "wizard.summaryAuto": "O Copilot Free usa somente a seleção automática de modelo; o cockpit trata o allowance incluído como não publicado.",
+    "wizard.start": "Iniciar o cockpit",
+    "wizard.note": "A licença selecionada é aplicada imediatamente (sem reiniciar) e salva neste navegador. O ambiente da stack (workshop.env/client.env) continua como padrão para o Grafana e outros consumidores.",
+    "wizard.reopen": "Editar configuração"
 };
 
 const es: Dict = {
@@ -1471,7 +1511,27 @@ const es: Dict = {
     "coachCard.top-sessions.action": "Evalúa si esas sesiones necesitaban un modelo frontier. Las tareas más ligeras pueden usar un modelo menor para ahorrar créditos.",
     "coachCard.healthy.title": "El uso se ve saludable",
     "coachCard.healthy.insight": "La reutilización de caché, el contexto frío, la presión de contexto y los AI credits están dentro de los guardrails locales en este período.",
-    "coachCard.healthy.action": "Sigue trabajando así. Revisa esta vista después de sesiones de agente más grandes para mantener la eficiencia."
+    "coachCard.healthy.action": "Sigue trabajando así. Revisa esta vista después de sesiones de agente más grandes para mantener la eficiencia.",
+
+    "wizard.title": "Bienvenido a Frontier Cockpit Local",
+    "wizard.subtitle": "Configura tu cockpit en segundos. Todo se queda en esta máquina.",
+    "wizard.name": "Tu nombre",
+    "wizard.namePlaceholder": "p. ej. Paula Silva",
+    "wizard.role": "Tu rol",
+    "wizard.plan": "Licencia de GitHub Copilot",
+    "wizard.perSeatShort": "/usuario",
+    "wizard.creditsShort": "{credits} créditos",
+    "wizard.seats": "Asientos",
+    "wizard.promo": "Cliente existente de Business/Enterprise dentro de la ventana promocional jun-sep 2026 ({credits} créditos/usuario)",
+    "wizard.repoHost": "¿Dónde viven tus repositorios?",
+    "wizard.host.github": "GitHub",
+    "wizard.host.gitlab": "GitLab",
+    "wizard.host.azuredevops": "Azure DevOps",
+    "wizard.summary": "Tu presupuesto, planner y coach usarán {credits} AI Credits incluidos al mes para el plan {plan}.",
+    "wizard.summaryAuto": "Copilot Free usa solo la selección automática de modelo; el cockpit trata el allowance incluido como no publicado.",
+    "wizard.start": "Iniciar el cockpit",
+    "wizard.note": "La licencia seleccionada se aplica de inmediato (sin reiniciar) y se guarda en este navegador. El entorno del stack (workshop.env/client.env) sigue siendo el predeterminado para Grafana y otros consumidores.",
+    "wizard.reopen": "Editar configuración"
 };
 
 const dictionaries: Record<Lang, Dict> = { en, "pt-BR": ptBR, es };

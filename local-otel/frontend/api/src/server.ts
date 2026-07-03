@@ -177,17 +177,46 @@ interface AllowanceResolution {
 // only when explicitly enabled, and only while the promotional window is
 // open — after it closes the cockpit falls back to the standard allowance
 // automatically so the dashboard never overstates included credits.
-export function resolveAllowance(now = new Date()): AllowanceResolution {
-  const plan = planFactsFor(copilotPlan);
-  const promoActive = usePromotionalAllowance && plan.promoCredits !== null && promoWindowActive(now);
-  if (Number.isFinite(allowanceOverride)) {
-    return { credits: allowanceOverride, perSeatCredits: allowanceOverride / Math.max(1, copilotSeats), source: "override", promoActive };
+export interface PlanOverride {
+  plan?: string;
+  seats?: number;
+  usePromo?: boolean;
+}
+
+// The setup wizard in the web app sends the selected license as query
+// parameters, so the allowance can follow the wizard without restarting the
+// stack. The environment remains the default when no override is present.
+export function planOverridesFromUrl(url: URL): PlanOverride {
+  const override: PlanOverride = {};
+  const plan = (url.searchParams.get("plan") ?? "").toLowerCase();
+  if (copilotPlanCatalog.some((entry) => entry.id === plan)) {
+    override.plan = plan;
+  }
+  const seats = Number.parseInt(url.searchParams.get("seats") ?? "", 10);
+  if (Number.isFinite(seats) && seats > 0) {
+    override.seats = Math.min(100000, seats);
+  }
+  const promo = url.searchParams.get("promo");
+  if (promo === "true" || promo === "false") {
+    override.usePromo = promo === "true";
+  }
+  return override;
+}
+
+export function resolveAllowance(now = new Date(), override: PlanOverride = {}): AllowanceResolution {
+  const effectivePlan = override.plan ?? copilotPlan;
+  const effectiveSeats = override.seats ?? copilotSeats;
+  const effectivePromo = override.usePromo ?? usePromotionalAllowance;
+  const plan = planFactsFor(effectivePlan);
+  const promoActive = effectivePromo && plan.promoCredits !== null && promoWindowActive(now);
+  if (Number.isFinite(allowanceOverride) && override.plan === undefined) {
+    return { credits: allowanceOverride, perSeatCredits: allowanceOverride / Math.max(1, effectiveSeats), source: "override", promoActive };
   }
   if (plan.includedCredits === null) {
     return { credits: 0, perSeatCredits: 0, source: "unpublished", promoActive: false };
   }
   const perSeat = promoActive ? plan.promoCredits ?? plan.includedCredits : plan.includedCredits;
-  const seats = plan.perSeat ? Math.max(1, copilotSeats) : 1;
+  const seats = plan.perSeat ? Math.max(1, effectiveSeats) : 1;
   return {
     credits: perSeat * seats,
     perSeatCredits: perSeat,
@@ -196,8 +225,8 @@ export function resolveAllowance(now = new Date()): AllowanceResolution {
   };
 }
 
-function billingFacts(now = new Date()) {
-  const allowance = resolveAllowance(now);
+function billingFacts(now = new Date(), override: PlanOverride = {}) {
+  const allowance = resolveAllowance(now, override);
   return {
     creditUsd: aiCreditUsd,
     autoModelDiscount,
@@ -206,8 +235,8 @@ function billingFacts(now = new Date()) {
     meteringRule: "Usage is metered from input, output, and cached tokens at each model's listed API rate. Code completions and next edit suggestions do not consume AI Credits.",
     overageRule: "When the included allowance is exhausted, paid plans can purchase additional usage billed at per-model API rates at the end of the cycle. Organization admins must enable overages and can set per-user budgets.",
     promoWindow: { start: promoWindowStart, end: promoWindowEnd, active: promoWindowActive(now) },
-    configuredPlan: copilotPlan,
-    seats: copilotSeats,
+    configuredPlan: override.plan ?? copilotPlan,
+    seats: override.seats ?? copilotSeats,
     allowance,
     planCatalog: copilotPlanCatalog,
     source: "GitHub Docs: Copilot plans and usage-based billing (individuals; organizations and enterprises). Values are reference defaults and stay configurable because they can change."
@@ -1087,9 +1116,9 @@ export function budgetAlertLevel(utilizationPct: number | null): AiCreditsBudget
   return "ok";
 }
 
-async function aiCreditsBudgetInsight(): Promise<AiCreditsBudgetInsight> {
+async function aiCreditsBudgetInsight(override: PlanOverride = {}): Promise<AiCreditsBudgetInsight> {
   const cycle = billingCycle();
-  const allowance = resolveAllowance();
+  const allowance = resolveAllowance(new Date(), override);
   const allowanceCredits = allowance.credits;
   const monthWindow = `${Math.max(1, cycle.daysElapsed)}d`;
   const observed = await scalarMetric(`${realSessionSum("nano_aiu", monthWindow, "")} / 1e9`);
@@ -1115,8 +1144,8 @@ async function aiCreditsBudgetInsight(): Promise<AiCreditsBudgetInsight> {
     ? exhaustionForecast(observedCredits, allowanceCredits, dailyRate)
     : { daysToExhaustion: null, projectedExhaustionDate: null };
   return {
-    plan: copilotPlan,
-    seats: copilotSeats,
+    plan: override.plan ?? copilotPlan,
+    seats: override.seats ?? copilotSeats,
     monthlyAllowanceCredits: allowanceCredits,
     allowanceSource: allowance.source,
     promoActive: allowance.promoActive,
@@ -1337,7 +1366,7 @@ async function summary(url: URL) {
     scalarMetric(notObservedCoverageQuery),
     workspaceBreakdown(range),
     usageHistory(range, repoLabelMatcher),
-    aiCreditsBudgetInsight(),
+    aiCreditsBudgetInsight(planOverridesFromUrl(url)),
     modelMix(range),
     experienceMetrics(range),
     outcomeMetrics(range)
@@ -1386,7 +1415,7 @@ async function summary(url: URL) {
     links: appLinks(),
     thresholds,
     coachTuning,
-    billing: billingFacts(),
+    billing: billingFacts(new Date(), planOverridesFromUrl(url)),
     alerts,
     economy,
     budget,
@@ -2223,7 +2252,8 @@ async function planner(url: URL): Promise<PlannerInsight> {
   const horizonWeeks = plannerWeeksFromUrl(url);
   const repoLabelMatcher = repoMatcher(repo);
   const cycle = billingCycle();
-  const allowance = resolveAllowance();
+  const override = planOverridesFromUrl(url);
+  const allowance = resolveAllowance(new Date(), override);
 
   const [scopeCredits, allCredits, sessions, prices, scopeCacheRead, scopeCacheCreation, scopeCold] = await Promise.all([
     scalarMetric(`${realSessionSum("nano_aiu", lookback.literal, repoLabelMatcher)} / 1e9`),
@@ -2325,8 +2355,8 @@ async function planner(url: URL): Promise<PlannerInsight> {
     scope: repo ? shortRepoName(repo) : "all workspaces",
     lookbackDays: lookback.days,
     horizonWeeks,
-    plan: copilotPlan,
-    seats: copilotSeats,
+    plan: override.plan ?? copilotPlan,
+    seats: override.seats ?? copilotSeats,
     allowanceCredits: allowance.credits,
     allowanceSource: allowance.source,
     perSeatAllowanceCredits: allowance.perSeatCredits,
@@ -2617,7 +2647,7 @@ const getRoutes: Record<string, RouteHandler> = {
   "/api/sessions": async (url, response) =>
     jsonResponse(response, 200, await sessionsBreakdown(rangeFromUrl(url), repoFromUrl(url))),
   "/api/coach": async (url, response) => jsonResponse(response, 200, await coach(url)),
-  "/api/plans": (_url, response) => jsonResponse(response, 200, billingFacts()),
+  "/api/plans": (url, response) => jsonResponse(response, 200, billingFacts(new Date(), planOverridesFromUrl(url))),
   "/api/planner": async (url, response) => jsonResponse(response, 200, await planner(url)),
   "/api/inspector": async (url, response) => jsonResponse(response, 200, await inspectorTrace(url)),
   "/api/history/long-term": async (url, response) => jsonResponse(response, 200, await longTermHistory(url))

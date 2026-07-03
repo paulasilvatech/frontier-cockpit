@@ -36,6 +36,39 @@ import { CheckIcon, DashIcon, NavIcon } from "./icons";
 
 const rangeOptions: RangeOption[] = ["1h", "6h", "24h", "7d"];
 
+// First-run setup collected by the wizard. The license part is sent to the
+// API as query overrides so credits follow the selected plan immediately; the
+// environment configuration stays as the default when the wizard is skipped.
+export interface SetupPrefs {
+  name: string;
+  role: string;
+  plan: string;
+  seats: number;
+  promo: boolean;
+  repoHost: "github" | "gitlab" | "azuredevops";
+}
+
+const setupStorageKey = "frontier.setup.v1";
+
+function readSetupPrefs(): SetupPrefs | null {
+  if (typeof localStorage === "undefined") {
+    return null;
+  }
+  try {
+    const raw = localStorage.getItem(setupStorageKey);
+    return raw ? (JSON.parse(raw) as SetupPrefs) : null;
+  } catch {
+    return null;
+  }
+}
+
+function planQueryParams(prefs: SetupPrefs | null): Record<string, string> {
+  if (!prefs) {
+    return {};
+  }
+  return { plan: prefs.plan, seats: String(prefs.seats), promo: String(prefs.promo) };
+}
+
 type ViewId = "overview" | "credits" | "planner" | "inspector" | "sessions" | "workspaces" | "coach" | "history" | "health" | "settings";
 
 interface ViewDef {
@@ -81,7 +114,7 @@ interface DashboardData {
   coach: CoachResponse | null;
 }
 
-function useDashboardData(range: RangeOption, repo: string) {
+function useDashboardData(range: RangeOption, repo: string, prefs: SetupPrefs | null) {
   const [data, setData] = useState<DashboardData>({ summary: null, sessions: null, coach: null });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -90,7 +123,7 @@ function useDashboardData(range: RangeOption, repo: string) {
     setIsLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ range, repo });
+      const params = new URLSearchParams({ range, repo, ...planQueryParams(prefs) });
       const query = params.toString();
       const [summaryRes, sessionsRes, coachRes] = await Promise.all([
         fetch(`/api/summary?${query}`, { cache: "no-store" }),
@@ -109,7 +142,7 @@ function useDashboardData(range: RangeOption, repo: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [range, repo]);
+  }, [range, repo, prefs]);
 
   useEffect(() => {
     void load();
@@ -830,7 +863,7 @@ function PlanComparisonPanel({ summary }: Readonly<{ summary: SummaryResponse | 
 const plannerWeeksOptions = [2, 4, 8, 12] as const;
 const plannerLookbackOptions = ["24h", "7d", "14d", "30d"] as const;
 
-function usePlannerData(repo: string, weeks: number, lookback: string) {
+function usePlannerData(repo: string, weeks: number, lookback: string, prefs: SetupPrefs | null) {
   const [planner, setPlanner] = useState<PlannerInsight | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -839,7 +872,7 @@ function usePlannerData(repo: string, weeks: number, lookback: string) {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
-    const params = new URLSearchParams({ repo, weeks: String(weeks), lookback });
+    const params = new URLSearchParams({ repo, weeks: String(weeks), lookback, ...planQueryParams(prefs) });
     fetch(`/api/planner?${params.toString()}`, { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) {
@@ -863,7 +896,7 @@ function usePlannerData(repo: string, weeks: number, lookback: string) {
     return () => {
       cancelled = true;
     };
-  }, [repo, weeks, lookback]);
+  }, [repo, weeks, lookback, prefs]);
 
   return { planner, error, isLoading };
 }
@@ -878,12 +911,12 @@ function plannerVerdictTone(verdict: string): string {
   return "pill-good";
 }
 
-function PlannerView({ summary, repo }: Readonly<{ summary: SummaryResponse | null; repo: string }>) {
+function PlannerView({ summary, repo, prefs }: Readonly<{ summary: SummaryResponse | null; repo: string; prefs: SetupPrefs | null }>) {
   const t = useT();
   const [weeks, setWeeks] = useState<number>(4);
   const [lookback, setLookback] = useState<string>("7d");
   const [copied, setCopied] = useState(false);
-  const { planner, error, isLoading } = usePlannerData(repo, weeks, lookback);
+  const { planner, error, isLoading } = usePlannerData(repo, weeks, lookback, prefs);
 
   const copyJustification = useCallback(async () => {
     if (!planner) {
@@ -1935,12 +1968,13 @@ interface ViewProps {
   sessions: SessionsResponse | null;
   coach: CoachResponse | null;
   repo: string;
+  prefs: SetupPrefs | null;
 }
 
 const viewRenderers: Record<ViewId, (props: ViewProps) => ReactNode> = {
   overview: ({ summary }) => <OverviewView summary={summary} />,
   credits: ({ summary }) => <CreditsView summary={summary} />,
-  planner: ({ summary, repo }) => <PlannerView summary={summary} repo={repo} />,
+  planner: ({ summary, repo, prefs }) => <PlannerView summary={summary} repo={repo} prefs={prefs} />,
   inspector: ({ sessions }) => <InspectorView sessions={sessions} />,
   sessions: ({ sessions }) => <SessionsView sessions={sessions} />,
   workspaces: ({ summary }) => <WorkspacesView summary={summary} />,
@@ -1958,21 +1992,134 @@ function readInitialLang(): Lang {
   return languages.some((entry) => entry.id === stored) ? (stored as Lang) : defaultLang;
 }
 
+const repoHosts: SetupPrefs["repoHost"][] = ["github", "gitlab", "azuredevops"];
+
+function SetupWizard({
+  billingPlans,
+  initial,
+  lang,
+  setLang,
+  onDone
+}: Readonly<{
+  billingPlans: CopilotPlanFacts[];
+  initial: SetupPrefs | null;
+  lang: Lang;
+  setLang: (lang: Lang) => void;
+  onDone: (prefs: SetupPrefs) => void;
+}>) {
+  const t = useT();
+  const [name, setName] = useState(initial?.name ?? "");
+  const [role, setRole] = useState(initial?.role ?? "Developer");
+  const [plan, setPlan] = useState(initial?.plan ?? "business");
+  const [seats, setSeats] = useState(initial?.seats ?? 1);
+  const [promo, setPromo] = useState(initial?.promo ?? false);
+  const [repoHost, setRepoHost] = useState<SetupPrefs["repoHost"]>(initial?.repoHost ?? "github");
+  const selected = billingPlans.find((entry) => entry.id === plan);
+  const perSeat = selected ? (promo && selected.promoCredits !== null ? selected.promoCredits : selected.includedCredits) : null;
+  const totalCredits = perSeat === null ? null : perSeat * (selected?.perSeat ? Math.max(1, seats) : 1);
+
+  return (
+    <div className="wizard-overlay" role="dialog" aria-modal="true">
+      <div className="wizard-card">
+        <div className="wizard-head">
+          <span className="brand__squares" aria-hidden="true"><i className="sq-red" /><i className="sq-green" /><i className="sq-blue" /><i className="sq-yellow" /></span>
+          <div>
+            <h2>{t("wizard.title")}</h2>
+            <p className="muted">{t("wizard.subtitle")}</p>
+          </div>
+          <div className="segmented small lang-switch">
+            {languages.map((entry) => (
+              <button key={entry.id} type="button" className={lang === entry.id ? "active" : ""} onClick={() => setLang(entry.id)}>{entry.short}</button>
+            ))}
+          </div>
+        </div>
+        <div className="wizard-grid">
+          <label className="wizard-field">
+            <span>{t("wizard.name")}</span>
+            <input value={name} onChange={(event) => setName(event.target.value)} placeholder={t("wizard.namePlaceholder")} />
+          </label>
+          <label className="wizard-field">
+            <span>{t("wizard.role")}</span>
+            <input value={role} onChange={(event) => setRole(event.target.value)} placeholder="Developer" />
+          </label>
+          <label className="wizard-field">
+            <span>{t("wizard.plan")}</span>
+            <select value={plan} onChange={(event) => setPlan(event.target.value)}>
+              {billingPlans.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {planDisplayName(entry, t)} · US${entry.priceUsdMonth}{entry.perSeat ? t("wizard.perSeatShort") : ""} · {entry.includedCredits === null ? t("plans.autoOnly") : t("wizard.creditsShort", { credits: formatNumber(entry.includedCredits, 0) })}
+                </option>
+              ))}
+            </select>
+          </label>
+          {selected?.perSeat ? (
+            <label className="wizard-field">
+              <span>{t("wizard.seats")}</span>
+              <input type="number" min={1} value={seats} onChange={(event) => setSeats(Math.max(1, Number.parseInt(event.target.value || "1", 10)))} />
+            </label>
+          ) : null}
+          {selected?.promoCredits !== null && selected?.promoCredits !== undefined ? (
+            <label className="wizard-check">
+              <input type="checkbox" checked={promo} onChange={(event) => setPromo(event.target.checked)} />
+              <span>{t("wizard.promo", { credits: formatNumber(selected.promoCredits, 0) })}</span>
+            </label>
+          ) : null}
+          <div className="wizard-field">
+            <span>{t("wizard.repoHost")}</span>
+            <div className="segmented">
+              {repoHosts.map((host) => (
+                <button key={host} type="button" className={repoHost === host ? "active" : ""} onClick={() => setRepoHost(host)}>
+                  {t(`wizard.host.${host}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="wizard-summary">
+          {totalCredits === null
+            ? t("wizard.summaryAuto")
+            : t("wizard.summary", { credits: formatNumber(totalCredits, 0), plan: selected ? planDisplayName(selected, t) : plan })}
+        </div>
+        <div className="wizard-actions">
+          <button
+            type="button"
+            className="wizard-primary"
+            onClick={() => onDone({ name: name.trim() || "Developer", role: role.trim() || "Developer", plan, seats, promo, repoHost })}
+          >
+            {t("wizard.start")}
+          </button>
+        </div>
+        <p className="muted wizard-note">{t("wizard.note")}</p>
+      </div>
+    </div>
+  );
+}
+
 function AppShell({ lang, setLang }: Readonly<{ lang: Lang; setLang: (lang: Lang) => void }>) {
   const t = useT();
   const [range, setRange] = useState<RangeOption>("24h");
   const [repo, setRepo] = useState("all");
   const [activeView, setActiveView] = useState<ViewId>("overview");
-  const { data, error, isLoading, reload } = useDashboardData(range, repo);
+  const [prefs, setPrefs] = useState<SetupPrefs | null>(() => readSetupPrefs());
+  const [wizardOpen, setWizardOpen] = useState(() => readSetupPrefs() === null);
+  const { data, error, isLoading, reload } = useDashboardData(range, repo, prefs);
   const { summary, sessions, coach } = data;
+
+  const saveSetup = useCallback((next: SetupPrefs) => {
+    setPrefs(next);
+    setWizardOpen(false);
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(setupStorageKey, JSON.stringify(next));
+    }
+  }, []);
 
   const views = buildViews(t);
   const alertCount = summary?.alerts.length ?? 0;
   const activeDef = views.find((view) => view.id === activeView) ?? views[0];
 
   const dashboardTitle = summary?.participant.dashboardTitle ?? "Frontier Cockpit Local";
-  const participantName = summary?.participant.name ?? "Workshop Participant";
-  const participantRole = summary?.participant.role ?? "Developer";
+  const participantName = prefs?.name ?? summary?.participant.name ?? "Workshop Participant";
+  const participantRole = prefs?.role ?? summary?.participant.role ?? "Developer";
   const participantLine = participantRole ? `${participantName} | ${participantRole}` : participantName;
   const customerName = summary?.participant.customerName ?? "";
 
@@ -2033,6 +2180,7 @@ function AppShell({ lang, setLang }: Readonly<{ lang: Lang; setLang: (lang: Lang
         <div className="sidebar-foot">
           <a href="http://localhost:18888" target="_blank" rel="noopener noreferrer">Aspire</a>
           <a href="http://localhost:3000" target="_blank" rel="noopener noreferrer">Grafana</a>
+          <button type="button" className="sidebar-setup" onClick={() => setWizardOpen(true)}>{t("wizard.reopen")}</button>
         </div>
       </aside>
 
@@ -2075,7 +2223,7 @@ function AppShell({ lang, setLang }: Readonly<{ lang: Lang; setLang: (lang: Lang
         {!summary && !error ? <div className="loading">{t("state.loading")}</div> : null}
 
         <div className="view">
-          {viewRenderers[activeView]({ summary, sessions, coach, repo })}
+          {viewRenderers[activeView]({ summary, sessions, coach, repo, prefs })}
         </div>
 
         <footer className="content-foot">
@@ -2083,6 +2231,15 @@ function AppShell({ lang, setLang }: Readonly<{ lang: Lang; setLang: (lang: Lang
           <span>{t("footer.scope", { range, scope: scopeLabel })}</span>
         </footer>
       </main>
+      {wizardOpen ? (
+        <SetupWizard
+          billingPlans={summary?.billing.planCatalog ?? []}
+          initial={prefs}
+          lang={lang}
+          setLang={setLang}
+          onDone={saveSetup}
+        />
+      ) : null}
     </div>
   );
 }
