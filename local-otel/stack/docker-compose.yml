@@ -163,7 +163,7 @@ services:
       - observability
 
   grafana:
-    image: grafana/grafana-oss:11.6.16
+    image: grafana/grafana-oss:11.6.5
     container_name: copilot-otel-grafana
     env_file:
       - ./grafana-admin.env

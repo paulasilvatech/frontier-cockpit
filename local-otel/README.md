@@ -50,7 +50,7 @@ The full local stack runs 10 containers. Every published port binds to `127.0.0.
 | `copilot-otel-prometheus` | `prom/prometheus:v3.1.0` | Local metric history, 30 days | `http://localhost:9090` |
 | `copilot-otel-registry` | local build | Model and price registry sidecar, re-seeds every 5 minutes | internal only |
 | `copilot-otel-jobs` | local build | Runs `materialize-copilot-sessions.sh` every 5 minutes and `daily-rollup.sh` daily inside Docker, cross-platform | internal only |
-| `copilot-otel-grafana` | `grafana/grafana-oss:11.6.16` | Historical dashboards with embedded SQLite metadata storage | `http://localhost:3000` |
+| `copilot-otel-grafana` | `grafana/grafana-oss:11.6.5` | Historical dashboards with embedded SQLite metadata storage | `http://localhost:3000` |
 | `frontier-dashboard-api` | local build | Mini app API over Prometheus, Tempo, Loki, and Grafana | internal only |
 | `frontier-dashboard-web` | local build | Frontier Cockpit Local mini app | `http://localhost:3300` |
 

@@ -39,9 +39,15 @@ vars=(
   CLAUDE_CODE_ENABLE_TELEMETRY
 )
 
-for name in $vars; do
-  launchctl setenv "$name" "${(P)name}"
-done
-
-print "User launchd OpenTelemetry environment is enabled for apps started after this point."
-print "Restart VS Code Insiders windows to guarantee the new environment is inherited."
+# launchd only exists on macOS. On Linux and Windows the persistent
+# environment comes from client-bootstrap.sh / client-bootstrap.ps1 instead.
+if [[ "$(uname -s)" == "Darwin" ]] && command -v launchctl >/dev/null 2>&1; then
+  for name in $vars; do
+    launchctl setenv "$name" "${(P)name}"
+  done
+  print "User launchd OpenTelemetry environment is enabled for apps started after this point."
+  print "Restart VS Code Insiders windows to guarantee the new environment is inherited."
+else
+  print "launchctl is not available on this platform; skipped the macOS launchd environment."
+  print "Use client-bootstrap.sh (Linux/macOS) or client-bootstrap.ps1 (Windows) for persistent OTel variables."
+fi
