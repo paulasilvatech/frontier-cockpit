@@ -23,12 +23,14 @@ Usage:
 
 Options:
   --config PATH              Use a custom client env file.
-  --no-build                 Start Docker Compose without rebuilding images.
+  --no-build                 Start container stack without rebuilding images.
   --skip-vscode-settings     Do not update VS Code user settings.
   --skip-user-env            Do not persist user-level OTel environment variables.
   --skip-workspace-register  Do not emit the workspace registry metric.
   --skip-validation          Do not validate local endpoints after startup.
   -h, --help                 Show this help.
+
+Supported container runtimes: Docker, Podman
 EOF
 }
 
@@ -117,10 +119,46 @@ find_python() {
   fi
 }
 
+find_container_runtime() {
+  if command -v docker >/dev/null 2>&1; then
+    echo "docker"
+  elif command -v podman >/dev/null 2>&1; then
+    echo "podman"
+  else
+    return 1
+  fi
+}
+
+find_compose_tool() {
+  local runtime="$1"
+  if [[ "$runtime" == "docker" ]]; then
+    if command -v docker-compose >/dev/null 2>&1; then
+      echo "docker-compose"
+    else
+      echo "docker"
+    fi
+  else
+    if command -v podman-compose >/dev/null 2>&1; then
+      echo "podman-compose"
+    else
+      echo "podman"
+    fi
+  fi
+}
+
 python_cmd="$(find_python || true)"
 if [[ -z "$python_cmd" ]]; then
   fail "Python 3 is required for JSON settings and OTLP bootstrap payloads."
 fi
+
+container_runtime="$(find_container_runtime || true)"
+if [[ -z "$container_runtime" ]]; then
+  fail "Container runtime required. Install Docker or Podman."
+fi
+
+compose_tool="$(find_compose_tool "$container_runtime")"
+export CONTAINER_RUNTIME="$container_runtime"
+export COMPOSE_TOOL="$compose_tool"
 
 sanitize_attr() {
   printf '%s' "$1" | tr ',' ' ' | tr '\n\r' '  '
@@ -179,15 +217,18 @@ otel_vars=(
 write_user_env() {
   local env_dir="$HOME/.frontier-cockpit"
   local env_file="$env_dir/otel.env"
+  local fish_env_file="$env_dir/otel.fish"
   mkdir -p "$env_dir"
   : > "$env_file"
-  chmod 600 "$env_file"
+  : > "$fish_env_file"
+  chmod 600 "$env_file" "$fish_env_file"
   for name in "${otel_vars[@]}"; do
     local value="${!name}"
     value="${value//\\/\\\\}"
     value="${value//\"/\\\"}"
     value="${value//\$/\\\$}"
     printf 'export %s="%s"\n' "$name" "$value" >> "$env_file"
+    printf 'set -gx %s "%s"\n' "$name" "$value" >> "$fish_env_file"
   done
 
   local block_start="# Frontier Cockpit Local OTel start"
@@ -197,12 +238,21 @@ if [ -f \"\$HOME/.frontier-cockpit/otel.env\" ]; then
   . \"\$HOME/.frontier-cockpit/otel.env\"
 fi
 ${block_end}"
+  local fish_block_start="# Frontier Cockpit Local OTel start (Fish)"
+  local fish_block_end="# Frontier Cockpit Local OTel end (Fish)"
+  local fish_block="${fish_block_start}
+if test -f \"\$HOME/.frontier-cockpit/otel.fish\"
+  source \"\$HOME/.frontier-cockpit/otel.fish\"
+end
+${fish_block_end}"
 
   local profiles=()
   case "${SHELL:-}" in
+    *fish*) profiles+=("$HOME/.config/fish/config.fish") ;;
     *zsh*) profiles+=("$HOME/.zshrc") ;;
     *bash*) profiles+=("$HOME/.bashrc") ;;
   esac
+  [[ -f "$HOME/.config/fish/config.fish" ]] && profiles+=("$HOME/.config/fish/config.fish")
   [[ -f "$HOME/.zshrc" ]] && profiles+=("$HOME/.zshrc")
   [[ -f "$HOME/.bashrc" ]] && profiles+=("$HOME/.bashrc")
   [[ ${#profiles[@]} -eq 0 ]] && profiles+=("$HOME/.profile")
@@ -211,12 +261,22 @@ ${block_end}"
   for profile in "${profiles[@]}"; do
     [[ ",$seen," == *",$profile,"* ]] && continue
     seen="$seen,$profile"
+    mkdir -p "$(dirname "$profile")"
     touch "$profile"
-    if ! grep -q "$block_start" "$profile"; then
-      printf '\n%s\n' "$block" >> "$profile"
-      ok "Added OTel env source block to $profile."
+    if [[ "$profile" == *".config/fish/config.fish" ]]; then
+      if ! grep -q "${fish_block_start}" "$profile"; then
+        printf '\n%s\n' "$fish_block" >> "$profile"
+        ok "Added OTel env source block to $profile (Fish)."
+      else
+        ok "OTel env source block already exists in $profile (Fish)."
+      fi
     else
-      ok "OTel env source block already exists in $profile."
+      if ! grep -q "$block_start" "$profile"; then
+        printf '\n%s\n' "$block" >> "$profile"
+        ok "Added OTel env source block to $profile."
+      else
+        ok "OTel env source block already exists in $profile."
+      fi
     fi
   done
 
@@ -227,7 +287,7 @@ ${block_end}"
     ok "Set macOS launchd user environment for GUI apps started after this run."
   fi
 
-  ok "Wrote $env_file for GitHub Copilot CLI, Copilot SDK apps, and terminal-launched tools that honor OTEL_* variables."
+  ok "Wrote $env_file and $fish_env_file for GitHub Copilot CLI, Copilot SDK apps, and terminal-launched tools that honor OTEL_* variables."
 }
 
 apply_vscode_settings() {
@@ -329,12 +389,20 @@ PY
 }
 
 ensure_docker() {
-  if ! command -v docker >/dev/null 2>&1 && [[ "$(uname -s)" == "Darwin" ]] && [[ -x "/Applications/Docker.app/Contents/Resources/bin/docker" ]]; then
-    export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+  if ! command -v "$CONTAINER_RUNTIME" >/dev/null 2>&1; then
+    if [[ "$(uname -s)" == "Darwin" ]] && [[ "$CONTAINER_RUNTIME" == "docker" ]] && [[ -x "/Applications/Docker.app/Contents/Resources/bin/docker" ]]; then
+      export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+    else
+      fail "$CONTAINER_RUNTIME CLI was not found. Install Docker or Podman."
+    fi
   fi
-  command -v docker >/dev/null 2>&1 || fail "Docker CLI was not found. Install Docker Desktop or Docker Engine."
-  docker info >/dev/null 2>&1 || fail "Docker is installed, but the daemon is not running. Start Docker and rerun."
-  ok "Docker daemon is running."
+  command -v "$CONTAINER_RUNTIME" >/dev/null 2>&1 || fail "$CONTAINER_RUNTIME CLI was not found."
+  
+  if "$CONTAINER_RUNTIME" info >/dev/null 2>&1; then
+    ok "$CONTAINER_RUNTIME daemon is running."
+  else
+    fail "$CONTAINER_RUNTIME is installed, but the daemon is not running. Start $CONTAINER_RUNTIME and rerun."
+  fi
 }
 
 ensure_aspire_key() {
@@ -364,12 +432,12 @@ PY
 }
 
 start_stack() {
-  if docker ps --format '{{.Names}}' | grep -qx 'aspire-dashboard'; then
+  if "$CONTAINER_RUNTIME" ps --format '{{.Names}}' | grep -qx 'aspire-dashboard'; then
     local standalone_owns_otlp
-    standalone_owns_otlp="$(docker port aspire-dashboard 18890/tcp 2>/dev/null || true)"
+    standalone_owns_otlp="$("$CONTAINER_RUNTIME" port aspire-dashboard 18890/tcp 2>/dev/null || true)"
     if [[ "$standalone_owns_otlp" == *":4318"* ]]; then
       warn "Stopping standalone Aspire container to free OTLP ports for the Collector."
-      docker stop aspire-dashboard >/dev/null 2>&1 || true
+      "$CONTAINER_RUNTIME" stop aspire-dashboard >/dev/null 2>&1 || true
     fi
   fi
 
@@ -383,8 +451,12 @@ start_stack() {
   export FRONTIER_COPILOT_PLAN FRONTIER_COPILOT_SEATS FRONTIER_AI_CREDITS_USE_PROMO
   export FRONTIER_AI_CREDITS_MONTHLY_ALLOWANCE FRONTIER_ENABLE_CONTENT_CAPTURE
 
-  (cd "$stack_dir" && docker compose -f docker-compose.yml up -d ${build_flag})
-  ok "Docker Compose stack is starting."
+  if [[ "$COMPOSE_TOOL" == "docker-compose" ]] || [[ "$COMPOSE_TOOL" == "podman-compose" ]]; then
+    (cd "$stack_dir" && "$COMPOSE_TOOL" -f docker-compose.yml up -d ${build_flag})
+  else
+    (cd "$stack_dir" && "$CONTAINER_RUNTIME" compose -f docker-compose.yml up -d ${build_flag})
+  fi
+  ok "Container Compose stack is starting."
 }
 
 emit_workspace_registry() {

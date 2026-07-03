@@ -26,7 +26,7 @@ services:
       - observability
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.155.0
+    image: docker.io/otel/opentelemetry-collector-contrib:0.155.0
     container_name: copilot-otel-collector
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
     env_file:
@@ -46,7 +46,7 @@ services:
       - observability
 
   tempo:
-    image: grafana/tempo:2.6.1
+    image: docker.io/grafana/tempo:2.6.1
     container_name: copilot-otel-tempo
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
@@ -65,7 +65,7 @@ services:
       - observability
 
   loki:
-    image: grafana/loki:3.3.2
+    image: docker.io/grafana/loki:3.3.2
     container_name: copilot-otel-loki
     command: ["-config.file=/etc/loki/local-config.yaml"]
     volumes:
@@ -84,7 +84,7 @@ services:
       - observability
 
   prometheus:
-    image: prom/prometheus:v3.1.0
+    image: docker.io/prom/prometheus:v3.1.0
     container_name: copilot-otel-prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
@@ -163,7 +163,7 @@ services:
       - observability
 
   grafana:
-    image: grafana/grafana-oss:11.6.16
+    image: docker.io/grafana/grafana-oss:13.0.2
     container_name: copilot-otel-grafana
     env_file:
       - ./grafana-admin.env
