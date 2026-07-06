@@ -1,4 +1,4 @@
-FROM docker.io/library/alpine:3.20
+FROM docker.io/library/alpine:3.24
 
 RUN apk add --no-cache curl python3 zsh
 
