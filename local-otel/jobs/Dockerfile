@@ -1,4 +1,4 @@
-FROM docker.io/library/python:3.12-slim
+FROM docker.io/library/python:3.14-slim
 
 # zsh runs the job scripts; curl serves healthchecks and OTLP posts; duckdb
 # powers the local analytics store (developer_daily_rollup) and the long-term
